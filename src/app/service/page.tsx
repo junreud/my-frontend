@@ -1,13 +1,11 @@
-// import { Header3 } from "@/components/header-3";
-// import { BlogSection } from "@/components/blog-section";
-// import { Footer3 } from "@/components/footer-3";
+import RankSeoTabs from "@/components/RankSeoTabs";
+import ServiceHero from "@/components/ServiceHero";
 
 export default function ServicePage() {
   return (
-    <>
-      {/* <Header3 />
-      <BlogSection />
-      <Footer3 /> */}
-    </>
+    <main>
+      <ServiceHero />
+      <RankSeoTabs />
+    </main>
   );
 }

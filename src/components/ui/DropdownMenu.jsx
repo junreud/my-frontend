@@ -5,11 +5,7 @@ import Link from "next/link";
 export default function DropdownMenu({ label, items }) {
   return (
     <div className="dropdown dropdown-hover dropdown-bottom">
-      <label
-        tabIndex={0}
-        className="cursor-pointer flex items-center"
-        aria-label={label}
-      >
+      <div tabIndex={0} className="flex items-center">
         {label}
         <svg
           className="ml-1 h-4 w-4 fill-current"
@@ -18,7 +14,7 @@ export default function DropdownMenu({ label, items }) {
         >
           <path d="M5.516 7.548L10 12.032l4.484-4.484 1.032 1.032L10 14.096 4.484 8.58z" />
         </svg>
-      </label>
+      </div>
       <ul className="dropdown-content menu p-1 shadow bg-base-100 rounded-box w-52">
         {items.map((item, index) => (
           <li key={index}>

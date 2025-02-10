@@ -8,10 +8,10 @@ import DropdownMenu from "./ui/DropdownMenu";
 const Navbar = () => {
   const scrollDirection = useScrollDirection();
 
-  // 드롭다운 메뉴에 사용할 항목 배열 예시
+  // 드롭다운 항목 배열
   const serviceItems = [
-    { text: "네이버플레이스", href: "/naverplace" },
-    { text: "블로그", href: "/blog" },
+    { text: "네이버플레이스", href: "/service?id=place" },
+    { text: "블로그", href: "/service?id=blog" },
   ];
 
   return (
@@ -21,6 +21,7 @@ const Navbar = () => {
       }`}
       aria-label="주요 내비게이션"
     >
+      {/* navbar-start */}
       <div className="navbar-start">
         <div className="dropdown">
           <div
@@ -36,12 +37,7 @@ const Navbar = () => {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 6h16M4 12h8m-8 6h16"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h8m-8 6h16" />
             </svg>
           </div>
           <ul
@@ -52,7 +48,9 @@ const Navbar = () => {
               <Link href="/co-info">회사소개</Link>
             </li>
             <li>
-              <DropdownMenu label="서비스" items={serviceItems} />
+              <Link href="/service">
+                <DropdownMenu label="서비스" items={serviceItems} />
+              </Link>
             </li>
             <li>
               <Link href="/faq">자주 묻는 질문</Link>
@@ -63,19 +61,26 @@ const Navbar = () => {
           <span className="btn btn-ghost text-xl">LAKABE</span>
         </Link>
       </div>
+
+      {/* navbar-center */}
       <div className="navbar-center hidden lg:flex">
         <ul className="menu menu-horizontal px-1 gap-x-4">
           <li>
             <Link href="/co-info">회사소개</Link>
           </li>
           <li>
-            <DropdownMenu label="서비스" items={serviceItems} />
+            {/* 여기서도 desktop용 “서비스” 메뉴 */}
+            <Link href="/service">
+              <DropdownMenu label="서비스" items={serviceItems} />
+            </Link>
           </li>
           <li>
             <Link href="/faq">자주 묻는 질문</Link>
           </li>
         </ul>
       </div>
+
+      {/* navbar-end */}
       <div className="navbar-end">
         <Link href="/estimate">
           <span className="btn custom-btn px-4 py-1 rounded-full">견적받기</span>
