@@ -12,7 +12,7 @@ export default function FadeInSection({ children }: FadeInProps) {
       initial={{ opacity: 0 }}
       whileInView={{
         opacity: 1,
-        transition: { duration: 0.6, ease: "easeOut" },
+        transition: { duration: 1.5, ease: "easeOut" },
       }}
       viewport={{ once: false }}
     >

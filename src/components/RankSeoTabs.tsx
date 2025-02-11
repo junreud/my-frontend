@@ -2,6 +2,9 @@
 import { Tab } from "@headlessui/react";
 import FadeInSection from "./animations/FadeInComponent";
 import { Container } from "./ui/Container";
+import WorkMethod from "./WorkMethod";
+import SlideUpComponent from "./animations/SlideUpComponent";
+import PopInComponent from "./animations/PopInComponent";
 
 // ─────────────────────────────────────────────────────────────
 // 순위작업 탭 컨텐츠
@@ -11,7 +14,10 @@ function RankTabContent() {
     <div className="space-y-36">
       {/* 단계 섹션 - 이미지 세로 길이 늘림 */}
       <section className="p-4">
+        <FadeInSection><SlideUpComponent>
         <h2 className="mb-4 text-xl font-semibold">단계</h2>
+        </SlideUpComponent></FadeInSection>
+        <FadeInSection><SlideUpComponent>
         <div className="grid grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((num) => (
             <div key={num} className="flex flex-col items-center border p-4">
@@ -29,79 +35,61 @@ function RankTabContent() {
             </div>
           ))}
         </div>
+        </SlideUpComponent></FadeInSection>
       </section>
-<FadeInSection>
-      {/* 레퍼런스 섹션 - 지도 오른쪽 배치 */}
-      <section className="p-4">
-        <h2 className="mb-4 text-xl font-semibold">레퍼런스</h2>
-        {/* 좌-우 레이아웃: 왼쪽 레퍼런스 목록 / 오른쪽 지도 */}
-        <div className="flex gap-4">
-          {/* 왼쪽 (레퍼런스 목록) */}
-          <div className="flex-1 grid grid-cols-2 gap-4">
-            <div>
-              <h3 className="font-medium">맛집</h3>
-              <ul className="text-sm text-gray-600 mt-1">
-                <li>경기도</li>
-                <li>서울</li>
-                <li>인천</li>
-              </ul>
+      <FadeInSection>
+        <SlideUpComponent>
+        {/* 레퍼런스 섹션 - 지도 오른쪽 배치 */}
+        <section className="p-4">
+          <h2 className="mb-4 text-xl font-semibold">레퍼런스</h2>
+          {/* 좌-우 레이아웃: 왼쪽 레퍼런스 목록 / 오른쪽 지도 */}
+          <div className="flex gap-4">
+            {/* 왼쪽 (레퍼런스 목록) */}
+            <div className="flex-1 grid grid-cols-2 gap-4">
+              <div>
+                <h3 className="font-medium">맛집</h3>
+                <ul className="text-sm text-gray-600 mt-1">
+                  <li>경기도</li>
+                  <li>서울</li>
+                  <li>인천</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-medium">헬스장</h3>
+                <ul className="text-sm text-gray-600 mt-1">
+                  <li>경기도</li>
+                  <li>서울</li>
+                  <li>인천</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-medium">스크린골프</h3>
+                <ul className="text-sm text-gray-600 mt-1">
+                  <li>경기도</li>
+                  <li>서울</li>
+                  <li>인천</li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-medium">기타</h3>
+                <ul className="text-sm text-gray-600 mt-1">
+                  <li>경기도</li>
+                  <li>서울</li>
+                  <li>인천</li>
+                </ul>
+              </div>
             </div>
-            <div>
-              <h3 className="font-medium">헬스장</h3>
-              <ul className="text-sm text-gray-600 mt-1">
-                <li>경기도</li>
-                <li>서울</li>
-                <li>인천</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium">스크린골프</h3>
-              <ul className="text-sm text-gray-600 mt-1">
-                <li>경기도</li>
-                <li>서울</li>
-                <li>인천</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium">기타</h3>
-              <ul className="text-sm text-gray-600 mt-1">
-                <li>경기도</li>
-                <li>서울</li>
-                <li>인천</li>
-              </ul>
-            </div>
-          </div>
 
-          {/* 오른쪽 (지도) */}
-          <div className="w-1/2 h-48 bg-gray-300 flex items-center justify-center">
-            <span className="text-sm text-gray-700">지도 (대한민국)</span>
+            {/* 오른쪽 (지도) */}
+            <div className="w-1/2 h-48 bg-gray-300 flex items-center justify-center">
+              <span className="text-sm text-gray-700">지도 (대한민국)</span>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+        </SlideUpComponent>
       </FadeInSection>
       {/* 작업방식 섹션 */}
-      <section className="p-4">
-        <h2 className="mb-4 text-xl font-semibold">작업방식</h2>
-        <div className="flex">
-          {/* 왼쪽 버튼 그룹: 리워드, 블로그배포, 슬롯 */}
-          <div className="w-1/4 border-r pr-4">
-            <ul className="space-y-2 text-sm">
-              <li className="font-medium">리워드</li>
-              <li>블로그배포</li>
-              <li>슬롯</li>
-            </ul>
-          </div>
-          {/* 오른쪽 내용 */}
-          <div className="w-3/4 pl-4">
-            <div className="mb-2 h-36 w-full bg-gray-300 flex items-center justify-center">
-              <span className="text-gray-700">이미지 or 정보</span>
-            </div>
-            <p className="text-sm text-gray-700">
-              저장하기, 유입 버튼 등이 있는 영역
-            </p>
-          </div>
-        </div>
-      </section>
+      <WorkMethod />
 
       {/* 계약조건 섹션 */}
       <section className="p-4">
@@ -142,11 +130,14 @@ function SeoTabContent() {
       </section>
 
       {/* 2. 대표사진, 메뉴사진 */}
+      
       <section className="p-4">
+      <PopInComponent>
         <h2 className="mb-2 text-xl font-semibold">2. 대표사진, 메뉴사진</h2>
         <p className="text-sm text-gray-700 mb-4">
           사진 등록 규정, 이미지 크기(가로x세로), 파일 형식(JPG/PNG) 등.
         </p>
+        </PopInComponent>
         <hr className="my-4 border-gray-300" />
         <div className="flex gap-4">
           <div className="w-1/2 h-36 bg-gray-300 flex items-center justify-center">
