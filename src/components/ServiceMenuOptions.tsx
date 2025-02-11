@@ -12,7 +12,7 @@ interface ItemType {
 
 // 항목 리스트
 const MENU_ITEMS: ItemType[] = [
-  { id: "place", label: "플레이스" },
+  { id: "place", label: "N-플레이스" },
   { id: "blog", label: "블로그" },
 ];
 

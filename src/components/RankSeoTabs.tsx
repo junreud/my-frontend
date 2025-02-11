@@ -1,14 +1,16 @@
 "use client";
 import { Tab } from "@headlessui/react";
+import FadeInSection from "./animations/FadeInComponent";
+import { Container } from "./ui/Container";
 
 // ─────────────────────────────────────────────────────────────
 // 순위작업 탭 컨텐츠
 // ─────────────────────────────────────────────────────────────
 function RankTabContent() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-36">
       {/* 단계 섹션 - 이미지 세로 길이 늘림 */}
-      <section className="p-4 border rounded-md">
+      <section className="p-4">
         <h2 className="mb-4 text-xl font-semibold">단계</h2>
         <div className="grid grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((num) => (
@@ -28,9 +30,9 @@ function RankTabContent() {
           ))}
         </div>
       </section>
-
+<FadeInSection>
       {/* 레퍼런스 섹션 - 지도 오른쪽 배치 */}
-      <section className="p-4 border rounded-md">
+      <section className="p-4">
         <h2 className="mb-4 text-xl font-semibold">레퍼런스</h2>
         {/* 좌-우 레이아웃: 왼쪽 레퍼런스 목록 / 오른쪽 지도 */}
         <div className="flex gap-4">
@@ -76,9 +78,9 @@ function RankTabContent() {
           </div>
         </div>
       </section>
-
+      </FadeInSection>
       {/* 작업방식 섹션 */}
-      <section className="p-4 border rounded-md">
+      <section className="p-4">
         <h2 className="mb-4 text-xl font-semibold">작업방식</h2>
         <div className="flex">
           {/* 왼쪽 버튼 그룹: 리워드, 블로그배포, 슬롯 */}
@@ -102,7 +104,7 @@ function RankTabContent() {
       </section>
 
       {/* 계약조건 섹션 */}
-      <section className="p-4 border rounded-md">
+      <section className="p-4">
         <h2 className="mb-4 text-xl font-semibold">계약조건</h2>
         <p className="text-sm text-gray-700">
           라카비의 분석을 토대로 예상 작업량을 산정 후 작업.
@@ -120,7 +122,7 @@ function SeoTabContent() {
   return (
     <div className="space-y-8">
       {/* 1. 업체명, 업종셋팅 영역 */}
-      <section className="p-4 border rounded-md">
+      <section className="p-4">
         <h2 className="mb-2 text-xl font-semibold">1. 업체명, 업종셋팅</h2>
         {/* 첨부 사진처럼 텍스트 → divider → 사진 → 설명 */}
         <p className="text-sm text-gray-700 mb-4">
@@ -140,7 +142,7 @@ function SeoTabContent() {
       </section>
 
       {/* 2. 대표사진, 메뉴사진 */}
-      <section className="p-4 border rounded-md">
+      <section className="p-4">
         <h2 className="mb-2 text-xl font-semibold">2. 대표사진, 메뉴사진</h2>
         <p className="text-sm text-gray-700 mb-4">
           사진 등록 규정, 이미지 크기(가로x세로), 파일 형식(JPG/PNG) 등.
@@ -160,7 +162,7 @@ function SeoTabContent() {
       </section>
 
       {/* 3. 기타 세팅 */}
-      <section className="p-4 border rounded-md">
+      <section className="p-4">
         <h2 className="mb-2 text-xl font-semibold">3. 그 외 세팅</h2>
         <p className="text-sm text-gray-700 mb-4">
           주변 지역/검색어에 따라 업소 정보 확장 설정. 
@@ -192,7 +194,7 @@ export default function RankSeoTabs() {
   return (
     <div className="w-full px-4 pt-20 pb-16">
       {/* 상단 여백: pt-10 */}
-      <div className="mx-auto max-w-5xl">
+      <Container>
         <Tab.Group>
           {/* 탭 목록 - 수평 중앙 정렬 */}
           <Tab.List className="flex justify-center gap-6 mb-6">
@@ -221,7 +223,7 @@ export default function RankSeoTabs() {
             </Tab.Panel>
           </Tab.Panels>
         </Tab.Group>
-      </div>
+      </Container>
     </div>
   );
 }

@@ -8,7 +8,7 @@ interface FadeInProps {
 
 export default function FadeInSection({ children }: FadeInProps) {
   return (
-    <motion.section
+    <motion.div
       initial={{ opacity: 0 }}
       whileInView={{
         opacity: 1,
@@ -17,6 +17,6 @@ export default function FadeInSection({ children }: FadeInProps) {
       viewport={{ once: false }}
     >
       {children}
-    </motion.section>
+    </motion.div>
   );
 }
