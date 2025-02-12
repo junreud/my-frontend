@@ -27,11 +27,11 @@ export default function Homepage() {
       </section>
 
       {/* 2) 순위 섹션 */}
-      <section className="px-2 py-8 sm:p-8">
+      <section className="w-full px-2 py-8 sm:p-8">
         <h2 className="text-center text-lg sm:text-xl font-bold mb-6">
           순위
         </h2>
-        <div className="mx-auto w-full h-full flex items-start justify-center mb-4">
+        <div className="mx-auto w-{800px} h-{600px} items-start justify-center mb-4">
           <Mychart />
         </div>
         <p className="text-center text-sm sm:text-base">

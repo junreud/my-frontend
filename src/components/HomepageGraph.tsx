@@ -35,37 +35,37 @@ import {
 //    Y값이 1 ~ 300 사이
 // -------------------------------------------
 const chartData = [
-  { month: "12.01", desktop: 186, mobile: 80 },
-  { month: "12.02", desktop: 166, mobile: 80 },
-  { month: "12.03", desktop: 146, mobile: 80 },
-  { month: "12.04", desktop: 116, mobile: 80 },
-  { month: "12.05", desktop: 86, mobile: 80 },
-  { month: "12.06", desktop: 83, mobile: 80 },
-  { month: "12.07", desktop: 86, mobile: 80 },
-  { month: "12.08", desktop: 76, mobile: 80 },
-  { month: "12.09", desktop: 72, mobile: 80 },
-  { month: "12.10", desktop: 66, mobile: 80 },
-  { month: "12.11", desktop: 62, mobile: 80 },
-  { month: "12.12", desktop: 56, mobile: 80 },
-  { month: "12.13", desktop: 46, mobile: 80 },
-  { month: "12.14", desktop: 36, mobile: 80 },
-  { month: "12.15", desktop: 31, mobile: 80 },
-  { month: "12.16", desktop: 186, mobile: 80 },
-  { month: "12.17", desktop: 186, mobile: 80 },
-  { month: "12.18", desktop: 186, mobile: 80 },
-  { month: "12.19", desktop: 186, mobile: 80 },
-  { month: "12.20", desktop: 186, mobile: 80 },
-  { month: "12.21", desktop: 186, mobile: 80 },
-  { month: "12.22", desktop: 186, mobile: 80 },
-  { month: "12.23", desktop: 186, mobile: 80 },
-  { month: "12.24", desktop: 186, mobile: 80 },
-  { month: "12.25", desktop: 186, mobile: 80 },
-  { month: "12.26", desktop: 186, mobile: 80 },
-  { month: "12.27", desktop: 186, mobile: 80 },
-  { month: "12.28", desktop: 186, mobile: 80 },
-  { month: "12.29", desktop: 186, mobile: 80 },
-  { month: "12.30", desktop: 186, mobile: 80 },
-  { month: "12.31", desktop: 186, mobile: 80 },
+  { month: "12.01", 순위: 186, mobile: 80 },
+  { month: "12.02", 순위: 166, mobile: 80 },
+  { month: "12.03", 순위: 146, mobile: 80 },
+  { month: "12.04", 순위: 116, mobile: 80 },
+  { month: "12.05", 순위: 86, mobile: 80 },
+  { month: "12.06", 순위: 83, mobile: 80 },
+  { month: "12.07", 순위: 86, mobile: 80 },
+  { month: "12.08", 순위: 76, mobile: 80 },
+  { month: "12.09", 순위: 72, mobile: 80 },
+  { month: "12.10", 순위: 66, mobile: 80 },
+  { month: "12.11", 순위: 62, mobile: 80 },
+  { month: "12.12", 순위: 56, mobile: 80 },
+  { month: "12.13", 순위: 46, mobile: 80 },
+  { month: "12.14", 순위: 36, mobile: 80 },
+  { month: "12.15", 순위: 31, mobile: 80 },
+  { month: "12.16", 순위: 186, mobile: 80 },
+  { month: "12.17", 순위: 186, mobile: 80 },
+  { month: "12.18", 순위: 186, mobile: 80 },
+  { month: "12.19", 순위: 186, mobile: 80 },
+  { month: "12.20", 순위: 186, mobile: 80 },
+  { month: "12.21", 순위: 186, mobile: 80 },
+  { month: "12.22", 순위: 186, mobile: 80 },
+  { month: "12.23", 순위: 186, mobile: 80 },
+  { month: "12.24", 순위: 186, mobile: 80 },
+  { month: "12.25", 순위: 186, mobile: 80 },
+  { month: "12.26", 순위: 186, mobile: 80 },
+  { month: "12.27", 순위: 186, mobile: 80 },
+  { month: "12.28", 순위: 186, mobile: 80 },
+  { month: "12.29", 순위: 186, mobile: 80 },
+  { month: "12.30", 순위: 186, mobile: 80 },
+  { month: "12.31", 순위: 186, mobile: 80 },
 ];
 
 // -------------------------------------------
@@ -118,18 +118,15 @@ export function Component() {
   const xAxisInterval = isDesktop ? 0 : "preserveEnd";
 
   return (
-    <Card>
+    <Card className="w-{1000px}">
       <CardHeader>
         <CardTitle>부평 헬스장</CardTitle>
         <CardDescription>2024-12-01 ~ 2024-12-31</CardDescription>
       </CardHeader>
 
-      <CardContent>
-        {/* 만약 ChartContainer 내부에서 ResponsiveContainer까지 감싸고 있으면
-            아래 ResponsiveContainer는 삭제해야 할 수도 있음 */}
+      <CardContent className = "w-{1000px} h-{1000px}">
         <ChartContainer config={chartConfig}>
-          {/* 예시로 직접 <ResponsiveContainer> 쓰는 방법 */}
-          <ResponsiveContainer width= "150%" height="90%">
+          <ResponsiveContainer>
             <LineChart
               data={chartData}
               // 차트 내부 마진
@@ -170,7 +167,7 @@ export function Component() {
 
               {/* 실제 라인 */}
               <Line
-                dataKey="desktop"
+                dataKey="순위"
                 type="monotone"
                 stroke="var(--color-desktop)"
                 strokeWidth={2}

@@ -42,10 +42,7 @@ export default function RootLayout({ children }: {children: ReactNode }) {
         </Container>
         <CustomCursor />
           <main>{children}</main>
-        
-        
         <Footer />
-        
       </body>
     </html>
   );
