@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
+import PopInComponent from "./animations/PopInComponent";
+import { Component as Mychart} from "@/components/HomepageGraph"
 
 export default function Homepage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
 
       {/* 1) 플레이스 작업 (검은 배경) */}
       <section className="bg-black text-white p-6 sm:p-8">
@@ -25,27 +27,32 @@ export default function Homepage() {
       </section>
 
       {/* 2) 순위 섹션 */}
-      <section className="px-6 py-8 sm:p-8">
+      <section className="px-2 py-8 sm:p-8">
         <h2 className="text-center text-lg sm:text-xl font-bold mb-6">
           순위
         </h2>
-        <div className="mx-auto w-64 h-36 bg-gray-200 flex items-center justify-center mb-4">
-          <span className="text-gray-700 text-sm sm:text-base">실제업체 이미지</span>
+        <div className="mx-auto w-full h-full flex items-start justify-center mb-4">
+          <Mychart />
         </div>
         <p className="text-center text-sm sm:text-base">
           플레이스 방문자 수 120% 증가
         </p>
       </section>
-
       {/* 3) 내 업체도 될까? / 무료상담 (검은 배경 바) */}
-      <section className="bg-black text-white flex flex-col sm:flex-row items-center justify-center gap-4 px-6 py-8 sm:p-8">
+      <section className="bg-black text-white flex flex-row sm:flex-row items-center justify-center gap-36 px-6 py-8 sm:p-8">
+        <PopInComponent>
         <div className="font-bold text-base sm:text-lg">
           내 업체도 될까?
         </div>
+
+        </PopInComponent>
         <Link href="/consult">
+        <PopInComponent>
           <span className="bg-white text-black px-4 py-2 rounded-md cursor-pointer text-sm sm:text-base">
             무료상담
           </span>
+
+        </PopInComponent>
         </Link>
       </section>
 

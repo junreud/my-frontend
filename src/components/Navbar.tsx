@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import useScrollDirection from "./useScrollDirection";
+import useScrollDirection from "../hooks/useScrollDirection";
 import { Container } from "@/components/ui/Container";
 
 export default function Navbar() {
@@ -26,7 +26,6 @@ export default function Navbar() {
       <Container>
         {/* 전체 navbar */}
         <div className="navbar h-14 flex items-center">
-
           {/* ─────────────── navbar-start ─────────────── */}
           <div className="navbar-start">
             {/* 모바일용(763px 이하) 햄버거 버튼 */}
@@ -56,12 +55,17 @@ export default function Navbar() {
               {/* 모바일용 드롭다운 메뉴 */}
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content bg-base-100 rounded-box mt-3 w-52 p-2 shadow z-[1]"
+                className="menu menu-sm dropdown-content bg-base-100 rounded-box mt-1 w-52 p-2 shadow z-[1]"
               >
                 <li>
                   <Link href="/co-info">회사소개</Link>
                 </li>
-                <li className="dropdown dropdown-hover dropdown-bottom dropdown-center" tabIndex={0}>
+
+                {/* 모바일에서 '서비스' 드롭다운 */}
+                <li
+                  className="dropdown dropdown-hover dropdown-bottom dropdown-center"
+                  tabIndex={0}
+                >
                   <Link href="/service" className="justify-between">
                     서비스
                     <svg
@@ -69,7 +73,6 @@ export default function Navbar() {
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                     >
-                      {/* 수정된 화살표 경로 */}
                       <path
                         fillRule="evenodd"
                         d="M5.23 7.21a.75.75 0 011.06.02L10 10.708l3.71-3.496a.75.75 0 111.04 1.08l-4.25 4a.75.75 0 01-1.04 0l-4.25-4a.75.75 0 01.02-1.06z"
@@ -77,8 +80,8 @@ export default function Navbar() {
                       />
                     </svg>
                   </Link>
-                  {/* 서비스 하위 메뉴 */}
-                  <ul className="menu bg-base-100 p-2 shadow rounded-box w-52 mt-1">
+                  {/* 서비스 하위 메뉴 (모바일) */}
+                  <ul className="dropdown-content menu bg-base-100 p-2 shadow rounded-box w-52 mt-0">
                     {serviceItems.map((item, idx) => (
                       <li key={idx}>
                         <Link href={item.href}>{item.text}</Link>
@@ -86,6 +89,7 @@ export default function Navbar() {
                     ))}
                   </ul>
                 </li>
+
                 <li>
                   <Link href="/faq">자주 묻는 질문</Link>
                 </li>
@@ -105,7 +109,12 @@ export default function Navbar() {
               <li>
                 <Link href="/co-info">회사소개</Link>
               </li>
-              <li className="dropdown dropdown-hover dropdown-bottom dropdown-center" tabIndex={0}>
+
+              {/* 데스크톱에서 '서비스' 드롭다운 */}
+              <li
+                className="dropdown dropdown-hover dropdown-bottom dropdown-center"
+                tabIndex={0}
+              >
                 <Link href="/service" className="btn-ghost flex items-center gap-1">
                   서비스
                   <svg
@@ -113,7 +122,6 @@ export default function Navbar() {
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 20 20"
                   >
-                    {/* 수정된 화살표 경로 */}
                     <path
                       fillRule="evenodd"
                       d="M5.23 7.21a.75.75 0 011.06.02L10 10.708l3.71-3.496a.75.75 0 111.04 1.08l-4.25 4a.75.75 0 01-1.04 0l-4.25-4a.75.75 0 01.02-1.06z"
@@ -121,8 +129,8 @@ export default function Navbar() {
                     />
                   </svg>
                 </Link>
-                {/* 서비스 하위 메뉴 */}
-                <ul className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 mt-1">
+                {/* 서비스 하위 메뉴 (데스크톱) */}
+                <ul className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-40 mt-0">
                   {serviceItems.map((item, idx) => (
                     <li key={idx}>
                       <Link href={item.href}>{item.text}</Link>
@@ -130,6 +138,7 @@ export default function Navbar() {
                   ))}
                 </ul>
               </li>
+
               <li>
                 <Link href="/faq">자주 묻는 질문</Link>
               </li>

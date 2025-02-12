@@ -3,8 +3,8 @@ import "./globals.css";
 import { ReactNode } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import CustomCursor from "@/components/ui/CustomCursor";
 import { Container } from "@/components/ui/Container";
+import CustomCursor from "@/components/CustomCursor";
 
 export const metadata = {
   title: "My dd",
@@ -40,9 +40,12 @@ export default function RootLayout({ children }: {children: ReactNode }) {
         <Container>
           <Navbar />
         </Container>
-        <main>{children}</main>
-        <Footer />
         <CustomCursor />
+          <main>{children}</main>
+        
+        
+        <Footer />
+        
       </body>
     </html>
   );
