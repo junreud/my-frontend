@@ -1,3 +1,5 @@
+//cloudflared tunnel run wiz25
+// npm run dev
 import "./globals.css";
 
 import { ReactNode } from "react";

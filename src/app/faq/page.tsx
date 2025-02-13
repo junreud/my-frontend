@@ -1,70 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FaqDisclosures from "@/components/FaqDisclosures";
 
-// 카테고리별 Q&A 데이터를 미리 준비
-const FAQ_DATA = {
-  플레이스: [
-    {
-      question: "홍보 정책은 어떻게 되나요?",
-      answer:
-        "목표 순위 진입 실적 시 전액 환불을 보장합니다. 협의된 조건에 따라 진행 가능합니다.",
-    },
-    {
-      question: "정말로 이행 불가능이 없나요?",
-      answer:
-        "네, 정석적인 SEO 전략과 콘텐츠 강화, 구조 개선으로 순위를 올립니다. 어뷰징 없이 안정적으로 상위 유지가 가능합니다.",
-    },
-  ],
-  "체험단/기자단": [
-    {
-      question: "언론 보도나 체험단 모집 기간은 얼마나 걸리나요?",
-      answer:
-        "업종, 경쟁도에 따라 다르지만 보통 1~4주 내 변화를 확인 가능합니다. 구체적인 기간은 상담 시 안내드립니다.",
-    },
-  ],
-  블로그: [
-    {
-      question: "블로그 마케팅 비용이 궁금해요",
-      answer:
-        "안녕하세요. 블로그는 포스팅 수, 키워드 난이도에 따라 상이합니다. 상담 시 상세 안내해 드립니다.",
-    },
-    {
-      question: "제 블로그 노출 상태가 안 좋아요",
-      answer:
-        "안녕하세요. 블로그 지수 개선, 컨텐츠 보강 등을 통해 노출을 높일 수 있습니다. 자세한 방법은 상담을 통해 안내드립니다.",
-    },
-  ],
-  환불: [
-    {
-      question: "환불 규정은 어떻게 되나요?",
-      answer:
-        "목표한 사항을 달성하지 못하면 전액 환불을 보장해 드립니다. 상황에 따라 달라질 수 있으니 문의 부탁드립니다.",
-      defaultOpen: true, // 처음부터 펼쳐두고 싶다면
-    },
-  ],
-  결제: [
-    {
-      question: "결제 방법이 궁금합니다",
-      answer:
-        "카드, 계좌이체, 현금영수증 발행 모두 가능합니다. 상황에 맞게 선택해 주세요.",
-    },
-  ],
-  계약: [
-    {
-      question: "계약 절차가 어떻게 되나요?",
-      answer:
-        "견적 안내 후, 계약서 작성 및 결제 진행하면 마케팅 작업이 시작됩니다. 구체사항은 상담 시 안내드립니다.",
-    },
-  ],
-};
-
 export default function FaqPage() {
-  const [category, setCategory] = useState<keyof typeof FAQ_DATA>("플레이스");
+  // JSON 파일로부터 불러온 데이터를 저장할 state
+  const [faqData, setFaqData] = useState<{ [key: string]: any[] } | null>(null);
 
-  // 카테고리 목록
-  const categories = Object.keys(FAQ_DATA) as (keyof typeof FAQ_DATA)[];
+  // 현재 선택된 카테고리
+  const [category, setCategory] = useState<string>("플레이스");
+
+  // 컴포넌트 마운트 시점에 FAQ JSON 파일 fetch
+  useEffect(() => {
+    fetch("/data/faqData.json") // public 폴더 내부는 루트(/) 기준으로 접근 가능
+      .then((res) => res.json())
+      .then((data) => {
+        setFaqData(data);
+      })
+      .catch((error) => {
+        console.error("FAQ 데이터를 불러오는 중 오류가 발생했습니다:", error);
+      });
+  }, []);
+
+  // 로딩 상태 처리 (데이터가 아직 없는 경우)
+  if (!faqData) {
+    return <div>로딩 중...</div>;
+  }
+
+  // 카테고리 목록 가져오기
+  const categories = Object.keys(faqData);
 
   return (
     <div>
@@ -73,7 +37,7 @@ export default function FaqPage() {
 
         {/* 전체 레이아웃: 왼쪽 메뉴 + 오른쪽 Q&A */}
         <div className="flex gap-8">
-          {/* 왼쪽 메뉴 */}
+          {/* 왼쪽 메뉴: 카테고리 목록 */}
           <nav className="w-1/4 space-y-2 border-r pr-4">
             {categories.map((cat) => (
               <button
@@ -90,20 +54,23 @@ export default function FaqPage() {
 
           {/* 오른쪽 Q&A */}
           <div className="w-3/4">
-            <FaqDisclosures items={FAQ_DATA[category]} />
+            {/* 혹시 카테고리 key가 존재하지 않으면 예외처리 */}
+            {faqData[category] ? (
+              <FaqDisclosures items={faqData[category]} />
+            ) : (
+              <div>해당 카테고리에 대한 FAQ가 없습니다.</div>
+            )}
           </div>
         </div>
-        
       </section>
+
       <section className="bg-gray-50 py-12">
-      {/* 배경색, 상하 패딩 */}
-      <div className="max-w-5xl mx-auto px-4 text-center py-24 flex:row">
-        {/* 가운데 정렬, 최대 폭 설정 */}
-          <h2 className="text-3xl font-semibold ">
-              만약 문제가 해결되지 않았다면 언제든 연락해주세요.
+        <div className="max-w-5xl mx-auto px-4 text-center py-24 flex:row">
+          <h2 className="text-3xl font-semibold">
+            만약 문제가 해결되지 않았다면 언제든 연락해주세요.
           </h2>
-      </div>
-    </section>
-  </div>
+        </div>
+      </section>
+    </div>
   );
 }

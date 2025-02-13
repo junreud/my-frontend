@@ -115,13 +115,13 @@ export function Component() {
   const xAxisInterval = isDesktop ? 0 : "preserveEnd";
 
   return (
-    <Card className="w-{1000px}">
+    <Card>
       <CardHeader>
         <CardTitle>부평 헬스장</CardTitle>
         <CardDescription>2024-12-01 ~ 2024-12-31</CardDescription>
       </CardHeader>
 
-      <CardContent className = "w-{1000px} h-{1000px}">
+      <CardContent>
         <ChartContainer config={chartConfig}>
           <ResponsiveContainer>
             <LineChart

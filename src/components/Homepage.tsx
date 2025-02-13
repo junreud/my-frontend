@@ -13,7 +13,7 @@ export default function Homepage() {
 
       {/* 1) 플레이스 작업 (검은 배경) */}
       <section className="bg-white text-white p-6 sm:p-8 mt-60">
-      <h2 className="text-black text-left text-lg sm:text-xl font-bold mb-20">
+      <h2 className="text-black text-left text-lg sm:text-3xl font-bold mb-20">
         플레이스 작업
       </h2>
       {/* 모바일: 세로 / 데스크톱(sm:flex): 가로 */}
@@ -59,7 +59,7 @@ export default function Homepage() {
         <h2 className="text-center text-lg sm:text-xl font-bold mb-6">
           실제 작업 업체
         </h2>
-        <div className="mx-auto w-{800px} h-{600px} items-start justify-center mb-4">
+        <div className="mx-auto w-{800px} h-{800px} items-start justify-center mb-4">
           <Mychart />
         </div>
         <p className="text-center text-sm sm:text-base">
