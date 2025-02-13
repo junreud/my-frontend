@@ -50,22 +50,22 @@ const chartData = [
   { month: "12.13", 순위: 46, mobile: 80 },
   { month: "12.14", 순위: 36, mobile: 80 },
   { month: "12.15", 순위: 31, mobile: 80 },
-  { month: "12.16", 순위: 186, mobile: 80 },
-  { month: "12.17", 순위: 186, mobile: 80 },
-  { month: "12.18", 순위: 186, mobile: 80 },
-  { month: "12.19", 순위: 186, mobile: 80 },
-  { month: "12.20", 순위: 186, mobile: 80 },
-  { month: "12.21", 순위: 186, mobile: 80 },
-  { month: "12.22", 순위: 186, mobile: 80 },
-  { month: "12.23", 순위: 186, mobile: 80 },
-  { month: "12.24", 순위: 186, mobile: 80 },
-  { month: "12.25", 순위: 186, mobile: 80 },
-  { month: "12.26", 순위: 186, mobile: 80 },
-  { month: "12.27", 순위: 186, mobile: 80 },
-  { month: "12.28", 순위: 186, mobile: 80 },
-  { month: "12.29", 순위: 186, mobile: 80 },
-  { month: "12.30", 순위: 186, mobile: 80 },
-  { month: "12.31", 순위: 186, mobile: 80 },
+  { month: "12.16", 순위: 30, mobile: 80 },
+  { month: "12.17", 순위: 26, mobile: 80 },
+  { month: "12.18", 순위: 24, mobile: 80 },
+  { month: "12.19", 순위: 21, mobile: 80 },
+  { month: "12.20", 순위: 19, mobile: 80 },
+  { month: "12.21", 순위: 17, mobile: 80 },
+  { month: "12.22", 순위: 20, mobile: 80 },
+  { month: "12.23", 순위: 24, mobile: 80 },
+  { month: "12.24", 순위: 15, mobile: 80 },
+  { month: "12.25", 순위: 10, mobile: 80 },
+  { month: "12.26", 순위: 4, mobile: 80 },
+  { month: "12.27", 순위: 4, mobile: 80 },
+  { month: "12.28", 순위: 4, mobile: 80 },
+  { month: "12.29", 순위: 4, mobile: 80 },
+  { month: "12.30", 순위: 3, mobile: 80 },
+  { month: "12.31", 순위: 3, mobile: 80 },
 ];
 
 // -------------------------------------------
@@ -152,7 +152,7 @@ export function Component() {
 
               {/* Y축: 1(위) ~ 300(아래) 역방향 */}
               <YAxis
-                domain={[1, 300]}
+                domain={[0, "dataMax"]}
                 reversed={true}
                 tickLine={true}
                 axisLine={true}
@@ -161,7 +161,7 @@ export function Component() {
 
               {/* 기본 툴팁(Recharts) -> 만약 shadcn-ui의 ChartTooltip 쓰면 아래처럼 */}
               <ChartTooltip
-                cursor={false}
+                cursor={true}
                 content={<ChartTooltipContent hideLabel />}
               />
 
@@ -170,7 +170,7 @@ export function Component() {
                 dataKey="순위"
                 type="monotone"
                 stroke="var(--color-desktop)"
-                strokeWidth={2}
+                strokeWidth={3}
                 dot={{
                   fill: "var(--color-desktop)",
                 }}
@@ -181,14 +181,14 @@ export function Component() {
         </ChartContainer>
       </CardContent>
 
-      <CardFooter className="flex-col items-start gap-2 text-sm">
+      {/* <CardFooter className="flex-col items-start gap-2 text-sm">
         <div className="flex gap-2 font-medium leading-none">
           Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
         </div>
         <div className="leading-none text-muted-foreground">
           Showing total visitors for December (1~31)
         </div>
-      </CardFooter>
+      </CardFooter> */}
     </Card>
   );
 }

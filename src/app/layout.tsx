@@ -39,10 +39,11 @@ export default function RootLayout({ children }: {children: ReactNode }) {
       <body>
         <Container>
           <Navbar />
-        </Container>
+        
         <CustomCursor />
           <main>{children}</main>
         <Footer />
+        </Container>
       </body>
     </html>
   );

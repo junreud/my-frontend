@@ -2,29 +2,40 @@
 import Link from "next/link";
 import PopInComponent from "./animations/PopInComponent";
 import { Component as Mychart} from "@/components/HomepageGraph"
+import Page from "./Dialog";
+import Mockup from "./Mockup";
+import ArrowIcon from "./ArrowIcon";
 
 export default function Homepage() {
   return (
     <div className="space-y-12">
 
       {/* 1) 플레이스 작업 (검은 배경) */}
-      <section className="bg-black text-white p-6 sm:p-8">
-        <h2 className="text-center text-lg sm:text-xl font-bold mb-6">
-          플레이스 작업
-        </h2>
-        {/* 모바일: 세로(위아래), 데스크톱: 가로(양옆) */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          {/* 이미지 1 */}
-          <div className="w-40 h-60 bg-white text-black flex items-center justify-center">
-            이미지 1
-          </div>
-          <span className="text-lg sm:text-xl">=&gt;</span>
-          {/* 이미지 2 */}
-          <div className="w-40 h-60 bg-white text-black flex items-center justify-center">
-            이미지 2
-          </div>
-        </div>
-      </section>
+      <section className="bg-white text-white p-6 sm:p-8">
+      <h2 className="text-center text-lg sm:text-xl font-bold mb-6">
+        플레이스 작업
+      </h2>
+      {/* 모바일: 세로 / 데스크톱: 가로 */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        {/* Mockup 1 */}
+        <Mockup
+          lightSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-1-light.png"
+          darkSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-1-dark.png"
+          alt="목업 이미지 1"
+          className="max-w-full" // 혹은 원하는 추가 클래스
+        />
+
+        {/* SVG 화살표 */}
+        <ArrowIcon className="text-white sm:rotate-0 rotate-90 w-36 h-36 items-center justify-center" />
+
+        {/* Mockup 2 */}
+        <Mockup
+          lightSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-2-light.png"
+          darkSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-2-dark.png"
+          alt="목업 이미지 2"
+        />
+      </div>
+    </section>
 
       {/* 2) 순위 섹션 */}
       <section className="w-full px-2 py-8 sm:p-8">
@@ -46,7 +57,7 @@ export default function Homepage() {
         </div>
 
         </PopInComponent>
-        <Link href="/consult">
+        <Link href="/estimate">
         <PopInComponent>
           <span className="bg-white text-black px-4 py-2 rounded-md cursor-pointer text-sm sm:text-base">
             무료상담
@@ -57,7 +68,7 @@ export default function Homepage() {
       </section>
 
       {/* 4) 블로그 체험단/기자단 */}
-      <section className="px-6 py-8 sm:p-8">
+      <section className="px-6 py-8 mb-6 sm:p-8">
         <h2 className="text-lg sm:text-xl font-bold mb-4">
           블로그 체험단/기자단
         </h2>
@@ -78,20 +89,7 @@ export default function Homepage() {
       </section>
 
       {/* 5) 체험단 / 기자단이 뭔가요? (검은 바) */}
-      <section className="bg-black text-white px-6 py-8 sm:p-8">
-        <div className="text-center text-base sm:text-lg">
-          <span className="text-red-500 font-bold">체험단</span> / <span className="text-blue-500 font-bold">기자단</span>이 뭔가요?
-        </div>
-      </section>
-
-      {/* 6) 자세히 알아보기 버튼 */}
-      <section className="px-6 py-8 sm:p-8 text-center">
-        <Link href="/details">
-          <span className="border border-black px-6 py-2 rounded-md cursor-pointer text-sm sm:text-base">
-            자세히 알아보기
-          </span>
-        </Link>
-      </section>
+      <Page />
     </div>
   );
 }
