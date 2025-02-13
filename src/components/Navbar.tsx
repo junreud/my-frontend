@@ -17,8 +17,11 @@ export default function Navbar() {
   return (
     <nav
       className={`
+        font-pretendard             /* 폰트 적용 */
         bg-base-100 fixed top-0 left-0 right-0 z-50
         transition-transform duration-300
+        border-b border-gray-200 /* 하단 경계선 */
+        bg-white
         ${scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"}
       `}
       aria-label="주요 내비게이션"
@@ -43,7 +46,7 @@ export default function Navbar() {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path 
+                  <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth="2"
@@ -61,7 +64,7 @@ export default function Navbar() {
                   <Link href="/co-info">회사소개</Link>
                 </li>
 
-                {/* 모바일에서 '서비스' 드롭다운 */}
+                {/* 모바일: '서비스' 드롭다운 */}
                 <li
                   className="dropdown dropdown-hover dropdown-bottom dropdown-center"
                   tabIndex={0}
@@ -103,14 +106,14 @@ export default function Navbar() {
           </div>
           {/* ─────────────── /navbar-start ─────────────── */}
 
-          {/* ─────────────── navbar-center (데스크톱: 763px 이상) ─────────────── */}
+          {/* ─────────────── navbar-center (데스크톱) ─────────────── */}
           <div className="navbar-center hidden [@media(min-width:763px)]:flex">
             <ul className="menu menu-horizontal px-1 gap-x-4">
               <li>
                 <Link href="/co-info">회사소개</Link>
               </li>
 
-              {/* 데스크톱에서 '서비스' 드롭다운 */}
+              {/* 데스크톱: '서비스' 드롭다운 */}
               <li
                 className="dropdown dropdown-hover dropdown-bottom dropdown-center"
                 tabIndex={0}

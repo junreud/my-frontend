@@ -67,31 +67,43 @@ export default function FaqPage() {
   const categories = Object.keys(FAQ_DATA) as (keyof typeof FAQ_DATA)[];
 
   return (
-    <section className="mx-auto max-w-7xl py-16 px-4">
-      <h2 className="mb-8 text-2xl font-semibold">자주 묻는 질문</h2>
+    <div>
+      <section className="mx-auto max-w-7xl py-16 px-4">
+        <h2 className="mb-8 text-3xl font-semibold mt-20">자주 묻는 질문</h2>
 
-      {/* 전체 레이아웃: 왼쪽 메뉴 + 오른쪽 Q&A */}
-      <div className="flex gap-8">
-        {/* 왼쪽 메뉴 */}
-        <nav className="w-1/4 space-y-2 border-r pr-4">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`block w-full text-left py-2 px-2 font-medium ${
-                category === cat ? "bg-gray-200 text-gray-900" : "text-gray-600"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </nav>
+        {/* 전체 레이아웃: 왼쪽 메뉴 + 오른쪽 Q&A */}
+        <div className="flex gap-8">
+          {/* 왼쪽 메뉴 */}
+          <nav className="w-1/4 space-y-2 border-r pr-4">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`block w-full text-left py-2 px-2 font-medium ${
+                  category === cat ? "bg-gray-200 text-gray-900" : "text-gray-600"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </nav>
 
-        {/* 오른쪽 Q&A */}
-        <div className="w-3/4">
-          <FaqDisclosures items={FAQ_DATA[category]} />
+          {/* 오른쪽 Q&A */}
+          <div className="w-3/4">
+            <FaqDisclosures items={FAQ_DATA[category]} />
+          </div>
         </div>
+        
+      </section>
+      <section className="bg-gray-50 py-12">
+      {/* 배경색, 상하 패딩 */}
+      <div className="max-w-5xl mx-auto px-4 text-center py-24 flex:row">
+        {/* 가운데 정렬, 최대 폭 설정 */}
+          <h2 className="text-3xl font-semibold ">
+              만약 문제가 해결되지 않았다면 언제든 연락해주세요.
+          </h2>
       </div>
     </section>
+  </div>
   );
 }

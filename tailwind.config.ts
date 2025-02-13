@@ -7,11 +7,17 @@ module.exports = {
   ],
   theme: {
   	extend: {
+		boxShadow: {
+			"45deg": "10px 10px 30px rgb(71, 71, 71)",
+		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
+		fontFamily: {
+			pretendard: ['Pretendard', 'sans-serif'],
+		},
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

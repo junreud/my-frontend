@@ -68,7 +68,7 @@ const CustomCursor = () => {
   return (
     <div
       ref={cursorParentRef}
-      className="fixed pointer-events-none z-50"
+      className="fixed pointer-events-none z-[9999]"
       style={{
         transform: "translate3d(-9999px, -9999px, 0)",
       }}

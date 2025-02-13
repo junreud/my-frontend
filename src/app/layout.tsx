@@ -37,13 +37,15 @@ export default function RootLayout({ children }: {children: ReactNode }) {
     <html lang="ko">
       <head />
       <body>
+        <CustomCursor />
         <Container>
           <Navbar />
+          </Container>
         
-        <CustomCursor />
           <main>{children}</main>
+        
         <Footer />
-        </Container>
+        
       </body>
     </html>
   );

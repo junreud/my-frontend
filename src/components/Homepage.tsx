@@ -5,42 +5,59 @@ import { Component as Mychart} from "@/components/HomepageGraph"
 import Page from "./Dialog";
 import Mockup from "./Mockup";
 import ArrowIcon from "./ArrowIcon";
+import FadeSlideUp from "./animations/FadeSlideUp";
 
 export default function Homepage() {
   return (
-    <div className="space-y-12">
+    <div className="space-y-60">
 
       {/* 1) 플레이스 작업 (검은 배경) */}
-      <section className="bg-white text-white p-6 sm:p-8">
-      <h2 className="text-center text-lg sm:text-xl font-bold mb-6">
+      <section className="bg-white text-white p-6 sm:p-8 mt-60">
+      <h2 className="text-black text-left text-lg sm:text-xl font-bold mb-20">
         플레이스 작업
       </h2>
-      {/* 모바일: 세로 / 데스크톱: 가로 */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+      {/* 모바일: 세로 / 데스크톱(sm:flex): 가로 */}
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-24">
         {/* Mockup 1 */}
+        <FadeSlideUp
+        fadeInDuration={0.8}
+        delay={0.3}
+        once = {true}
+        >
         <Mockup
-          lightSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-1-light.png"
-          darkSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-1-dark.png"
-          alt="목업 이미지 1"
+          Src = "/images/beforeRestaurant.png"
+          alt="마케팅 전 플레이스"
           className="max-w-full" // 혹은 원하는 추가 클래스
         />
-
+        </FadeSlideUp>
+        
         {/* SVG 화살표 */}
-        <ArrowIcon className="text-white sm:rotate-0 rotate-90 w-36 h-36 items-center justify-center" />
-
+        <FadeSlideUp
+        fadeInDuration={0.8}
+        delay={0.8}
+        once = {true}
+        >
+        <ArrowIcon className="text-white sm:rotate-0 rotate-90" />
+        </FadeSlideUp>
+        
         {/* Mockup 2 */}
+        <FadeSlideUp
+        fadeInDuration={0.8}
+        delay={1.3}
+        once = {true}
+        >
         <Mockup
-          lightSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-2-light.png"
-          darkSrc="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/hero/mockup-2-dark.png"
-          alt="목업 이미지 2"
+          Src = "/images/afterRestaurant.png"
+          alt="마케팅 후 플레이스"
         />
+        </FadeSlideUp>
       </div>
     </section>
 
       {/* 2) 순위 섹션 */}
       <section className="w-full px-2 py-8 sm:p-8">
         <h2 className="text-center text-lg sm:text-xl font-bold mb-6">
-          순위
+          실제 작업 업체
         </h2>
         <div className="mx-auto w-{800px} h-{600px} items-start justify-center mb-4">
           <Mychart />
@@ -50,7 +67,7 @@ export default function Homepage() {
         </p>
       </section>
       {/* 3) 내 업체도 될까? / 무료상담 (검은 배경 바) */}
-      <section className="bg-black text-white flex flex-row sm:flex-row items-center justify-center gap-36 px-6 py-8 sm:p-8">
+      <section className="bg-gray-100 flex flex-row items-center justify-center gap-36 px-6 py-36 sm:p-8">
         <PopInComponent>
         <div className="font-bold text-base sm:text-lg">
           내 업체도 될까?
@@ -59,8 +76,8 @@ export default function Homepage() {
         </PopInComponent>
         <Link href="/estimate">
         <PopInComponent>
-          <span className="bg-white text-black px-4 py-2 rounded-md cursor-pointer text-sm sm:text-base">
-            무료상담
+          <span className="bg-white text-gray-500 px-4 py-2 rounded-md cursor-pointer text-sm sm:text-base border">
+            비용 보러가기
           </span>
 
         </PopInComponent>

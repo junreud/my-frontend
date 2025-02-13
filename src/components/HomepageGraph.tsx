@@ -35,34 +35,31 @@ import {
 //    Y값이 1 ~ 300 사이
 // -------------------------------------------
 const chartData = [
-  { month: "12.01", 순위: 186, mobile: 80 },
-  { month: "12.02", 순위: 166, mobile: 80 },
-  { month: "12.03", 순위: 146, mobile: 80 },
-  { month: "12.04", 순위: 116, mobile: 80 },
-  { month: "12.05", 순위: 86, mobile: 80 },
-  { month: "12.06", 순위: 83, mobile: 80 },
-  { month: "12.07", 순위: 86, mobile: 80 },
-  { month: "12.08", 순위: 76, mobile: 80 },
-  { month: "12.09", 순위: 72, mobile: 80 },
-  { month: "12.10", 순위: 66, mobile: 80 },
-  { month: "12.11", 순위: 62, mobile: 80 },
-  { month: "12.12", 순위: 56, mobile: 80 },
-  { month: "12.13", 순위: 46, mobile: 80 },
-  { month: "12.14", 순위: 36, mobile: 80 },
-  { month: "12.15", 순위: 31, mobile: 80 },
-  { month: "12.16", 순위: 30, mobile: 80 },
-  { month: "12.17", 순위: 26, mobile: 80 },
-  { month: "12.18", 순위: 24, mobile: 80 },
-  { month: "12.19", 순위: 21, mobile: 80 },
-  { month: "12.20", 순위: 19, mobile: 80 },
-  { month: "12.21", 순위: 17, mobile: 80 },
-  { month: "12.22", 순위: 20, mobile: 80 },
-  { month: "12.23", 순위: 24, mobile: 80 },
-  { month: "12.24", 순위: 15, mobile: 80 },
-  { month: "12.25", 순위: 10, mobile: 80 },
-  { month: "12.26", 순위: 4, mobile: 80 },
+  { month: "12.04", 순위: 71, mobile: 80 },
+  { month: "12.05", 순위: 71, mobile: 80 },
+  { month: "12.06", 순위: 73, mobile: 80 },
+  { month: "12.07", 순위: 43, mobile: 80 },
+  { month: "12.08", 순위: 43, mobile: 80 },
+  { month: "12.09", 순위: 27, mobile: 80 },
+  { month: "12.10", 순위: 21, mobile: 80 },
+  { month: "12.11", 순위: 15, mobile: 80 },
+  { month: "12.12", 순위: 15, mobile: 80 },
+  { month: "12.13", 순위: 14, mobile: 80 },
+  { month: "12.14", 순위: 14, mobile: 80 },
+  { month: "12.15", 순위: 11, mobile: 80 },
+  { month: "12.16", 순위: 11, mobile: 80 },
+  { month: "12.17", 순위: 11, mobile: 80 },
+  { month: "12.18", 순위: 13, mobile: 80 },
+  { month: "12.19", 순위: 12, mobile: 80 },
+  { month: "12.20", 순위: 12, mobile: 80 },
+  { month: "12.21", 순위: 10, mobile: 80 },
+  { month: "12.22", 순위: 6, mobile: 80 },
+  { month: "12.23", 순위: 7, mobile: 80 },
+  { month: "12.24", 순위: 5, mobile: 80 },
+  { month: "12.25", 순위: 4, mobile: 80 },
+  { month: "12.26", 순위: 3, mobile: 80 },
   { month: "12.27", 순위: 4, mobile: 80 },
-  { month: "12.28", 순위: 4, mobile: 80 },
+  { month: "12.28", 순위: 3, mobile: 80 },
   { month: "12.29", 순위: 4, mobile: 80 },
   { month: "12.30", 순위: 3, mobile: 80 },
   { month: "12.31", 순위: 3, mobile: 80 },
@@ -140,7 +137,7 @@ export function Component() {
                 dataKey="month"
                 tickLine={false}
                 axisLine={false}
-                tickMargin={2}
+                tickMargin={1}
                 tick={{
                     angle: -30,
                     textAnchor: "end"
@@ -156,7 +153,7 @@ export function Component() {
                 reversed={true}
                 tickLine={true}
                 axisLine={true}
-                tickMargin={12}
+                tickMargin={10}
               />
 
               {/* 기본 툴팁(Recharts) -> 만약 shadcn-ui의 ChartTooltip 쓰면 아래처럼 */}
@@ -174,7 +171,7 @@ export function Component() {
                 dot={{
                   fill: "var(--color-desktop)",
                 }}
-                activeDot={{ r: 6 }}
+                activeDot={{ r: 1 }}
               />
             </LineChart>
           </ResponsiveContainer>
