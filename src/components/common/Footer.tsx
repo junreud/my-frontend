@@ -1,7 +1,7 @@
 // components/Footer.jsx
 "use client";
 import React from "react";
-import { Container } from "./ui/Container";
+import { Container } from "./Container";
 
 const Footer = () => {
   return (

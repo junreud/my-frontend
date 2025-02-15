@@ -1,11 +1,8 @@
 "use client";
-import Link from "next/link";
-import PopInComponent from "./animations/PopInComponent";
-import { Component as Mychart} from "@/components/HomepageGraph"
-import Page from "./Dialog";
-import Mockup from "./Mockup";
-import ArrowIcon from "./ArrowIcon";
-import FadeSlideUp from "./animations/FadeSlideUp";
+import { Component as Mychart} from "@/components/HomePage/HomepageGraph"
+import Mockup from "../ui/Mockup";
+import ArrowIcon from "../ui/ArrowIcon";
+import FadeSlideUp from "../animations/FadeSlideUp";
 
 export default function Homepage() {
   return (
@@ -28,7 +25,7 @@ export default function Homepage() {
         once = {true}
         >
         <Mockup
-          Src = "/images/beforeRestaurant.png"
+          src = "/images/beforeRestaurant.png"
           alt="마케팅 전 플레이스"
           className="max-w-full" // 혹은 원하는 추가 클래스
         />
@@ -50,7 +47,7 @@ export default function Homepage() {
         once = {true}
         >
         <Mockup
-          Src = "/images/afterRestaurant.png"
+          src = "/images/afterRestaurant.png"
           alt="마케팅 후 플레이스"
           className="max-w-full" // 혹은 원하는 추가 클래스
         />

@@ -1,4 +1,4 @@
-import PopInComponent from "./animations/PopInComponent"
+import PopInComponent from "../animations/PopInComponent"
 import Link from "next/link"
 
 export default function IsItImposible() {

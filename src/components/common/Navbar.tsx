@@ -2,8 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import useScrollDirection from "../hooks/useScrollDirection";
-import { Container } from "@/components/ui/Container";
+import useScrollDirection from "../../hooks/useScrollDirection";
+import { Container } from "@/components/common/Container";
 
 export default function Navbar() {
   const scrollDirection = useScrollDirection();

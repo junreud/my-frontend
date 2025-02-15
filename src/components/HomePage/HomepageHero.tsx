@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import FadeInSection from "./animations/FadeInComponent";
+import FadeInSection from "../animations/FadeInComponent";
 
 const HomepageHero = () => {
   return (

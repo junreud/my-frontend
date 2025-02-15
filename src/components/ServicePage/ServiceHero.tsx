@@ -1,7 +1,7 @@
 // components/Navbar.jsx (or wherever you keep the Hero)
 "use client";
 import React from "react";
-import ServiceMenuOptions from "@/components/ServiceMenuOptions";
+import ServiceMenuOptions from "@/components/ServicePage/ServiceMenuOptions";
 
 const ServiceHero = () => {
   return (

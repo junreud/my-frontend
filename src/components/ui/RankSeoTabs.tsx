@@ -1,10 +1,10 @@
 "use client";
 import { Tab } from "@headlessui/react";
-import FadeInSection from "./animations/FadeInComponent";
-import { Container } from "./ui/Container";
-import WorkMethod from "./WorkMethod";
-import SlideUpComponent from "./animations/SlideUpComponent";
-import PopInComponent from "./animations/PopInComponent";
+import FadeInSection from "../animations/FadeInComponent";
+import { Container } from "../common/Container";
+import WorkMethod from "../ServicePage/WorkMethod";
+import SlideUpComponent from "../animations/SlideUpComponent";
+import PopInComponent from "../animations/PopInComponent";
 
 // ─────────────────────────────────────────────────────────────
 // 순위작업 탭 컨텐츠
@@ -114,8 +114,8 @@ function SeoTabContent() {
         <h2 className="mb-2 text-xl font-semibold">1. 업체명, 업종셋팅</h2>
         {/* 첨부 사진처럼 텍스트 → divider → 사진 → 설명 */}
         <p className="text-sm text-gray-700 mb-4">
-          업체명에 '필수 단어'가 포함되어야 한다는 검색 로직이 있습니다. 
-          예) 업소명에 'OOO'이 반드시 들어가야 노출 확률이 높아짐.
+          업체명에 &apos;필수 단어&apos;가 포함되어야 한다는 검색 로직이 있습니다. 
+          예) 업소명에 &apos;OOO&apos;이 반드시 들어가야 노출 확률이 높아짐.
         </p>
         <hr className="my-4 border-gray-300" />
         {/* 예시 이미지 */}
@@ -124,7 +124,7 @@ function SeoTabContent() {
         </div>
         <p className="text-sm text-gray-700">
           세팅 설명: <br />
-          - 업소명: '라카비 헤어샵' 처럼 핵심 키워드 넣기 <br />
+          - 업소명: &apos;라카비 헤어샵&apos; 처럼 핵심 키워드 넣기 <br />
           - 업종: 검색량 많은 업종 카테고리 설정 
         </p>
       </section>
