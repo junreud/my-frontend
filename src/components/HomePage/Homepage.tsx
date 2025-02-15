@@ -2,7 +2,7 @@
 import { Component as Mychart} from "@/components/HomePage/HomepageGraph"
 import Mockup from "../ui/Mockup";
 import ArrowIcon from "../ui/ArrowIcon";
-import FadeSlideUp from "../animations/FadeSlideUp";
+import SequentialFadeSlideUp from "../animations/SequentialFadeSlideUp"
 
 export default function Homepage() {
   return (
@@ -16,43 +16,22 @@ export default function Homepage() {
       <p className="text-black my-2 ml-12 mb-16">
         안녕하세요
       </p>
-      {/* 모바일: 세로 / 데스크톱(sm:flex): 가로 */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-24">
-        {/* Mockup 1 */}
-        <FadeSlideUp
-        fadeInDuration={0.8}
-        delay={0.3}
-        once = {true}
-        >
-        <Mockup
-          src = "/images/beforeRestaurant.png"
-          alt="마케팅 전 플레이스"
-          className="max-w-full" // 혹은 원하는 추가 클래스
-        />
-        </FadeSlideUp>
-        
-        {/* SVG 화살표 */}
-        <FadeSlideUp
-        fadeInDuration={0.8}
-        delay={0.8}
-        once = {true}
-        >
-        <ArrowIcon className="text-white sm:rotate-0 rotate-90" />
-        </FadeSlideUp>
-        
-        {/* Mockup 2 */}
-        <FadeSlideUp
-        fadeInDuration={0.8}
-        delay={1.3}
-        once = {true}
-        >
-        <Mockup
-          src = "/images/afterRestaurant.png"
-          alt="마케팅 후 플레이스"
-          className="max-w-full" // 혹은 원하는 추가 클래스
-        />
-        </FadeSlideUp>
+      <div>
+        <SequentialFadeSlideUp fadeInDuration={0.8} delay={0.5} once={true} rootMargin="-50% 0px 0px 0px">
+          <Mockup
+            src="/images/beforeRestaurant.png"
+            alt="마케팅 전 플레이스"
+            className="max-w-full" // 혹은 원하는 추가 클래스
+          />
+          <ArrowIcon className="text-white sm:rotate-0 rotate-90" />
+          <Mockup
+            src="/images/afterRestaurant.png"
+            alt="마케팅 후 플레이스"
+            className="max-w-full" // 혹은 원하는 추가 클래스
+          />
+        </SequentialFadeSlideUp>
       </div>
+      
     </section>
 
       {/* 2) 순위 섹션 */}
