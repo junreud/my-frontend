@@ -10,8 +10,6 @@ interface MockupProps {
   
   // Flowbite Mockup 컨테이너
   export default function Mockup({
-    lightSrc,
-    darkSrc,
     Src,
     alt = "",
     className = "",

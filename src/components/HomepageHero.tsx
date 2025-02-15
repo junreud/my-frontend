@@ -21,7 +21,7 @@ const HomepageHero = () => {
                 라카비에서 쉽고 간편하게
               </h1>
               <Link href="/estimate">
-                <span className="btn custom-btn px-8 cursor-pointer rounded-full">
+                <span className="glass btn custom-btn px-8 cursor-pointer rounded-full">
                   견적받기
                 </span>
               </Link>
