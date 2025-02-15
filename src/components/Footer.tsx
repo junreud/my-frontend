@@ -1,10 +1,12 @@
 // components/Footer.jsx
 "use client";
 import React from "react";
+import { Container } from "./ui/Container";
 
 const Footer = () => {
   return (
     <footer className="footer bg-base-200 text-base-content p-10">
+      
       <aside>
         <svg
           width="50"
@@ -45,6 +47,8 @@ const Footer = () => {
         <a className="link link-hover">Privacy policy</a>
         <a className="link link-hover">Cookie policy</a>
       </nav>
+      
+      
     </footer>
   );
 };

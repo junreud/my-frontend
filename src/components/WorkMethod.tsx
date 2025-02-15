@@ -20,7 +20,7 @@ export default function WorkMethod() {
                   <li
                     className={
                       selected
-                        ? "font-medium text-blue-600 cursor-pointer"
+                        ? "font-black text-base cursor-pointer"
                         : "cursor-pointer"
                     }
                   >
@@ -35,7 +35,7 @@ export default function WorkMethod() {
                   <li
                     className={
                       selected
-                        ? "font-medium text-blue-600 cursor-pointer"
+                        ? "font-black text-base cursor-pointer"
                         : "cursor-pointer"
                     }
                   >
@@ -50,7 +50,7 @@ export default function WorkMethod() {
                   <li
                     className={
                       selected
-                        ? "font-medium text-blue-600 cursor-pointer"
+                        ? "font-black text-base cursor-pointer"
                         : "cursor-pointer"
                     }
                   >

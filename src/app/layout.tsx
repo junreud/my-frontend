@@ -1,10 +1,12 @@
+//cloudflared tunnel run wiz25
+// npm run dev
 import "./globals.css";
 
 import { ReactNode } from "react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import CustomCursor from "@/components/ui/CustomCursor";
 import { Container } from "@/components/ui/Container";
+import CustomCursor from "@/components/CustomCursor";
 
 export const metadata = {
   title: "My dd",
@@ -37,12 +39,15 @@ export default function RootLayout({ children }: {children: ReactNode }) {
     <html lang="ko">
       <head />
       <body>
+        <CustomCursor />
         <Container>
           <Navbar />
-        </Container>
-        <main>{children}</main>
+          </Container>
+        
+          <main>{children}</main>
+        
         <Footer />
-        <CustomCursor />
+        
       </body>
     </html>
   );
