@@ -1,4 +1,4 @@
-import InputArtboard from "@/components/InputArtboard";
+import InputArtboard from "@/components/ui/InputArtboard";
 
 export default function SomePage() {
   return (

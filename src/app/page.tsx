@@ -1,12 +1,12 @@
 // pages/index.jsx
 import React from "react";
-import HomepageHero from "../components/HomepageHero";
-import { Container } from "@/components/ui/Container";
-import Homepage from "@/components/Homepage";
-import HomepageSection from "@/components/HomepageSection";
-import IsItImposible from "@/components/IsItImposible";
-import Page from "@/components/Dialog";
-import Cheheom from "@/components/Cheheom";
+import HomepageHero from "../components/HomePage/HomepageHero";
+import { Container } from "@/components/common/Container";
+import Homepage from "@/components/HomePage/Homepage";
+import HomepageSection from "@/components/HomePage/HomepageSection";
+import IsItImposible from "@/components/ui/IsItImposible";
+import Page from "@/components/ui/Dialog";
+import Cheheom from "@/components/HomePage/Cheheom";
 
 const HomePage = () => {
   return (

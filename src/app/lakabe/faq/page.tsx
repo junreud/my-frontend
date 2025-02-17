@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import FaqDisclosures from "@/components/FaqDisclosures";
+import FaqDisclosures from "@/components/ui/FaqDisclosures";
 
 export default function FaqPage() {
   // JSON 파일로부터 불러온 데이터를 저장할 state
