@@ -2,7 +2,7 @@
 
 import React from "react"
 import { ChevronRight, type LucideIcon } from "lucide-react"
-
+import { House } from "lucide-react"
 import {
   Collapsible,
   CollapsibleTrigger,
@@ -31,6 +31,14 @@ interface NavItem {
 export function NavMain({ items }: { items: NavItem[] }) {
   return (
     <SidebarGroup>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton>
+            <House />
+            <span>Home</span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
       <SidebarGroupLabel>대쉬보드</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {

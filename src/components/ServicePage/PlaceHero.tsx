@@ -3,7 +3,7 @@
 import React from "react";
 import ServiceMenuOptions from "@/components/ServicePage/ServiceMenuOptions";
 
-const ServiceHero = () => {
+const PlaceHero = () => {
   return (
     <section
       // min-h-screen: 화면 높이 전체 (원하면 py-36만 사용할 수도 있음)
@@ -19,7 +19,7 @@ const ServiceHero = () => {
       {/* hero-content: 내용 정렬 */}
       <div className="hero-content text-center text-neutral-content relative">
         <div className="max-w-md mx-auto">
-          <h1 className="mb-5 text-5xl font-bold">왜 &quot;라카비&quot; 일까요?</h1>
+          <h1 className="mb-5 text-5xl font-bold">네이버 플레이스 상위노출로 우리 가게를 지역 1등으로!</h1>
           {/* 여기서 Combobox 표시 */}
           <div className="mt-8">
           <ServiceMenuOptions />
@@ -30,4 +30,4 @@ const ServiceHero = () => {
   );
 };
 
-export default ServiceHero;
+export default PlaceHero;

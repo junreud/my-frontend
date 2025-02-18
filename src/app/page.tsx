@@ -7,10 +7,15 @@ import HomepageSection from "@/components/HomePage/HomepageSection";
 import IsItImposible from "@/components/ui/IsItImposible";
 import Page from "@/components/ui/Dialog";
 import Cheheom from "@/components/HomePage/Cheheom";
+import Navbar from "@/components/common/Navbar";
+import Footer from "@/components/common/Footer";
 
 const HomePage = () => {
   return (
     <>
+    <Container>
+    <Navbar />
+    </Container>
     <HomepageHero />
     <HomepageSection />
     <Container>
@@ -21,6 +26,7 @@ const HomePage = () => {
     <Cheheom />
     
     <Page />
+    <Footer />
     </>
   );
 };

@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import FaqDisclosures from "@/components/ui/FaqDisclosures";
-
+import Navbar from "@/components/common/Navbar";
+import { Container } from "@/components/common/Container";
+import Footer from "@/components/common/Footer";
 export default function FaqPage() {
   // JSON 파일로부터 불러온 데이터를 저장할 state
   const [faqData, setFaqData] = useState<{ [key: string]: any[] } | null>(null);
@@ -32,6 +34,9 @@ export default function FaqPage() {
 
   return (
     <div>
+            <Container>
+            <Navbar />
+            </Container>
       <section className="mx-auto max-w-7xl py-16 px-4">
         <h2 className="mb-8 text-3xl font-semibold mt-20">자주 묻는 질문</h2>
 
@@ -71,6 +76,7 @@ export default function FaqPage() {
           </h2>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }

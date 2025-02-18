@@ -1,19 +1,23 @@
 "use client"
 
 import * as React from "react"
+// 아이콘 전부 여기서 불러옴
 import {
-  // 새 아이콘을 lucide-react에서 필요에 맞게 불러옵니다.
-  PieChart,       // Overview
-  TrendingUp,     // Rank Tracker
-  Megaphone,      // Marketing
-  CreditCard,     // Billing & Payments
-  Settings2,      // Settings
+  Utensils,
+  Coffee,
+  Dumbbell,
+  PieChart,
+  TrendingUp,
+  Megaphone,
+  CreditCard,
+  Settings2,
+  Plus, // + 아이콘도 여기서 import
 } from "lucide-react"
 
 import { NavMain } from "@/components/Dashboard/nav-main"
-import { NavProjects } from "@/components/Dashboard/nav-projects"
+// import { NavProjects } from "@/components/Dashboard/nav-projects"
 import { NavUser } from "@/components/Dashboard/nav-user"
-import { TeamSwitcher } from "@/components/Dashboard/team-switcher"
+import { TeamSwitcher } from "@/components/Dashboard/team-switcher" // 위에서 만든 스위처
 import {
   Sidebar,
   SidebarContent,
@@ -22,57 +26,64 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 
-// 예시 데이터 (샘플)
+
+// import {
+//   UtensilsCrossed,
+//   ShoppingCart,
+//   Briefcase,
+//   Stethoscope,
+//   GraduationCap,
+//   Film,
+//   Bed,
+//   Building,
+//   Banknote,
+//   Car,
+//   Dumbbell,
+//   MoreHorizontal
+// } from "lucide-react";
+
+// // 예시: 카테고리별 아이콘 매핑 객체
+// const categoryIcons = {
+//   "음식점/카페/주점": UtensilsCrossed,
+//   "쇼핑/유통": ShoppingCart,
+//   "서비스": Briefcase,
+//   "의료/건강": Stethoscope,
+//   "교육/학원": GraduationCap,
+//   "문화/오락": Film,
+//   "숙박/여행": Bed,
+//   "공공기관": Building,
+//   "금융/부동산": Banknote,
+//   "자동차/교통": Car,
+//   "레저/스포츠": Dumbbell,
+//   "기타": MoreHorizontal,
+// };
+// 샘플 데이터
 const data = {
   user: {
-    name: "김준석",
-    email: "cngkdkr@gmail.com",
+    name: "홍길동",
+    email: "test@example.com",
     avatar: "/avatars/shadcn.jpg",
   },
-  // 플랫폼(네이버, 구글, 인스타 등) 스위처 예시
   platform: [
-    {
-      name: "NAVER",
-      logo: "/images/naver24.svg",
-      plan: "사업자",
-    },
-    {
-      name: "Instagram",
-      logo: "/images/instagram48.svg",
-      plan: "사업자",
-    },
-    {
-      name: "Google",
-      logo: "/images/google48.svg",
-      plan: "사업자",
-    },
+    { name: "홍대가장맛있는고기집", logo: Utensils },
+    { name: "사랑스러운카페", logo: Coffee },
+    { name: "최고의강남헬스장", logo: Dumbbell },
   ],
-  // 메인 사이드바 메뉴: 1번 구조에 맞게 수정
   navMain: [
     {
-      title: "Overview",
-      url: "/dashboard/overview",
+      title: "마케팅",
+      url: "/dashboard/",
       icon: PieChart,
       isActive: true,
       items: [
-        { title: "Dashboard", url: "/dashboard/overview" },
-        {
-          title: "SEO",
-          url: "/dashboard/overview/seo",
-        },
-        {
-          title: "Social",
-          url: "/dashboard/overview/social",
-        },
-        {
-          title: "Ads",
-          url: "/dashboard/overview/ads",
-        },
+        { title: "플레이스", url: "/dashboard/place/overview" },
+        { title: "블로그", url: "/dashboard/vlog/reports" },
+        { title: "검색광고", url: "/dashboard/searchad" },
       ]
     },
     {
-      title: "Rank Tracker",
-      url: "/dashboard/rank-tracker",
+      title: "블로그",
+      url: "/dashboard/blog",
       icon: TrendingUp,
     },
     {
@@ -91,39 +102,41 @@ const data = {
       icon: Settings2,
     },
   ],
-  // 프로젝트나 캠페인 등 (예: 마케팅 캠페인 목록, 추가 메뉴 등)
   projects: [
     {
-      name: "캠페인 A",
-      url: "/dashboard/campaign/a",
+      name: "업체 A",
+      url: "/dashboard/campaign/restaurant-a",
       icon: Megaphone,
     },
     {
-      name: "캠페인 B",
-      url: "/dashboard/campaign/b",
+      name: "업체 B",
+      url: "/dashboard/campaign/restaurant-b",
       icon: Megaphone,
     },
   ],
 }
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        {/* 플랫폼 스위처 (네이버/인스타/구글) 등 */}
-        <TeamSwitcher teams={data.platform} />
+        {/* 팀(플랫폼) 스위처 */}
+        <TeamSwitcher
+          teams={data.platform}
+          plusIcon={Plus}              // + 아이콘을 여기서 전달
+          onAddTeamClick={() => {
+            // + 버튼 클릭 시 로직
+            alert("새 업체 추가")
+          }}
+        />
       </SidebarHeader>
 
       <SidebarContent>
-        {/* 메인 메뉴 (Overview, Rank Tracker, Marketing, Billing, Settings) */}
         <NavMain items={data.navMain} />
-
-        {/* 추가로 보여줄 프로젝트/캠페인 메뉴 */}
-        <NavProjects projects={data.projects} />
+        {/* <NavProjects projects={data.projects} /> */}
       </SidebarContent>
 
       <SidebarFooter>
-        {/* 사용자 정보 (아바타, 이름, 메일 등) */}
         <NavUser user={data.user} />
       </SidebarFooter>
 

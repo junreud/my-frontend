@@ -39,7 +39,7 @@ export function NavProjects({
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
       {/* 라벨을 '캠페인' 혹은 '프로젝트' 등 원하는 용어로 바꿀 수 있습니다 */}
-      <SidebarGroupLabel>캠페인/프로젝트</SidebarGroupLabel>
+      <SidebarGroupLabel>업체</SidebarGroupLabel>
       <SidebarMenu>
         {projects.map((item) => (
           <SidebarMenuItem key={item.name}>
@@ -63,7 +63,7 @@ export function NavProjects({
               >
                 <DropdownMenuItem>
                   <Folder className="text-muted-foreground" />
-                  <span>View Project</span>
+                  <span>Duplicate</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Forward className="text-muted-foreground" />

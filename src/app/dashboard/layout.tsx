@@ -1,9 +1,7 @@
 //cloudflared tunnel run wiz25
 // npm run dev
 import "../globals.css";
-
 import { ReactNode } from "react";
-import CustomCursor from "@/components/animations/CustomCursor";
 
 export const metadata = {
   title: "My dd",
@@ -27,15 +25,12 @@ export const metadata = {
     card: "summary_large_image",
     title: "My dd",
     description: "tteete",
-    images: ["https://m1mac.lakabe.com/og-image.jpg"],
+    images: ["https://lakabe.com/og-image.jpg"],
   },
 };
 
 export default function RootLayout({ children }: {children: ReactNode }) {
   return (
-  <section>
-    <CustomCursor />        
-    <main>{children}</main>
-  </section>
+    <section className="dashboard-layout">{children}</section>
   );
 }

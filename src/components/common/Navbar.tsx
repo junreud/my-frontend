@@ -10,8 +10,8 @@ export default function Navbar() {
 
   // 드롭다운 항목 배열
   const serviceItems = [
-    { text: "네이버플레이스", href: "/service?id=place" },
-    { text: "블로그", href: "/service?id=blog" },
+    { text: "네이버플레이스", href: "/service/place" },
+    { text: "블로그", href: "/service/blog" },
   ];
 
   return (
@@ -58,7 +58,7 @@ export default function Navbar() {
               {/* 모바일용 드롭다운 메뉴 */}
               <ul
                 tabIndex={0}
-                className="menu menu-sm dropdown-content bg-base-100 rounded-box mt-1 w-52 p-2 shadow z-[1]"
+                className="menu menu-sm dropdown-content bg-white rounded-box mt-1 w-52 p-2 shadow z-[1]"
               >
                 <li>
                   <Link href="/co-info">회사소개</Link>
@@ -84,7 +84,7 @@ export default function Navbar() {
                     </svg>
                   </Link>
                   {/* 서비스 하위 메뉴 (모바일) */}
-                  <ul className="dropdown-content menu bg-base-100 p-2 shadow rounded-box w-52 mt-0">
+                  <ul className="dropdown-content menu bg-white p-2 shadow rounded-box w-52 mt-0">
                     {serviceItems.map((item, idx) => (
                       <li key={idx}>
                         <Link href={item.href}>{item.text}</Link>
@@ -133,7 +133,7 @@ export default function Navbar() {
                   </svg>
                 </Link>
                 {/* 서비스 하위 메뉴 (데스크톱) */}
-                <ul className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-40 mt-0">
+                <ul className="dropdown-content menu p-2 shadow bg-white rounded-box w-40 mt-0">
                   {serviceItems.map((item, idx) => (
                     <li key={idx}>
                       <Link href={item.href}>{item.text}</Link>
@@ -152,7 +152,7 @@ export default function Navbar() {
           {/* ─────────────── navbar-end ─────────────── */}
           <div className="navbar-end">
             <Link href="/estimate">
-              <span className="btn btn-sm custom-btn px-4 py-1 rounded-full">
+              <span className="btn btn-sm custom-btn px-4 py-1 rounded-full bg-white text-black hv">
                 견적받기
               </span>
             </Link>

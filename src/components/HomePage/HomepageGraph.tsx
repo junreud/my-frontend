@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { TrendingUp } from "lucide-react";
+// import { TrendingUp } from "lucide-react";
 import {
   LineChart,
   CartesianGrid,
   Line,
   XAxis,
   YAxis,
-  Tooltip as RechartsTooltip,
+  // Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
 
@@ -16,7 +16,7 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
+  // CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
