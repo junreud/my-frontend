@@ -13,7 +13,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import  MyCalendarPage  from "@/components/ui/calendar"
+import  MyCalendarPage  from "@/components/ui/Calendar"
 import { ChartTwoLines } from "@/components/Dashboard/twolinechart"
 
 export default function Page() {
@@ -28,7 +28,7 @@ export default function Page() {
       label: "모바일",
       stroke: "hsl(var(--chart-2))",
     },
-  ] satisfies LineSeries[];
+  ];
   
   
   const chartData = [
@@ -73,7 +73,7 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
+                  <BreadcrumbLink href="/">
                     LAKABE
                   </BreadcrumbLink>
                 </BreadcrumbItem>

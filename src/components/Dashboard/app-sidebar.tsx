@@ -71,7 +71,7 @@ const data = {
   ],
   navMain: [
     {
-      title: "마케팅",
+      title: "마케팅 현황",
       url: "/dashboard/",
       icon: PieChart,
       isActive: true,
@@ -80,16 +80,6 @@ const data = {
         { title: "블로그", url: "/dashboard/vlog/reports" },
         { title: "검색광고", url: "/dashboard/searchad" },
       ]
-    },
-    {
-      title: "블로그",
-      url: "/dashboard/blog",
-      icon: TrendingUp,
-    },
-    {
-      title: "Marketing",
-      url: "/dashboard/marketing",
-      icon: Megaphone,
     },
     {
       title: "Billing & Payments",

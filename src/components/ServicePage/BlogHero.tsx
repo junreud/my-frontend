@@ -1,4 +1,3 @@
-// components/Navbar.jsx (or wherever you keep the Hero)
 "use client";
 import React from "react";
 import ServiceMenuOptions from "@/components/ServicePage/ServiceMenuOptions";
@@ -19,7 +18,9 @@ const BlogHero = () => {
       {/* hero-content: 내용 정렬 */}
       <div className="hero-content text-center text-neutral-content relative">
         <div className="max-w-md mx-auto">
-          <h1 className="mb-5 text-5xl font-bold">블로그 광고로 입소문 효과 극대화</h1>
+          <h1 className="mb-5 text-5xl font-bold whitespace-nowrap">
+            블로그 광고로 입소문 효과 극대화
+          </h1>
           {/* 여기서 Combobox 표시 */}
           <div className="mt-8">
           <ServiceMenuOptions />
