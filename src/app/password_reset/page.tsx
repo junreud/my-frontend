@@ -2,13 +2,12 @@
 
 import React from "react";
 import LogInNavbar from "@/components/ui/LogInNavbar";
-import LogInBox from "@/components/ui/LogIn";
+
 
 export default function LoginPage() {
   return (
     <>
       <LogInNavbar />
-      <LogInBox />
     </>
   );
 }

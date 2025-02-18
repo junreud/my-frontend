@@ -8,6 +8,9 @@ import { Container } from "@/components/common/Container";
 export default function Navbar() {
   const scrollDirection = useScrollDirection();
 
+  // 로그인 상태 변수 (실제 구현에서는 context나 hook을 활용)
+  const isLoggedIn = false; // true이면 로그인된 상태
+
   // 드롭다운 항목 배열
   const serviceItems = [
     { text: "네이버플레이스", href: "/service/place" },
@@ -150,11 +153,18 @@ export default function Navbar() {
           {/* ─────────────── /navbar-center ─────────────── */}
 
           {/* ─────────────── navbar-end ─────────────── */}
-          <div className="navbar-end">
+          <div className="navbar-end flex items-center gap-2">
+            {/* 로그인 상태에 따라 왼쪽 버튼 텍스트와 링크가 변경 */}
+            <Link href={isLoggedIn ? "/company-dashboard" : "/login"}>
+              <button className="btn btn-neutral rounded-full text-white">
+                {isLoggedIn ? "내업체 관리하기" : "로그인"}
+              </button>
+            </Link>
+            {/* 견적받기 버튼 */}
             <Link href="/estimate">
-              <span className="btn btn-sm custom-btn px-4 py-1 rounded-full bg-white text-black hv">
+              <button className="btn btn-neutral rounded-full text-white">
                 견적받기
-              </span>
+              </button>
             </Link>
           </div>
           {/* ─────────────── /navbar-end ─────────────── */}
