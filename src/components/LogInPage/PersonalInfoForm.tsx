@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface PersonalInfoFormProps {
   name: string;
@@ -23,30 +23,51 @@ export default function PersonalInfoForm({
 }: PersonalInfoFormProps) {
   const ssnBackInputRef = useRef<HTMLInputElement>(null);
 
-  // 앞자리 6자리 입력 완료 시 뒷자리 input 포커스
+  // Blur 여부(한 번이라도 포커스 벗어났는지)를 추적
+  const [frontTouched, setFrontTouched] = useState(false);
+  const [backTouched, setBackTouched] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
+
+  // 앞자리 6자리 입력 완료하면 자동 포커스 이동
   useEffect(() => {
     if (ssnFront.length === 6) {
       ssnBackInputRef.current?.focus();
     }
   }, [ssnFront]);
 
-  // ────────── 자릿수별 Border 색상 계산 ──────────
-  // 앞 6자리
-  let frontBorderClass = "border-gray-300 focus:ring-blue-200";
-  if (ssnFront.length > 0 && ssnFront.length < 6) {
-    frontBorderClass = "border-red-500 focus:ring-red-200";
-  } else if (ssnFront.length === 6) {
-    frontBorderClass = "border-green-500 focus:ring-green-200";
+  // ============ 이름 테두리 클래스 ============
+  // 1) 기본 (아직 Blur 안 됨): 회색 + focus 시 파랑
+  let nameBorderClass = "border border-gray-300 focus:ring-blue-200";
+
+  // 2) 만약 Blur가 발생했다면 => 글자수 체크
+  if (nameTouched) {
+    if (name.trim().length >= 2) {
+      // 2글자 이상 => 초록
+      nameBorderClass = "border border-green-500 focus:ring-green-200";
+    } else {
+      // 아니면 빨강
+      nameBorderClass = "border border-red-500 focus:ring-red-200";
+    }
   }
 
-  // 뒷 1자리
-  let backBorderClass = "border-gray-300 focus:ring-blue-200";
-  if (ssnBackFirst.length > 0 && ssnBackFirst.length < 1) {
-    // 사실상 length < 1이면 0이므로... 
-    // 여기선 "입력 중" 상태가 없지만, 포괄적 로직 예시
-    backBorderClass = "border-red-500 focus:ring-red-200";
-  } else if (ssnBackFirst.length === 1) {
-    backBorderClass = "border-green-500 focus:ring-green-200";
+  // ============ 주민번호 앞자리 테두리 클래스 ============
+  let frontBorderClass = "border border-gray-300 focus:ring-blue-200";
+  if (frontTouched) {
+    if (ssnFront.length === 6) {
+      frontBorderClass = "border border-green-500 focus:ring-green-200";
+    } else {
+      frontBorderClass = "border border-red-500 focus:ring-red-200";
+    }
+  }
+
+  // ============ 주민번호 뒷자리 테두리 클래스 ============
+  let backBorderClass = "border border-gray-300 focus:ring-blue-200";
+  if (backTouched) {
+    if (ssnBackFirst.length === 1) {
+      backBorderClass = "border border-green-500 focus:ring-green-200";
+    } else {
+      backBorderClass = "border border-red-500 focus:ring-red-200";
+    }
   }
 
   return (
@@ -63,16 +84,12 @@ export default function PersonalInfoForm({
           type="text"
           value={name}
           onChange={(e) => onNameChange(e.target.value)}
+          onBlur={() => setNameTouched(true)} // Blur 시 nameTouched = true
           className={`
             w-full px-3 py-1 rounded-md focus:outline-none focus:ring text-sm
-            ${
-              !name
-                ? "border border-gray-300 focus:ring-blue-200"
-                : "border border-green-500 focus:ring-green-200"
-            }
+            ${nameBorderClass}
           `}
           placeholder="홍길동"
-          required
         />
       </div>
 
@@ -81,8 +98,9 @@ export default function PersonalInfoForm({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           주민등록번호
         </label>
+
         <div className="flex items-center gap-2">
-          {/* 앞 6자리 */}
+          {/* 주민번호 앞 6자리 */}
           <input
             type="text"
             value={ssnFront}
@@ -90,18 +108,19 @@ export default function PersonalInfoForm({
               const val = e.target.value.replace(/\D/g, "");
               if (val.length <= 6) onSsnFrontChange(val);
             }}
+            onBlur={() => setFrontTouched(true)} // Blur 시 frontTouched = true
             maxLength={6}
             className={`
-              w-24 px-3 py-1 rounded-md focus:outline-none focus:ring text-sm
-              ${frontBorderClass} 
+              w-24 px-3 py-1 rounded-md
+              focus:outline-none focus:ring text-sm
+              ${frontBorderClass}
             `}
             placeholder="앞6자리"
-            required
           />
 
           <span className="text-xl font-bold">-</span>
 
-          {/* 뒷 1자리 */}
+          {/* 주민번호 뒷 1자리 */}
           <input
             type="text"
             value={ssnBackFirst}
@@ -109,14 +128,15 @@ export default function PersonalInfoForm({
               const val = e.target.value.replace(/\D/g, "");
               if (val.length <= 1) onSsnBackFirstChange(val);
             }}
+            onBlur={() => setBackTouched(true)} // Blur 시 backTouched = true
             maxLength={1}
             ref={ssnBackInputRef}
             className={`
-              w-8 px-2 py-1 rounded-md focus:outline-none focus:ring text-sm
+              w-8 px-2 py-1 rounded-md
+              focus:outline-none focus:ring text-sm
               ${backBorderClass}
             `}
             placeholder=""
-            required
           />
 
           <span className="text-sm text-gray-400">******</span>
