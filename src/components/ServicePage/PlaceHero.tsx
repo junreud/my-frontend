@@ -19,7 +19,7 @@ const PlaceHero = () => {
       {/* hero-content: 내용 정렬 */}
       <div className="hero-content text-center text-neutral-content relative">
         <div className="max-w-md mx-auto">
-          <h1 data-cursor="text" className="mb-5 text-align-center text-5xl font-bold whitespace-nowrap">네이버 플레이스 상위노출로<br/>우리 가게를 지역 1등으로!</h1>
+          <h1 className="mb-5 text-align-center text-5xl font-bold whitespace-nowrap">네이버 플레이스 상위노출로<br/>우리 가게를 지역 1등으로!</h1>
           {/* 여기서 Combobox 표시 */}
           <div className="mt-8">
           <ServiceMenuOptions />

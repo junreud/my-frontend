@@ -20,7 +20,7 @@ export default function Navbar() {
   return (
     <nav
       className={`
-        font-pretendard             /* 폰트 적용 */
+        font-pretendard
         bg-base-100 fixed top-0 left-0 right-0 z-50
         transition-transform duration-300
         border-b border-gray-200 /* 하단 경계선 */
@@ -138,7 +138,12 @@ export default function Navbar() {
                 {/* 서비스 하위 메뉴 (데스크톱) */}
                 <ul className="dropdown-content menu p-2 shadow bg-white rounded-box w-40 mt-0">
                   {serviceItems.map((item, idx) => (
-                    <li key={idx}>
+                    <li 
+                    key={idx}
+                    onClick={() => {
+                      (document.activeElement as HTMLElement)?.blur();
+                    }}
+                    >
                       <Link href={item.href}>{item.text}</Link>
                     </li>
                   ))}

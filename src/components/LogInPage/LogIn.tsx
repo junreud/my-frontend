@@ -9,16 +9,16 @@ const LogInBox: React.FC = () => {
   return (
     <div className="h-screen bg-white flex flex-col items-center justify-center">
       {/* 로그인 박스(카드) */}
-      <div className="w-full max-w-[280px] border border-gray-200 rounded-md p-3 shadow-sm">
+      <div className="w-full max-w-[280px] border border-gray-200 rounded-md p-4 shadow-sm">
         {/* 상단 타이틀(또는 로고) */}
-        <h1 data-cursor="text" className="text-ml font-semibold mb-2 text-center">
+        <h1 className="text-ml font-semibold mb-2 text-center">
           로그인하기
         </h1>
 
         {/* 로그인 폼 */}
         <form>
           <div className="mb-4">
-            <label data-cursor="text" className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-700 mb-1">
               이메일 주소
             </label>
             <input
@@ -32,10 +32,10 @@ const LogInBox: React.FC = () => {
 
           <div className="mb-6">
             <div className="flex items-center justify-between">
-              <label data-cursor="text" className="block text-xs font-medium text-gray-700">
+              <label className="block text-xs font-medium text-gray-700">
                 비밀번호
               </label>
-              <a href="#" className="text-xs text-blue-600 hover:underline">
+              <a href="/password_reset" className="text-xs text-blue-600 hover:underline">
                 비밀번호를 잊으셨나요?
               </a>
             </div>
@@ -68,13 +68,13 @@ const LogInBox: React.FC = () => {
         <button
           className="w-full bg-white border border-gray-300
                      hover:bg-gray-50 text-black font-medium
-                     py-1 px-3 rounded-md text-sm"
+                     py-1 px-3 rounded-md text-xs"
         >
           소셜미디어 계정으로 로그인하기
         </button>
 
         {/* 회원가입 안내 */}
-        <p className="text-center text-xs text-gray-500 mt-2">
+        <p className="text-center text-xs text-gray-500 mt-4">
           처음이신가요?{" "}
           <Link href="/register" className="text-blue-600 hover:underline">
             계정 만들기

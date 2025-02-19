@@ -18,7 +18,7 @@ const BlogHero = () => {
       {/* hero-content: 내용 정렬 */}
       <div className="hero-content text-center text-neutral-content relative">
         <div className="max-w-md mx-auto">
-          <h1 data-cursor="text" className="mb-5 text-5xl font-bold whitespace-nowrap">
+          <h1 className="font-pretendard mb-5 text-5xl font-bold whitespace-nowrap">
             블로그 광고로 입소문 효과 극대화
           </h1>
           {/* 여기서 Combobox 표시 */}

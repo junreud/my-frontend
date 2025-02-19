@@ -7,7 +7,7 @@ import {
   Coffee,
   Dumbbell,
   PieChart,
-  TrendingUp,
+  // TrendingUp,
   Megaphone,
   CreditCard,
   Settings2,
