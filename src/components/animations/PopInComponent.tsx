@@ -12,9 +12,9 @@ const popInVariants = {
     scale: 1,
     rotate: [0, -5, 5, -2, 0], // 흔들림 효과
     transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 20,
+      type: "tween",
+      duration: 0.5,
+      
     },
   },
 };
@@ -29,7 +29,7 @@ export default function PopInComponent({ children }: PopInProps) {
       initial="hidden"
       whileInView="visible"
       variants={popInVariants}
-      viewport={{ once: false }} // 뷰포트 진입할 때마다 재실행
+      viewport={{ once: true }} // 한 번만 실행
     >
       {children}
     </motion.div>

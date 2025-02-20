@@ -52,7 +52,7 @@ export default function EmailPasswordForm({
             }}
             className={`
               w-full px-3 py-1 rounded-md focus:outline-none focus:ring
-              text-sm pr-10
+              text-sm pr-10 bg-white
               ${
                 emailStatus === "invalid"
                   ? "border border-red-500 focus:ring-red-200"
@@ -139,7 +139,7 @@ export default function EmailPasswordForm({
             if (e.key === "Enter") e.preventDefault();
           }}
           className={`
-            w-full px-3 py-1 rounded-md focus:outline-none focus:ring text-sm
+            w-full px-3 py-1 rounded-md focus:outline-none focus:ring text-sm bg-white
             ${
               password
                 ? isPasswordValid

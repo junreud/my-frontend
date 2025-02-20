@@ -219,7 +219,7 @@ async function fakeCheckEmailDuplicate(email: string) {
   
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* 이메일 & 비밀번호 섹션 */}
-            <EmailPasswordForm
+            {/* <EmailPasswordForm
               email={email}
               onEmailChange={handleEmailChange}
               emailStatus={emailStatus}
@@ -228,7 +228,7 @@ async function fakeCheckEmailDuplicate(email: string) {
               password={password}
               isPasswordValid={isPasswordValid}
               onPasswordChange={handlePasswordChange}
-            />
+            /> */}
   
             {/* 휴대전화 & 인증번호 섹션 */}
             <PhoneVerificationForm

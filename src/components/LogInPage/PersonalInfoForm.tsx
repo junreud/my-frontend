@@ -86,7 +86,7 @@ export default function PersonalInfoForm({
           onChange={(e) => onNameChange(e.target.value)}
           onBlur={() => setNameTouched(true)} // Blur 시 nameTouched = true
           className={`
-            w-full px-3 py-1 rounded-md focus:outline-none focus:ring text-sm
+            w-full px-3 py-1 rounded-md focus:outline-none focus:ring text-sm bg-white
             ${nameBorderClass}
           `}
           placeholder="홍길동"
@@ -111,7 +111,7 @@ export default function PersonalInfoForm({
             onBlur={() => setFrontTouched(true)} // Blur 시 frontTouched = true
             maxLength={6}
             className={`
-              w-24 px-3 py-1 rounded-md
+              w-24 px-3 py-1 rounded-md bg-white
               focus:outline-none focus:ring text-sm
               ${frontBorderClass}
             `}
@@ -132,7 +132,7 @@ export default function PersonalInfoForm({
             maxLength={1}
             ref={ssnBackInputRef}
             className={`
-              w-8 px-2 py-1 rounded-md
+              w-8 px-2 py-1 rounded-md bg-white
               focus:outline-none focus:ring text-sm
               ${backBorderClass}
             `}
