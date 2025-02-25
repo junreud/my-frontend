@@ -95,7 +95,7 @@ export function TeamSwitcher({
               <div className="flex size-6 items-center justify-center rounded-sm border">
                 {PlusIcon && <PlusIcon className="size-4 shrink-0" />}
               </div>
-              새 플랫폼 추가
+              새 업체 추가하기
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

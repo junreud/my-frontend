@@ -8,8 +8,23 @@ import { Container } from "@/components/common/Container";
 export default function Navbar() {
   const scrollDirection = useScrollDirection();
 
-  // 로그인 상태 변수 (실제 구현에서는 context나 hook을 활용)
-  const isLoggedIn = false; // true이면 로그인된 상태
+  // 예시: 실제로는 Context, SSR, NextAuth 등에서 받아온 값을 사용
+  const isLoggedIn = true; // 로그인 여부
+  const userRole = "admin"; // "admin" or "user" or (null, undefined = 비로그인)
+
+  // 역할별 링크 & 버튼 텍스트 결정
+  let linkUrl = "/login";
+  let linkText = "로그인";
+
+  if (isLoggedIn) {
+    if (userRole === "admin") {
+      linkUrl = "/admin";
+      linkText = "어드민 대시보드";
+    } else if (userRole === "user") {
+      linkUrl = "/dashboard";
+      linkText = "내업체 관리하기";
+    }
+  }
 
   // 드롭다운 항목 배열
   const serviceItems = [
@@ -23,7 +38,7 @@ export default function Navbar() {
         font-pretendard
         bg-base-100 fixed top-0 left-0 right-0 z-50
         transition-transform duration-300
-        border-b border-gray-200 /* 하단 경계선 */
+        border-b border-gray-200
         bg-white
         ${scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"}
       `}
@@ -138,11 +153,11 @@ export default function Navbar() {
                 {/* 서비스 하위 메뉴 (데스크톱) */}
                 <ul className="dropdown-content menu p-2 shadow bg-white rounded-box w-40 mt-0">
                   {serviceItems.map((item, idx) => (
-                    <li 
-                    key={idx}
-                    onClick={() => {
-                      (document.activeElement as HTMLElement)?.blur();
-                    }}
+                    <li
+                      key={idx}
+                      onClick={() => {
+                        (document.activeElement as HTMLElement)?.blur();
+                      }}
                     >
                       <Link href={item.href}>{item.text}</Link>
                     </li>
@@ -159,10 +174,10 @@ export default function Navbar() {
 
           {/* ─────────────── navbar-end ─────────────── */}
           <div className="navbar-end flex items-center gap-2">
-            {/* 로그인 상태에 따라 왼쪽 버튼 텍스트와 링크가 변경 */}
-            <Link href={isLoggedIn ? "/company-dashboard" : "/login"}>
+            {/* 로그인 상태에 따라 버튼/링크를 다르게 */}
+            <Link href={linkUrl}>
               <button className="btn btn-neutral rounded-full text-white">
-                {isLoggedIn ? "내업체 관리하기" : "로그인"}
+                {linkText}
               </button>
             </Link>
             {/* 견적받기 버튼 */}
