@@ -1,5 +1,7 @@
 "use client";
 
+//TODO : 1. 로그인 상태에 따라 다른 링크/문구 보여주기
+
 import React from "react";
 import Link from "next/link";
 import useScrollDirection from "../../hooks/useScrollDirection";
@@ -8,25 +10,32 @@ import { Container } from "@/components/common/Container";
 export default function Navbar() {
   const scrollDirection = useScrollDirection();
 
-  // 예시: 실제로는 Context, SSR, NextAuth 등에서 받아온 값을 사용
-  const isLoggedIn = true; // 로그인 여부
-  const userRole = "admin"; // "admin" or "user" or (null, undefined = 비로그인)
+  // 지금은 예시 상수, 실제로는 Context/SSR/JWT 등을 통해 받아옴
+  const isLoggedIn = true; // true/false
+  const userRole = "user"; 
+  // "admin" | "user" | "pending" | undefined(미로그인)
 
-  // 역할별 링크 & 버튼 텍스트 결정
+  // 링크 URL/문구
   let linkUrl = "/login";
   let linkText = "로그인";
 
   if (isLoggedIn) {
+    // 로그인 상태
     if (userRole === "admin") {
       linkUrl = "/admin";
       linkText = "어드민 대시보드";
     } else if (userRole === "user") {
       linkUrl = "/dashboard";
-      linkText = "내업체 관리하기";
+      linkText = "내업체";
+    } else {
+      // 로그인은 했는데 role이 admin/user가 아닐 경우 → 심사중
+      linkUrl = "/pending";
+      linkText = "심사중";
     }
-  }
+  } 
+  // else { (기본값이 로그인 아니면) /login & '로그인' }
 
-  // 드롭다운 항목 배열
+  // 드롭다운 항목
   const serviceItems = [
     { text: "네이버플레이스", href: "/service/place" },
     { text: "블로그", href: "/service/blog" },
@@ -45,11 +54,10 @@ export default function Navbar() {
       aria-label="주요 내비게이션"
     >
       <Container>
-        {/* 전체 navbar */}
         <div className="navbar h-14 flex items-center">
-          {/* ─────────────── navbar-start ─────────────── */}
+          {/* navbar-start */}
           <div className="navbar-start">
-            {/* 모바일용(763px 이하) 햄버거 버튼 */}
+            {/* 모바일용 햄버거 버튼 (763px 이하) */}
             <div className="dropdown p-0 [@media(min-width:763px)]:hidden">
               <label
                 tabIndex={0}
@@ -72,8 +80,7 @@ export default function Navbar() {
                   />
                 </svg>
               </label>
-
-              {/* 모바일용 드롭다운 메뉴 */}
+              {/* 모바일용 드롭다운 */}
               <ul
                 tabIndex={0}
                 className="menu menu-sm dropdown-content bg-white rounded-box mt-1 w-52 p-2 shadow z-[1]"
@@ -81,7 +88,6 @@ export default function Navbar() {
                 <li>
                   <Link href="/co-info">회사소개</Link>
                 </li>
-
                 {/* 모바일: '서비스' 드롭다운 */}
                 <li
                   className="dropdown dropdown-hover dropdown-bottom dropdown-center"
@@ -101,7 +107,6 @@ export default function Navbar() {
                       />
                     </svg>
                   </Link>
-                  {/* 서비스 하위 메뉴 (모바일) */}
                   <ul className="dropdown-content menu bg-white p-2 shadow rounded-box w-52 mt-0">
                     {serviceItems.map((item, idx) => (
                       <li key={idx}>
@@ -110,7 +115,6 @@ export default function Navbar() {
                     ))}
                   </ul>
                 </li>
-
                 <li>
                   <Link href="/faq">자주 묻는 질문</Link>
                 </li>
@@ -122,15 +126,14 @@ export default function Navbar() {
               LAKABE
             </Link>
           </div>
-          {/* ─────────────── /navbar-start ─────────────── */}
+          {/* /navbar-start */}
 
-          {/* ─────────────── navbar-center (데스크톱) ─────────────── */}
+          {/* navbar-center (데스크톱) */}
           <div className="navbar-center hidden [@media(min-width:763px)]:flex">
             <ul className="menu menu-horizontal px-1 gap-x-4">
               <li>
                 <Link href="/co-info">회사소개</Link>
               </li>
-
               {/* 데스크톱: '서비스' 드롭다운 */}
               <li
                 className="dropdown dropdown-hover dropdown-bottom dropdown-center"
@@ -150,7 +153,6 @@ export default function Navbar() {
                     />
                   </svg>
                 </Link>
-                {/* 서비스 하위 메뉴 (데스크톱) */}
                 <ul className="dropdown-content menu p-2 shadow bg-white rounded-box w-40 mt-0">
                   {serviceItems.map((item, idx) => (
                     <li
@@ -164,30 +166,29 @@ export default function Navbar() {
                   ))}
                 </ul>
               </li>
-
               <li>
                 <Link href="/faq">자주 묻는 질문</Link>
               </li>
             </ul>
           </div>
-          {/* ─────────────── /navbar-center ─────────────── */}
+          {/* /navbar-center */}
 
-          {/* ─────────────── navbar-end ─────────────── */}
+          {/* navbar-end */}
           <div className="navbar-end flex items-center gap-2">
-            {/* 로그인 상태에 따라 버튼/링크를 다르게 */}
+            {/* 역할/로그인 상태별 버튼 */}
             <Link href={linkUrl}>
               <button className="btn btn-neutral rounded-full text-white">
                 {linkText}
               </button>
             </Link>
-            {/* 견적받기 버튼 */}
+            {/* 견적받기 */}
             <Link href="/estimate">
               <button className="btn btn-neutral rounded-full text-white">
                 견적받기
               </button>
             </Link>
           </div>
-          {/* ─────────────── /navbar-end ─────────────── */}
+          {/* /navbar-end */}
         </div>
       </Container>
     </nav>

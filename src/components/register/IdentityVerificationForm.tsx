@@ -8,11 +8,9 @@ import TermsAgreeSection from "./TermsAgreeSection";
 import VerificationSection from "./VerificationSection";
 import TermsDialogGroup from "./TermsDialogGroup";
 
+import { checkEmailAvailability as apiCheckEmailAvailability } from "@/services/api";
 
-import { checkEmailAvailability as apiCheckEmailAvailability } from "@/services/api"; 
-
-
-// 타입 정의 (예시)
+// --------- 타입 정의 (예시) -----------
 export type DialogOpenType =
   | "serviceTerm"
   | "privacyTerm"
@@ -21,7 +19,7 @@ export type DialogOpenType =
   | "marketingTerm"
   | null;
 
-// 유틸 함수 예시
+// --------- 유틸 함수 (휴대폰번호, 생년월일 포맷 등) -----------
 function formatPhoneNumber(raw: string): string {
   let digits = raw.replace(/\D/g, "");
   if (digits.length > 11) {
@@ -36,14 +34,9 @@ function formatPhoneNumber(raw: string): string {
 
 function convertBirthday6ToYYYYMMDD(birthday6: string): string {
   if (birthday6.length !== 6) {
-    // 길이가 정확히 6이 아니면 변환 불가 → "" 리턴
     return "";
   }
-  // 앞 2자리(YY)를 숫자로 변환
   const yy = parseInt(birthday6.slice(0, 2), 10);
-
-  // 간단 로직: 00~22 -> 2000년대, 그 외 -> 1900년대
-  // (정교하게 하려면 사용자 나이 제한이나 다른 조건 고려)
   const prefix = yy <= 22 ? "20" : "19";
   return prefix + birthday6; // "YYMMDD" -> "19YYMMDD" or "20YYMMDD"
 }
@@ -52,17 +45,14 @@ export default function IdentityVerificationForm() {
   // -------------------------------------------------
   // (1) 상태 (State)
   // -------------------------------------------------
-  // 이메일
   const [email, setEmail] = useState("");
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [emailError, setEmailError] = useState("");
 
-  // 비밀번호
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // 기본 정보
   const [name, setName] = useState("");
   const [birthday6, setBirthday6] = useState("");
   const [phone, setPhone] = useState("");
@@ -71,7 +61,7 @@ export default function IdentityVerificationForm() {
   const [gender, setGender] = useState<"MALE" | "FEMALE" | "">("");
   const [foreigner, setForeigner] = useState(false);
 
-  // 약관 체크
+  // 약관
   const [agreeAll, setAgreeAll] = useState(false);
   const [agreeServiceTerm, setAgreeServiceTerm] = useState(false);
   const [agreePrivacyTerm, setAgreePrivacyTerm] = useState(false);
@@ -79,17 +69,17 @@ export default function IdentityVerificationForm() {
   const [agreeThirdPartyTerm, setAgreeThirdPartyTerm] = useState(false);
   const [agreeMarketingTerm, setAgreeMarketingTerm] = useState(false);
 
-  // 모달 열림 상태
   const [dialogOpen, setDialogOpen] = useState<DialogOpenType>(null);
 
   // SMS 인증
   const [hasSentCode, setHasSentCode] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationError, setVerificationError] = useState("");
-  const verificationCodeInputRef = useRef<HTMLInputElement>(null);
+  const verificationCodeInputRef = useRef<HTMLInputElement>(null!);
+
 
   // -------------------------------------------------
-  // (2) 이메일 / 비밀번호 / 휴대전화 등 유효성 검사
+  // (2) 이메일 중복확인
   // -------------------------------------------------
   const validateEmail = async (value: string) => {
     setEmail(value);
@@ -110,6 +100,9 @@ export default function IdentityVerificationForm() {
     setIsEmailValid(true);
   };
 
+  // -------------------------------------------------
+  // (3) 비밀번호 체크
+  // -------------------------------------------------
   const passwordRegex =
     /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+|}{":;'?/>.<,]).{8,}$/;
 
@@ -132,6 +125,9 @@ export default function IdentityVerificationForm() {
     }
   };
 
+  // -------------------------------------------------
+  // (4) 휴대전화
+  // -------------------------------------------------
   const handlePhoneChange = (value: string) => {
     setPhoneError("");
     const formatted = formatPhoneNumber(value);
@@ -143,10 +139,9 @@ export default function IdentityVerificationForm() {
   };
 
   // -------------------------------------------------
-  // (3) 약관 전체 동의 로직
+  // (5) 약관 전체 동의
   // -------------------------------------------------
   useEffect(() => {
-    // 필수 약관들 모두 체크되면 agreeAll = true
     if (
       agreeServiceTerm &&
       agreePrivacyTerm &&
@@ -165,11 +160,11 @@ export default function IdentityVerificationForm() {
     setAgreePrivacyTerm(checked);
     setAgreeAuthTerm(checked);
     setAgreeThirdPartyTerm(checked);
-    setAgreeMarketingTerm(checked); // 선택 약관도 함께 체크할 경우
+    setAgreeMarketingTerm(checked);
   };
 
   // -------------------------------------------------
-  // (4) 모든 필드 유효성 검사
+  // (6) 전체 필드 유효성
   // -------------------------------------------------
   const allFieldsValid = () => {
     if (!isEmailValid || emailError) return false;
@@ -180,7 +175,7 @@ export default function IdentityVerificationForm() {
     if (!phone || phoneError) return false;
     if (!operator) return false;
     if (!gender) return false;
-    // 필수 약관 체크
+    // 필수 약관
     if (
       !agreeServiceTerm ||
       !agreePrivacyTerm ||
@@ -193,23 +188,60 @@ export default function IdentityVerificationForm() {
   };
 
   // -------------------------------------------------
-  // (5) "인증하기" / "가입하기" 로직
+  // (7) SMS 인증 재전송
+  // -------------------------------------------------
+  const resendSMSCode = async () => {
+    try {
+      const birth = convertBirthday6ToYYYYMMDD(birthday6);
+      const response = await fetch("http://localhost:4000/auth/send-sms-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: phone.replace(/\D/g, ""),
+          name,
+          birth,
+          operator,
+          gender,
+          foreigner,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert("재전송 실패: " + (errorData.message || "서버 오류"));
+        return;
+      }
+
+      alert("인증번호를 다시 보냈습니다.");
+      setVerificationError("");
+      setVerificationCode("");
+      setTimeout(() => {
+        verificationCodeInputRef.current?.focus();
+      }, 300);
+    } catch (err) {
+      console.error(err);
+      alert("서버 오류");
+    }
+  };
+
+  // -------------------------------------------------
+  // (8) "인증하기" 또는 "가입하기" 클릭
   // -------------------------------------------------
   const onClickFinalButton = async () => {
-    // 아직 인증번호 전송 전
     if (!hasSentCode) {
+      // 아직 인증번호 전송 전 => 인증번호 요청
       try {
         const birth = convertBirthday6ToYYYYMMDD(birthday6);
         const response = await fetch("http://localhost:4000/auth/send-sms-code", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            phone: phone.replace(/\D/g, ""), // 숫자만
+            phone: phone.replace(/\D/g, ""),
             name,
             birth,
-            operator,      // "SKT", "KT", ...
-            gender,       // "male" or "female"
-            foreigner,    // true or false
+            operator,
+            gender,
+            foreigner,
           }),
         });
 
@@ -229,17 +261,19 @@ export default function IdentityVerificationForm() {
         alert("서버 오류");
       }
     } else {
-      // 가입 단계
+      // 인증번호 이미 전송됨 -> "가입하기"
       if (!verificationCode) {
         setVerificationError("인증번호를 입력해주세요.");
         return;
       }
 
       try {
-        const response = await fetch("http://localhost:4000/auth/signup", {
+        // 백엔드에서 "인증번호 검증 + 가입"을 한 번에 처리하는 라우트 (예: /auth/verify-and-signup)
+        const response = await fetch("http://localhost:4000/auth/verify-and-signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            // 회원 정보
             email,
             password,
             name,
@@ -248,11 +282,6 @@ export default function IdentityVerificationForm() {
             operator,
             gender,
             foreigner,
-            // 약관
-            agreeServiceTerm,
-            agreePrivacyTerm,
-            agreeAuthTerm,
-            agreeThirdPartyTerm,
             agreeMarketingTerm,
             // 인증번호
             verificationCode,
@@ -270,8 +299,10 @@ export default function IdentityVerificationForm() {
         }
 
         const data = await response.json();
-        alert("가입이 완료되었습니다! userId=" + data.user.id);
-        // TODO: 후속 페이지 이동 등
+        alert("가입이 완료되었습니다! userId = " + data.user.id);
+
+        // 가입 완료 후 페이지 이동 등
+        // router.push("/somewhere");
       } catch (err) {
         console.error(err);
         alert("서버 오류");
@@ -280,13 +311,13 @@ export default function IdentityVerificationForm() {
   };
 
   // -------------------------------------------------
-  // (6) 실제 렌더링
+  // (9) 렌더링
   // -------------------------------------------------
   return (
     <div className="max-w-md mx-auto p-8 border border-gray-300 rounded-lg bg-white">
       <h1 className="text-xl font-bold mb-4 p-4">본인인증 가입폼 (예시)</h1>
 
-      {/* 이메일 섹션 */}
+      {/* (1) 이메일 */}
       <EmailInputSection
         email={email}
         setEmail={setEmail}
@@ -295,7 +326,7 @@ export default function IdentityVerificationForm() {
         isEmailValid={isEmailValid}
       />
 
-      {/* 비밀번호 섹션 */}
+      {/* (2) 비밀번호 */}
       <PasswordInputSection
         password={password}
         setPassword={handlePasswordChange}
@@ -304,7 +335,7 @@ export default function IdentityVerificationForm() {
         setConfirmPassword={handleConfirmPasswordChange}
       />
 
-      {/* 기본정보 섹션 */}
+      {/* (3) 기본정보 */}
       <BasicInfoSection
         isEmailValid={isEmailValid}
         emailError={emailError}
@@ -326,7 +357,7 @@ export default function IdentityVerificationForm() {
         setForeigner={setForeigner}
       />
 
-      {/* 약관 동의 섹션 */}
+      {/* (4) 약관 */}
       <TermsAgreeSection
         isEmailValid={isEmailValid}
         emailError={emailError}
@@ -349,7 +380,7 @@ export default function IdentityVerificationForm() {
         setDialogOpen={setDialogOpen}
       />
 
-      {/* 인증/가입 버튼 섹션 */}
+      {/* (5) 인증/가입 섹션 */}
       <VerificationSection
         allFieldsValid={allFieldsValid}
         hasSentCode={hasSentCode}
@@ -359,9 +390,11 @@ export default function IdentityVerificationForm() {
         verificationError={verificationError}
         setVerificationError={setVerificationError}
         verificationCodeInputRef={verificationCodeInputRef}
+        // 새로 추가: 재전송
+        onResendCode={resendSMSCode}
       />
 
-      {/* 약관 모달 그룹 */}
+      {/* (6) 약관 모달 */}
       <TermsDialogGroup dialogOpen={dialogOpen} setDialogOpen={setDialogOpen} />
     </div>
   );

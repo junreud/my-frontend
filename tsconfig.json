@@ -34,7 +34,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/components/ui/ArrowIcon.jsx"
-  ],
+, "src/app/welcomepage"  ],
   "exclude": [
     "node_modules"
   ]

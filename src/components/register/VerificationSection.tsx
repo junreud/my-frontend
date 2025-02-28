@@ -10,6 +10,8 @@ interface VerificationSectionProps {
   verificationError: string;
   setVerificationError: (val: string) => void;
   verificationCodeInputRef: React.RefObject<HTMLInputElement>;
+  // 재전송 버튼을 누르면 실행할 함수 (부모에서 구현)
+  onResendCode?: () => Promise<void>; 
 }
 
 export default function VerificationSection({
@@ -21,6 +23,7 @@ export default function VerificationSection({
   verificationError,
   setVerificationError,
   verificationCodeInputRef,
+  onResendCode, // 새로 추가
 }: VerificationSectionProps) {
   return (
     <AnimatePresence>
@@ -33,7 +36,7 @@ export default function VerificationSection({
           transition={{ duration: 0.7 }}
           className="overflow-hidden mt-4"
         >
-          {/* 인증번호 입력창 (보낼 후) */}
+          {/* 인증번호 입력창 (인증번호를 보낸 후에만 표시) */}
           <AnimatePresence>
             {hasSentCode && (
               <motion.div
@@ -47,23 +50,41 @@ export default function VerificationSection({
                 <label className="block text-sm font-medium mb-1">
                   인증번호 입력
                 </label>
-                <input
-                  ref={verificationCodeInputRef}
-                  type="text"
-                  value={verificationCode}
-                  onChange={(e) => {
-                    setVerificationCode(e.target.value);
-                    setVerificationError("");
-                  }}
-                  className={`w-full px-3 py-1 rounded border focus:outline-none focus:ring text-sm bg-white ${
-                    verificationError?.includes("일치하지 않습니다")
-                      ? "border-red-500 focus:ring-red-200"
-                      : verificationCode.length > 0
-                      ? "border-green-500 focus:ring-green-200"
-                      : "border-gray-300 focus:ring-blue-200"
-                  }`}
-                  placeholder="인증번호 6자리"
-                />
+
+                {/* 인증번호 + 재전송 버튼을 수평으로 배치 */}
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={verificationCodeInputRef}
+                    type="text"
+                    value={verificationCode}
+                    onChange={(e) => {
+                      setVerificationCode(e.target.value);
+                      setVerificationError("");
+                    }}
+                    className={`w-full px-3 py-1 rounded border focus:outline-none focus:ring text-sm bg-white ${
+                      verificationError?.includes("일치하지 않습니다")
+                        ? "border-red-500 focus:ring-red-200"
+                        : verificationCode.length > 0
+                        ? "border-green-500 focus:ring-green-200"
+                        : "border-gray-300 focus:ring-blue-200"
+                    }`}
+                    placeholder="인증번호 6자리"
+                  />
+
+                  {/* 재전송하기 버튼 */}
+                  {onResendCode && (
+                    <button
+                      type="button"
+                      onClick={onResendCode}
+                      className="text-blue-600 underline text-sm"
+                      style={{ whiteSpace: "nowrap" }}
+                    >
+                      재전송하기
+                    </button>
+                  )}
+                </div>
+
+                {/* 인증번호 검증 에러 메시지 */}
                 {verificationError && (
                   <p className="text-red-500 text-sm mt-1">
                     {verificationError}

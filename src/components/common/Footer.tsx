@@ -1,56 +1,193 @@
 // components/Footer.jsx
 "use client";
-import React from "react";
+import React, { useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+
+// 약관 내용이 담긴 파일(예: serviceTerm.ts, privacyTerm.ts 등)에서 가져옵니다.
+// 실제 경로와 export 이름은 프로젝트 구조에 맞게 변경하세요.
+import { SERVICE_TERM_TEXT } from "@/app/terms/serviceTerm";
+import { PRIVACY_TERM_TEXT } from "@/app/terms/privacyTerm";
+import { AUTH_TERM_TEXT } from "@/app/terms/authTerm";
+import { THIRD_PARTY_TERM_TEXT } from "@/app/terms/thirdPartyTerm";
+import { MARKETING_TERM_TEXT } from "@/app/terms/marketingTerm";
+
+export default function Footer() {
+  
+  const [dialogOpen, setDialogOpen] = useState<string | null>(null);
+
+  const getDialogContent = () => {
+    switch (dialogOpen) {
+      case "serviceTerm":
+        return { title: "서비스 이용약관", content: SERVICE_TERM_TEXT };
+      case "privacyTerm":
+        return { title: "개인정보 처리방침", content: PRIVACY_TERM_TEXT };
+      case "authTerm":
+        return { title: "본인인증 관련 동의", content: AUTH_TERM_TEXT };
+      case "thirdPartyTerm":
+        return { title: "개인정보 제3자 제공", content: THIRD_PARTY_TERM_TEXT };
+      case "marketingTerm":
+        return { title: "마케팅 정보 수신 동의", content: MARKETING_TERM_TEXT };
+      default:
+        return { title: "", content: "" };
+    }
+  };
 
 
-const Footer = () => {
+
   return (
-    <footer className="footer bg-base-200 text-base-content p-10">
-      
-      <aside>
-        <svg
-          width="50"
-          height="50"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-          fillRule="evenodd"
-          clipRule="evenodd"
-          className="fill-current"
-        >
-          <path
-            d="M22.672 15.226l-2.432.811.841 2.515c.33 1.019-.209 2.127-1.23 2.456-1.15.325-2.148-.321-2.463-1.226l-.84-2.518-5.013 1.677.84 2.517c.391 1.203-.434 2.542-1.831 2.542-.88 0-1.601-.564-1.86-1.314l-.842-2.516-2.431.809c-1.135.328-2.145-.317-2.463-1.229-.329-1.018.211-2.127 1.231-2.456l2.432-.809-1.621-4.823-2.432.808c-1.355.384-2.558-.59-2.558-1.839 0-.817.509-1.582 1.327-1.846l2.433-.809-.842-2.515c-.33-1.02.211-2.129 1.232-2.458 1.02-.329 2.13.209 2.461 1.229l.842 2.515 5.011-1.677-.839-2.517c-.403-1.238.484-2.553 1.843-2.553.819 0 1.585.509 1.85 1.326l.841 2.517 2.431-.81c1.02-.33 2.131.211 2.461 1.229.332 1.018-.21 2.126-1.23 2.456l-2.433.809 1.622 4.823 2.433-.809c1.242-.401 2.557.484 2.557 1.838 0 .819-.51 1.583-1.328 1.847m-8.992-6.428l-5.01 1.675 1.619 4.828 5.011-1.674-1.62-4.829z"
-          />
-        </svg>
+    <footer className="bg-gray-50 text-gray-600 px-6 py-10">
+      {/* 상단 4개 컬럼 섹션 */}
+      <div className="max-w-screen-xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-sm">
+        {/* 서비스 컬럼 */}
+        <div>
+          <h2 className="mb-4 font-semibold text-gray-800">서비스</h2>
+          <ul className="space-y-2">
+            
+            
+            
+            <li><a className="hover:underline" href="/service/blog">블로그</a></li>
+            <li><a className="hover:underline" href="/service/place">플레이스</a></li>
+          </ul>
+        </div>
+
+        {/* 회사 컬럼 */}
+        <div>
+          <h2 className="mb-4 font-semibold text-gray-800">회사</h2>
+          <ul className="space-y-2">
+            <li><a className="hover:underline" href="/co-info">회사 소개</a></li>
+            <li><a className="hover:underline" href="/faq">자주 묻는 질문</a></li>
+          </ul>
+        </div>
+
+        {/* 문의 컬럼 */}
+        <div>
+          <h2 className="mb-4 font-semibold text-gray-800">문의</h2>
+          <ul className="space-y-2">
+            <li><a className="hover:underline" href="/estimate">견적 문의</a></li>
+          </ul>
+        </div>
+
+        {/* 고객센터 컬럼 */}
+        <div>
+          <h2 className="mb-4 font-semibold text-gray-800">고객센터</h2>
+          <ul className="space-y-2">
+            <li>전화: 070-8064-1793</li>
+            <li>이메일(대표): growthjun@gmail.com</li>
+            <li>개인정보 보호 책임자: 김준석 (010-8079-0063)</li>
+            <li><a className="hover:underline" href="#!">민원 접수</a></li>
+          </ul>
+        </div>
+      </div>
+
+      {/* 구분선 */}
+      <div className="max-w-screen-xl mx-auto mt-8 border-t border-gray-200" />
+
+      {/* 하단 회사 정보 섹션 */}
+      <div className="max-w-screen-xl mx-auto mt-6 text-xs text-gray-500 space-y-2">
         <p>
-          ACME Industries Ltd.
-          <br />
-          Providing reliable tech since 1992
+          <strong className="text-gray-700">㈜라카비</strong> | 사업자등록번호 : 218-20-44209 | 대표 : 오희태
         </p>
-      </aside>
-      <nav>
-        <h6 className="footer-title">Services</h6>
-        <a className="link link-hover">Branding</a>
-        <a className="link link-hover">Design</a>
-        <a className="link link-hover">Marketing</a>
-        <a className="link link-hover">Advertisement</a>
-      </nav>
-      <nav>
-        <h6 className="footer-title">Company</h6>
-        <a className="link link-hover">About us</a>
-        <a className="link link-hover">Contact</a>
-        <a className="link link-hover">Jobs</a>
-        <a className="link link-hover">Press kit</a>
-      </nav>
-      <nav>
-        <h6 className="footer-title">Legal</h6>
-        <a className="link link-hover">Terms of use</a>
-        <a className="link link-hover">Privacy policy</a>
-        <a className="link link-hover">Cookie policy</a>
-      </nav>
-      
-      
+        <p>주소 : 서울특별시 관악구 은천로 25, 7층 b-2호 (봉천동, 정암빌딩)</p>
+        <p>대표 연락처 : 070-8064-1793 | 대표 이메일 : growthjun@gmail.com</p>
+        <p>개인정보 보호 책임자 : 김준석 / 대표이사 / 010-2063-5816</p>
+
+        {/* 약관 링크 (모달 오픈) */}
+        <div className="mt-4 flex flex-wrap gap-4 text-gray-600">
+          <button
+            onClick={() => setDialogOpen("serviceTerm")}
+            className="underline hover:text-gray-800"
+          >
+            서비스 이용약관
+          </button>
+          <button
+            onClick={() => setDialogOpen("privacyTerm")}
+            className="underline hover:text-gray-800"
+          >
+            개인정보 처리방침
+          </button>
+          <button
+            onClick={() => setDialogOpen("authTerm")}
+            className="underline hover:text-gray-800"
+          >
+            본인인증 동의
+          </button>
+          <button
+            onClick={() => setDialogOpen("thirdPartyTerm")}
+            className="underline hover:text-gray-800"
+          >
+            개인정보 제3자 제공
+          </button>
+          <button
+            onClick={() => setDialogOpen("marketingTerm")}
+            className="underline hover:text-gray-800"
+          >
+            마케팅 정보 수신 동의
+          </button>
+        </div>
+
+        <p className="mt-4">
+          <a
+            href="https://www.instagram.com/lakabe_ads"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mr-3 hover:underline"
+          >
+            인스타그램(@lakabe_ads)
+          </a>
+        </p>
+        <p className="text-gray-400 mt-4">
+          ⓒ 2025 LAKABE Corporation. All rights reserved.
+        </p>
+      </div>
+
+      {/* 모달 */}
+      <Transition appear show={dialogOpen !== null} as={React.Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setDialogOpen(null)}>
+          <Transition.Child
+            as={React.Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={React.Fragment}
+                enter="ease-out duration-200"
+                enterFrom="opacity-0 translate-y-4 scale-95"
+                enterTo="opacity-100 translate-y-0 scale-100"
+                leave="ease-in duration-150"
+                leaveFrom="opacity-100 translate-y-0 scale-100"
+                leaveTo="opacity-0 translate-y-4 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title as="h3" className="text-xl font-bold mb-4 text-gray-800">
+                    {getDialogContent().title}
+                  </Dialog.Title>
+                  <div className="h-96 overflow-auto whitespace-pre-wrap text-sm text-gray-700">
+                    {getDialogContent().content}
+                  </div>
+                  <div className="mt-6 text-right">
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      onClick={() => setDialogOpen(null)}
+                    >
+                      닫기
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </footer>
   );
-};
-
-export default Footer;
+}
