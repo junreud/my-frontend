@@ -5,26 +5,31 @@ import FaqDisclosures from "@/components/ui/FaqDisclosures";
 import Navbar from "@/components/common/Navbar";
 import { Container } from "@/components/common/Container";
 import Footer from "@/components/common/Footer";
-export default function FaqPage() {
-  // JSON 파일로부터 불러온 데이터를 저장할 state
-  const [faqData, setFaqData] = useState<{ [key: string]: any[] } | null>(null);
 
-  // 현재 선택된 카테고리
+interface FaqItem {
+  question: string;
+  answer: string;
+}
+
+interface FaqData {
+  [category: string]: FaqItem[];
+}
+
+export default function FaqPage() {
+  const [faqData, setFaqData] = useState<FaqData | null>(null);
   const [category, setCategory] = useState<string>("플레이스");
 
-  // 컴포넌트 마운트 시점에 FAQ JSON 파일 fetch
   useEffect(() => {
-    fetch("/data/faqData.json") // public 폴더 내부는 루트(/) 기준으로 접근 가능
+    fetch("/data/faqData.json")
       .then((res) => res.json())
-      .then((data) => {
+      .then((data: FaqData) => {  // <-- 타입 단언
         setFaqData(data);
       })
       .catch((error) => {
-        console.error("FAQ 데이터를 불러오는 중 오류가 발생했습니다:", error);
+        console.error("FAQ 데이터를 불러오는 중 오류:", error);
       });
   }, []);
 
-  // 로딩 상태 처리 (데이터가 아직 없는 경우)
   if (!faqData) {
     return <div>로딩 중...</div>;
   }
