@@ -19,12 +19,12 @@ import { ChartTwoLines } from "@/components/Dashboard/twolinechart"
 export default function Page() {
   const lines = [
     {
-      dataKey: "desktop",
+      dataKey: "desktop" as const,
       label: "데스크톱",
       stroke: "hsl(var(--chart-1))",
     },
     {
-      dataKey: "mobile",
+      dataKey: "mobile" as const,
       label: "모바일",
       stroke: "hsl(var(--chart-2))",
     },
