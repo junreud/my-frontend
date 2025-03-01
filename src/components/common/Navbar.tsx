@@ -21,7 +21,7 @@ export default function Navbar() {
 
   if (isLoggedIn) {
     // 로그인 상태
-    if (userRole === "admin") {
+    if (userRole === "user") {
       linkUrl = "/admin";
       linkText = "어드민 대시보드";
     } else if (userRole === "user") {
