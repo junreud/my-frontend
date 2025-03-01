@@ -19,10 +19,9 @@ jobs:
         with:
           node-version: 23.7
 
-      - name: Create .env file
+      - name: Create .env
         run: |
-          echo "${{ secrets.PRODUCTION_ENV }}" > .env 
-
+          echo "${{ secrets.PRODUCTION_ENV }}" > .env
       # 4) 프론트엔드 배포 (Next.js 예시)
       - name: Install & Build Frontend
         run: |
