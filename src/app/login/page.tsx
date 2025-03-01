@@ -7,7 +7,7 @@ import  LogInBox from "@/components/LogInPage/LogInBox";
 export default function LoginPage() {
   return (
     <>
-      <LogInNavbar />
+      {/* <LogInNavbar /> */}
       <LogInBox />
     </>
   );
