@@ -33,8 +33,8 @@ export default function MyCombobox() {
 
   return (
     <div className="w-52 mx-auto">
-      <Combobox<Person>
-        //value={selected}
+      <Combobox
+        value={selected}
         onChange={(value) => setSelected(value)}
       >
         <div className="relative">

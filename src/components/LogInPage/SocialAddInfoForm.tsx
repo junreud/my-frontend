@@ -134,7 +134,7 @@ export default function SocialAddInfoForm() {
         return;
       }
 
-      const data = await response.json();
+      await response.json();
       alert("가입(추가정보 등록)이 완료되었습니다!");
 
       // (2) 필요한 경우, 토큰이 응답에 포함되어 있다면 로컬스토리지에 저장
