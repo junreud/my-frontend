@@ -38,7 +38,7 @@ interface ChartDataItem {
 // 2) 라인(Series) 설정 타입
 // -----------------------------
 interface LineSeries {
-  dataKey: keyof ChartDataItem; // "desktop" | "mobile" | 등등
+  dataKey: keyof ChartDataItem; // "desktop" | "mobile" 등
   label: string;                // Tooltip/Legend 등에 쓰일 라벨
   stroke: string;               // 선 색상
 }
@@ -52,9 +52,16 @@ interface ChartTwoLinesProps {
   data: ChartDataItem[];     // 실제 차트 데이터
   lines: LineSeries[];       // 몇 개의 라인을 그릴지 설정
 }
-
+interface CustomAxisTickProps {
+  x?: number;
+  y?: number;
+  payload?: {
+    value: string;  // 여기서 'value'를 문자열로 가정
+    index?: number;
+  };
+}
 // -----------------------------
-// 4) 화면 크기에 따라 tick 표시 갯수 조정하는 훅 (예시)
+// 4) 화면 크기에 따라 tick 표시 갯수 조정 (예시)
 // -----------------------------
 function useIsDesktop() {
   const [isDesktop, setIsDesktop] = useState(false);
@@ -77,7 +84,33 @@ function useIsDesktop() {
 }
 
 // -----------------------------
-// 5) 최종 컴포넌트
+// 5) 커스텀 Tick 컴포넌트
+// -----------------------------
+// 2) 커스텀 Tick 컴포넌트
+function CustomAxisTick({
+  x = 0,
+  y = 0,
+  payload,
+}: CustomAxisTickProps) {
+  if (!payload) return null;
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        transform="rotate(-30)"
+        textAnchor="end"
+        fill="#666"
+        fontSize={12}
+        dy={8}
+      >
+        {payload.value}
+      </text>
+    </g>
+  );
+}
+
+// -----------------------------
+// 6) 최종 컴포넌트
 // -----------------------------
 export function ChartTwoLines({
   title = "부평 헬스장",
@@ -86,6 +119,8 @@ export function ChartTwoLines({
   lines,
 }: ChartTwoLinesProps) {
   const isDesktop = useIsDesktop();
+  // 데스크톱이면 X축 모든 라벨 표시( interval={0} ),
+  // 모바일이면 라벨 일부만( "preserveEnd" )
   const xAxisInterval = isDesktop ? 0 : "preserveEnd";
 
   return (
@@ -104,20 +139,31 @@ export function ChartTwoLines({
             >
               {/* 배경 그리드, 가로선만 표시 */}
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              {/* X축 설정: date 키 사용 */}
+
+              {/* XAxis에서 dataKey="date" 사용 + 커스텀 Tick */}
               <XAxis
                 dataKey="date"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={1}
-                tick={{ angle: -30, textAnchor: "end" }}
+                tick={<CustomAxisTick />}
                 interval={xAxisInterval}
               />
-              {/* Y축 설정: 순위가 낮을수록 높은 값이므로 reversed=true 가능 (옵션) */}
-              <YAxis domain={[0, "dataMax"]} reversed tickLine axisLine tickMargin={10} />
+
+              {/* Y축 설정: 순위가 낮을수록 높은 값 -> reversed 옵션 예시 */}
+              <YAxis
+                domain={[0, "dataMax"]}
+                reversed
+                tickLine
+                axisLine
+                tickMargin={10}
+              />
 
               {/* Tooltip (shadcn 예시) */}
-              <ChartTooltip cursor content={<ChartTooltipContent hideLabel />} />
+              <ChartTooltip
+                cursor
+                content={<ChartTooltipContent hideLabel />}
+              />
 
               {/* 여러 라인을 동적으로 렌더링 */}
               {lines.map((line) => (
