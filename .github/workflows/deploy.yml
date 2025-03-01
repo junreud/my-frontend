@@ -25,13 +25,13 @@ jobs:
       # 4) 프론트엔드 배포 (Next.js 예시)
       - name: Install & Build Frontend
         run: |
-          cd frontend
+          cd my-frontend
           npm install
           npm run build  # Next.js 빌드
           # npm run export (Static export가 필요하다면)
       
       - name: Restart Frontend Server
         run: |
-          cd frontend
+          cd my-frontend
           pm2 stop next-frontend || true
           pm2 start "npm run start" --name next-frontend
