@@ -5,7 +5,7 @@ import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation"; // Next.js의 라우터 훅
 import Link from "next/link"; // Next.js의 라우팅을 위해 next/link 사용
-
+import Image from "next/image"; // Next.js의 이미지 컴포넌트
 
 const LogInBox: React.FC = () => {
   const router = useRouter();
@@ -127,7 +127,9 @@ const LogInBox: React.FC = () => {
             onClick={handleGoogleLogin}
           >
             {/* 아이콘 위치 고정 */}
-            <img
+            <Image
+              width={16}
+              height={16}
               src="/icons/google96.svg"
               alt="Google 로고"
               className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
@@ -146,7 +148,9 @@ const LogInBox: React.FC = () => {
                        hover:opacity-90 bg-[#FEE500] text-black"
             onClick={handleKakaoLogin}
           >
-            <img
+            <Image
+              width={16}
+              height={16}
               src="/icons/kakao-logo.png"
               alt="Kakao 로고"
               className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"

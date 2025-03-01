@@ -2,6 +2,7 @@
 
 import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
 import { useState } from "react";
+import Image from "next/image";
 
 /**
  * 기본 모달 레이아웃 (사진 + 문장)
@@ -99,9 +100,10 @@ export default function Page() {
               {currentContent && (
                 <div className="space-y-4 text-sm text-white/80">
                   {/* 이미지 */}
-                  <img
+                  <Image
                     src={currentContent.imgUrl}
                     alt={currentContent.title}
+                    fill
                     className="w-full h-auto rounded-md"
                   />
 

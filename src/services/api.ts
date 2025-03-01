@@ -76,7 +76,6 @@ interface SignupPayload {
   carrier?: string;
   gender?: string;
   foreigner?: boolean;
-
   // 약관
   agreeServiceTerm?: boolean;
   agreePrivacyTerm?: boolean;
@@ -89,9 +88,16 @@ interface SignupPayload {
   // etc...
 }
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  phone: string;
+  carrier: string;
+}
 export async function signup(payload: SignupPayload): Promise<{
   ok: boolean;
-  user?: any;
+  user?: User;
   message?: string;
 }> {
   try {
@@ -124,7 +130,7 @@ export async function signup(payload: SignupPayload): Promise<{
 export async function login(
   email: string,
   password: string
-): Promise<{ ok: boolean; token?: string; user?: any; message?: string }> {
+): Promise<{ ok: boolean; token?: string; user?: User; message?: string }> {
   try {
     const response = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",
