@@ -5,13 +5,13 @@ import { ReactNode } from "react";;
 import CustomCursor from "@/components/animations/CustomCursor";
 
 export const metadata = {
-  title: "My dd",
+  title: "라카비, 온라인 마케팅 솔루션과 관리를 한 번에",
   description: "tteete",
   openGraph: {
-    title: "My dd - 라카비",
-    description: "tteete - 라카비 소개",
+    title: "라카비, 온라인 마케팅 솔루션과 관리를 한 번에",
+    description: "라카비, 온라인 마케팅 솔루션과 관리를 한 번에",
     url: "https://lakabe.com",
-    siteName: "MySite",
+    siteName: "LAKABE",
     images: [
       {
         url: "https://lakabe.com/og-image.jpg",
@@ -24,8 +24,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "My dd",
-    description: "tteete",
+    title: "라카비, 온라인 마케팅 솔루션과 관리를 한 번에",
+    description: "라카비, 온라인 마케팅 솔루션과 관리를 한 번에",
     images: ["https://lakabe.com/og-image.jpg"],
   },
 };

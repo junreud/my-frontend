@@ -1,11 +1,12 @@
-"use client";
+// app/components/LogInPage/LinkAccountsBox.tsx
+"use client"; // 여기서는 클라이언트 사이드 로직(이벤트 처리, Hooks)을 사용
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface LinkAccountLoginBoxProps {
-  defaultEmail: string; // 중복 이메일 (수정 불가)
-  onSuccess?: () => void; // 성공 시 동작 (선택)
+  defaultEmail: string; // 읽어올 이메일
+  onSuccess?: () => void; // 성공 시 실행할 함수 (선택)
 }
 
 const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
@@ -14,10 +15,11 @@ const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
 }) => {
   const router = useRouter();
 
+  // 클라이언트 사이드 상태 관리
   const [email] = useState(defaultEmail); // readOnly
   const [password, setPassword] = useState("");
 
-  // 중복 계정 연동용 "로그인" 이벤트 핸들러
+  // "로그인" 이벤트 핸들러 (fetch 예시)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -38,11 +40,11 @@ const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
       const data = await res.json();
       alert("로그인 성공: " + data.message);
 
-      // 예: 연동 로직 이후, onSuccess 호출
+      // 연동 로직 이후 동작
       if (onSuccess) {
         onSuccess();
       } else {
-        // or router.push("/dashboard") 등
+        // 예: 대시보드로 이동
         router.push("/dashboard");
       }
     } catch (error) {
@@ -76,7 +78,6 @@ const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
               <label className="block text-xs font-medium text-gray-700">
                 비밀번호
               </label>
-              {/* 여기서 '비밀번호를 잊으셨나요?' 링크가 들어감 */}
               <a
                 href={`/password_reset?email=${encodeURIComponent(email)}`}
                 className="text-xs text-blue-600 hover:underline"

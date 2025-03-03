@@ -1,6 +1,6 @@
 import { Container } from "@/components/common/Container";
 import LogInHeader from "@/components/LogInPage/LogInHeader";
-import IdentityVerificationForm from "@/components/register/IdentityVerificationForm";
+import IdentityVerificationForm from "@/components/SignUp/IdentityVerificationForm";
 
 export default function ResisterPage() {
   return (

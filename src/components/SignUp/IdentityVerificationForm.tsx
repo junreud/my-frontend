@@ -32,15 +32,6 @@ function formatPhoneNumber(raw: string): string {
   return digits.slice(0, 3) + "-" + digits.slice(3, 7) + "-" + digits.slice(7);
 }
 
-function convertBirthday6ToYYYYMMDD(birthday6: string): string {
-  if (birthday6.length !== 6) {
-    return "";
-  }
-  const yy = parseInt(birthday6.slice(0, 2), 10);
-  const prefix = yy <= 22 ? "20" : "19";
-  return prefix + birthday6; // "YYMMDD" -> "19YYMMDD" or "20YYMMDD"
-}
-
 export default function IdentityVerificationForm() {
   // -------------------------------------------------
   // (1) 상태 (State)
@@ -192,14 +183,14 @@ export default function IdentityVerificationForm() {
   // -------------------------------------------------
   const resendSMSCode = async () => {
     try {
-      const birth = convertBirthday6ToYYYYMMDD(birthday6);
+      
       const response = await fetch("http://localhost:4000/auth/send-sms-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           phone: phone.replace(/\D/g, ""),
           name,
-          birth,
+          birthday6,
           operator,
           gender,
           foreigner,
@@ -225,97 +216,104 @@ export default function IdentityVerificationForm() {
   };
 
   // -------------------------------------------------
-  // (8) "인증하기" 또는 "가입하기" 클릭
-  // -------------------------------------------------
-  const onClickFinalButton = async () => {
-    if (!hasSentCode) {
-      // 아직 인증번호 전송 전 => 인증번호 요청
-      try {
-        const birth = convertBirthday6ToYYYYMMDD(birthday6);
-        const response = await fetch("http://localhost:4000/auth/send-sms-code", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: phone.replace(/\D/g, ""),
-            name,
-            birth,
-            operator,
-            gender,
-            foreigner,
-          }),
-        });
+// (8) "인증하기" 또는 "가입하기" 클릭
+// -------------------------------------------------
+const onClickFinalButton = async () => {
+  if (!hasSentCode) {
+    // 아직 인증번호 전송 전 => 인증번호 요청
+    try {
+      /*
+      // [ORIGINAL: 실제 서버로 인증번호 발송 요청]
+      const response = await fetch("http://localhost:4000/auth/send-sms-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: phone.replace(/\D/g, ""),
+          name,
+          birthday6,
+          operator,
+          gender,
+          foreigner,
+        }),
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          alert("인증번호 발송 실패: " + (errorData.message || "서버 오류"));
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert("인증번호 발송 실패: " + (errorData.message || "서버 오류"));
+        return;
+      }
+      */
+
+      // [ADD: 테스트용 코드 - 실제 요청은 주석처리하고 가짜 성공 처리]
+      alert("테스트용: SMS 인증번호 123456 전송했다고 가정합니다.");
+      setHasSentCode(true);
+      setVerificationError("");
+      // 테스트 편의를 위해 바로 6자리 코드까지 입력 상태로 만들어주려면:
+      setVerificationCode("123456");
+
+      setTimeout(() => {
+        verificationCodeInputRef.current?.focus();
+      }, 300);
+    } catch (err) {
+      console.error(err);
+      alert("서버 오류");
+    }
+  } else {
+    // 인증번호 이미 전송됨 -> "가입하기"
+    if (!verificationCode) {
+      setVerificationError("인증번호를 입력해주세요.");
+      return;
+    }
+
+    try {
+      // [ORIGINAL: 실제 서버로 인증번호 검증 + 가입 요청]
+      const response = await fetch("http://localhost:4000/auth/verify-and-signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // 회원 정보
+          email,
+          password,
+          name,
+          birthday6,
+          phone: phone.replace(/\D/g, ""),
+          operator,
+          gender,
+          foreigner,
+          agreeMarketingTerm,
+          // 인증번호
+          verificationCode,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        if (errorData.message === "INVALID_CODE") {
+          setVerificationError("인증번호가 일치하지 않습니다.");
           return;
         }
-        setHasSentCode(true);
-        setVerificationError("");
-
-        setTimeout(() => {
-          verificationCodeInputRef.current?.focus();
-        }, 300);
-      } catch (err) {
-        console.error(err);
-        alert("서버 오류");
-      }
-    } else {
-      // 인증번호 이미 전송됨 -> "가입하기"
-      if (!verificationCode) {
-        setVerificationError("인증번호를 입력해주세요.");
+        alert("가입 실패: " + (errorData.message || "서버 오류"));
         return;
       }
 
-      try {
-        // 백엔드에서 "인증번호 검증 + 가입"을 한 번에 처리하는 라우트 (예: /auth/verify-and-signup)
-        const response = await fetch("http://localhost:4000/auth/verify-and-signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            // 회원 정보
-            email,
-            password,
-            name,
-            birthday6,
-            phone: phone.replace(/\D/g, ""),
-            operator,
-            gender,
-            foreigner,
-            agreeMarketingTerm,
-            // 인증번호
-            verificationCode,
-          }),
-        });
+      const data = await response.json();
+      alert("가입이 완료되었습니다! userId = " + data.user.id);
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          if (errorData.message === "INVALID_CODE") {
-            setVerificationError("인증번호가 일치하지 않습니다.");
-            return;
-          }
-          alert("가입 실패: " + (errorData.message || "서버 오류"));
-          return;
-        }
-
-        const data = await response.json();
-        alert("가입이 완료되었습니다! userId = " + data.user.id);
-
-        // 가입 완료 후 페이지 이동 등
-        // router.push("/somewhere");
-      } catch (err) {
-        console.error(err);
-        alert("서버 오류");
-      }
+      // 가입 완료 후 페이지 이동 등
+      // router.push("/somewhere");
+    } catch (err) {
+      console.error(err);
+      alert("서버 오류");
     }
-  };
+  }
+};
 
   // -------------------------------------------------
   // (9) 렌더링
   // -------------------------------------------------
   return (
     <div className="max-w-md mx-auto p-8 border border-gray-300 rounded-lg bg-white">
-      <h1 className="text-xl font-bold mb-4 p-4">본인인증 가입폼 (예시)</h1>
+      <h1 className="text-xl font-bold mb-4 p-4 text-center">라카비 회원가입</h1>
 
       {/* (1) 이메일 */}
       <EmailInputSection
