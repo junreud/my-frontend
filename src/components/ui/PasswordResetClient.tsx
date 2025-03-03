@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import RecaptchaBox from "@/components/LogInPage/RecaptchaBox";
-import LogInNavbar from "@/components/LogInPage/LogInHeader";
+
 
 export default function PasswordResetClient() {
   // useSearchParams() → 브라우저 URL 쿼리에서 email 파라미터 읽기
@@ -49,7 +49,7 @@ export default function PasswordResetClient() {
 
   return (
     <>
-      <LogInNavbar />
+      
       <div className="min-h-screen bg-white flex flex-col items-center justify-center px-4">
         {/* 카드(컨테이너) */}
         <div className="w-full max-w-md bg-white border border-gray-200 rounded-md shadow-sm p-6">

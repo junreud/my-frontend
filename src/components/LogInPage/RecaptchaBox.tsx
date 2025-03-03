@@ -1,29 +1,30 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
-// 컴포넌트가 받을 props 정의
 interface RecaptchaBoxProps {
-  sitekey: string;                       // 구글 reCAPTCHA 사이트 키
-  onChange: (token: string | null) => void; // 토큰 변경 시 실행할 함수
+  sitekey: string;
+  onChange: (token: string | null) => void;
 }
 
 export default function RecaptchaBox({ sitekey, onChange }: RecaptchaBoxProps) {
-  return (
-    <div className="border border-gray-200 p-4 rounded-md mb-4">
-      {/* 구글 reCAPTCHA 영역 */}
-      <ReCAPTCHA sitekey={sitekey} onChange={onChange} />
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
-      <p className="text-xs text-gray-500 mb-2 mt-2">
-        이 퍼즐을 풀어서 귀하가 인간이라는 것을 알 수 있게 해주십시오
-      </p>
-      <button
-        type="button"
-        className="border border-gray-300 text-sm px-3 py-1 rounded-md hover:bg-gray-100"
-      >
-        확인
-      </button>
-    </div>
+  // 컴포넌트가 마운트되면 자동 실행
+  useEffect(() => {
+    if (recaptchaRef.current) {
+      // invisible 모드이므로, 직접 execute() 호출
+      recaptchaRef.current.execute();
+    }
+  }, []);
+
+  return (
+    <ReCAPTCHA
+      ref={recaptchaRef}
+      sitekey={sitekey}
+      onChange={onChange}   // 토큰이 발급되면 호출
+      size="invisible"      // v3와 유사하게 "보이지 않는" 형태
+    />
   );
 }

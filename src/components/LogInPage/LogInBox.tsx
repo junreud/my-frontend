@@ -164,7 +164,7 @@ const LogInBox: React.FC = () => {
         {/* 회원가입 안내 */}
         <p className="text-center text-xs text-gray-500 mt-4">
           처음이신가요?{" "}
-          <Link href="/register" className="text-blue-600 hover:underline">
+          <Link href="/signup" className="text-blue-600 hover:underline">
             계정 만들기
           </Link>
         </p>

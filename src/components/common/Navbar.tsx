@@ -1,39 +1,46 @@
 "use client";
 
-//TODO : 1. 로그인 상태에 따라 다른 링크/문구 보여주기
-
 import React from "react";
 import Link from "next/link";
 import useScrollDirection from "../../hooks/useScrollDirection";
 import { Container } from "@/components/common/Container";
 
-export default function Navbar() {
+// 예: Navbar에 넘겨줄 유저 정보 타입 (role은 "admin" | "user" | "pending" | undefined)
+interface User {
+  role?: "admin" | "user" | "pending";
+  // 필요하면 여기에 더 추가 (id, name, etc.)
+}
+
+// NavbarProps: user가 null이면 미로그인, 아니면 User 타입
+interface NavbarProps {
+  user: User | null;
+}
+
+export default function Navbar({ user }: NavbarProps) {
   const scrollDirection = useScrollDirection();
 
-  // 지금은 예시 상수, 실제로는 Context/SSR/JWT 등을 통해 받아옴
-  const isLoggedIn = true; // true/false
-  const userRole = "user"; 
-  // "admin" | "user" | "pending" | undefined(미로그인)
+  // 로그인 상태 & role
+  const isLoggedIn = !!user;
+  const userRole = user?.role;
 
-  // 링크 URL/문구
+  // 링크 URL/문구 (초기값: 비로그인)
   let linkUrl = "/login";
   let linkText = "로그인";
 
   if (isLoggedIn) {
     // 로그인 상태
-    if (userRole === "user") {
+    if (userRole === "admin") {
       linkUrl = "/admin";
       linkText = "어드민 대시보드";
     } else if (userRole === "user") {
       linkUrl = "/dashboard";
       linkText = "내업체";
     } else {
-      // 로그인은 했는데 role이 admin/user가 아닐 경우 → 심사중
+      // 로그인은 했는데 admin/user가 아닌 경우 => "심사중" 처리
       linkUrl = "/pending";
       linkText = "심사중";
     }
-  } 
-  // else { (기본값이 로그인 아니면) /login & '로그인' }
+  }
 
   // 드롭다운 항목
   const serviceItems = [

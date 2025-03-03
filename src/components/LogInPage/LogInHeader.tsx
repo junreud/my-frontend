@@ -7,7 +7,7 @@ import Link from "next/link";
 export default function LogInHeader() {
   return (
     <header className="w-full bg-white">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center">
+      <div className="ml-8 max-w-7xl mx-auto px-4 py-4 flex items-center">
         <Link href="/">
           {/* 
             클릭 시 메인으로 이동.
