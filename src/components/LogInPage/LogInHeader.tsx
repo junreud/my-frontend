@@ -3,21 +3,21 @@
 
 import React from "react";
 import Link from "next/link";
+import { Container } from "@/components/common/Container"; // 경로 맞춰서 import
 
 export default function LogInHeader() {
   return (
-    <header className="w-full bg-white">
-      <div className="ml-8 max-w-7xl mx-auto px-4 py-4 flex items-center">
-        <Link href="/">
-          {/* 
-            클릭 시 메인으로 이동.
-            Tailwind 스타일로 간단히 강조
-          */}
-          <span className="text-xl cursor-pointer">
-            LAKABE
-          </span>
-        </Link>
-      </div>
+    // 고정(Fixed) 속성 추가
+    <header className="w-full bg-white fixed top-0 left-0 z-50">
+      <Container>
+        <div className="py-4 flex items-center">
+          <Link href="/">
+            <span className="text-xl cursor-pointer">
+              LAKABE
+            </span>
+          </Link>
+        </div>
+      </Container>
     </header>
   );
 }

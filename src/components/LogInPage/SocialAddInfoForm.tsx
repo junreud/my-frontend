@@ -36,27 +36,36 @@ export default function SocialAddInfoForm() {
   const [gender, setGender] = useState<"MALE" | "FEMALE" | "">("");
   const [foreigner, setForeigner] = useState(false);
 
+  // (추가) 소셜 로그인 타입 (kakao, google 등)
+  const [provider, setProvider] = useState("");
+
   // -----------------------------
   // [2] 약관 동의 상태
   //     (4개 필수 + 1개 선택 + 전체동의)
   // -----------------------------
   const [agreeAll, setAgreeAll] = useState(false);
-  const [agreeServiceTerm, setAgreeServiceTerm] = useState(false);     // (필수)
-  const [agreePrivacyTerm, setAgreePrivacyTerm] = useState(false);     // (필수)
-  const [agreeAuthTerm, setAgreeAuthTerm] = useState(false);           // (필수)
+  const [agreeServiceTerm, setAgreeServiceTerm] = useState(false);      // (필수)
+  const [agreePrivacyTerm, setAgreePrivacyTerm] = useState(false);      // (필수)
+  const [agreeAuthTerm, setAgreeAuthTerm] = useState(false);            // (필수)
   const [agreeThirdPartyTerm, setAgreeThirdPartyTerm] = useState(false); // (필수)
-  const [agreeMarketingTerm, setAgreeMarketingTerm] = useState(false); // (선택)
+  const [agreeMarketingTerm, setAgreeMarketingTerm] = useState(false);  // (선택)
 
   // 약관 세부내용 펼치기/접기
   const [showTermsDetail, setShowTermsDetail] = useState(false);
 
   // -----------------------------
-  // [3] url 파라미터에서 이메일 받기
+  // [3] url 파라미터에서 email, provider 받기 (수정됨)
   // -----------------------------
   useEffect(() => {
     const emailFromUrl = searchParams.get("email");
     if (emailFromUrl) {
       setEmail(emailFromUrl);
+    }
+
+    // provider도 URL 쿼리에서 가져오기
+    const providerFromUrl = searchParams.get("provider");
+    if (providerFromUrl) {
+      setProvider(providerFromUrl);
     }
   }, [searchParams]);
 
@@ -108,8 +117,7 @@ export default function SocialAddInfoForm() {
       !agreeMarketingTerm
     ) {
       // 선택항목만 빼고 모두 true일 수도...
-      // 이 경우엔 전체동의를 false로 둘지, true로 둘지 정책에 따라 다름
-      // 여기선 마케팅도 같이 체크해야 agreeAll을 true로 간주.
+      // 여기선 마케팅까지 체크해야 전체동의로 간주
       setAgreeAll(false);
     } else {
       setAgreeAll(false);
@@ -151,6 +159,8 @@ export default function SocialAddInfoForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // (추가) provider 값도 전송
+          provider,
           email,
           name,
           birthday6,
@@ -158,9 +168,8 @@ export default function SocialAddInfoForm() {
           carrier,
           gender,
           foreigner,
-          
+
           // 실제 백엔드에는 마케팅 동의만 전송
-          // (필수약관은 DB에 저장 안 하더라도 가입 진행 가능)
           agreeMarketingTerm,
         }),
       });

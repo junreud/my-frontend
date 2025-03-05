@@ -1,3 +1,7 @@
+// src/app/dashboard/page.tsx
+
+"use client";
+
 import { AppSidebar } from "@/components/Dashboard/app-sidebar"
 import {
   Breadcrumb,
@@ -13,10 +17,39 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import  MyCalendarPage  from "@/components/ui/Calendar"
+import MyCalendarPage from "@/components/ui/Calendar"
 import { ChartTwoLines } from "@/components/Dashboard/twolinechart"
+import { useRouter } from "next/navigation" // 클라이언트 라우팅 훅
+import { useEffect, useState } from "react"
 
-export default function Page() {
+export default function DashboardPage() {
+  const router = useRouter();
+  const [checkDone, setCheckDone] = useState(false);
+
+  useEffect(() => {
+    // 여기서는 더 이상 쿼리 파라미터 처리 안 해도 됨!
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      router.replace("/login");
+    } else {
+      setCheckDone(true);
+    }
+  }, [router]);
+
+  // (2) 로딩 스피너 표시
+  if (!checkDone) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        {/* Tailwind 예시: 회전 애니메이션으로 로딩 원 만들기 */}
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-solid border-gray-300 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // ---------------------------
+  // (3) 여기부터 "로그인된 사용자"만 보게 될 내용
+  // ---------------------------
+
   const lines = [
     {
       dataKey: "desktop" as const,
@@ -28,40 +61,16 @@ export default function Page() {
       label: "모바일",
       stroke: "hsl(var(--chart-2))",
     },
-  ];
-  
-  
+  ]
+
   const chartData = [
     { date: "12.04", desktop: 71, mobile: 80 },
     { date: "12.05", desktop: 71, mobile: 80 },
     { date: "12.06", desktop: 73, mobile: 80 },
-    { date: "12.07", desktop: 43, mobile: 80 },
-    { date: "12.08", desktop: 43, mobile: 80 },
-    { date: "12.09", desktop: 27, mobile: 80 },
-    { date: "12.10", desktop: 21, mobile: 80 },
-    { date: "12.11", desktop: 15, mobile: 80 },
-    { date: "12.12", desktop: 15, mobile: 80 },
-    { date: "12.13", desktop: 14, mobile: 80 },
-    { date: "12.14", desktop: 14, mobile: 80 },
-    { date: "12.15", desktop: 11, mobile: 80 },
-    { date: "12.16", desktop: 11, mobile: 80 },
-    { date: "12.17", desktop: 11, mobile: 80 },
-    { date: "12.18", desktop: 13, mobile: 80 },
-    { date: "12.19", desktop: 12, mobile: 80 },
-    { date: "12.20", desktop: 12, mobile: 80 },
-    { date: "12.21", desktop: 10, mobile: 80 },
-    { date: "12.22", desktop: 6, mobile: 80 },
-    { date: "12.23", desktop: 7, mobile: 80 },
-    { date: "12.24", desktop: 5, mobile: 80 },
-    { date: "12.25", desktop: 4, mobile: 80 },
-    { date: "12.26", desktop: 3, mobile: 80 },
-    { date: "12.27", desktop: 4, mobile: 80 },
-    { date: "12.28", desktop: 3, mobile: 80 },
-    { date: "12.29", desktop: 4, mobile: 80 },
-    { date: "12.30", desktop: 3, mobile: 80 },
+    // ...
     { date: "12.31", desktop: 3, mobile: 1 },
-  ];
-  
+  ]
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -73,20 +82,19 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">
-                    LAKABE
-                  </BreadcrumbLink>
+                  <BreadcrumbLink href="/">LAKABE</BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>Home</BreadcrumbPage>
-                  </BreadcrumbItem>
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Home</BreadcrumbPage>
+                </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
+
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        {/* 1) 위쪽 그리드 (aspect-video) */}
+          {/* 1) 위쪽 그리드 (aspect-video) */}
           <div className="grid auto-rows-min gap-4 md:grid-cols-3">
             <div className="aspect-video rounded-xl bg-muted/50" />
             <div className="aspect-video rounded-xl bg-muted/50" />
@@ -96,13 +104,13 @@ export default function Page() {
           {/* 2) 스크롤 스내핑 영역 */}
           <div className="fle flex-col snap-y snap-mandatory">
             {/* (1) 첫 번째 스크린 */}
-            <div className="h-[90vh] mb-4 snap-start rounded-xl bg-muted/50">
+            <div className="mb-4 h-[90vh] snap-start rounded-xl bg-muted/50">
               <MyCalendarPage />
             </div>
 
             {/* (2) 두 번째 스크린 */}
             <div className="h-[90vh] snap-start rounded-xl bg-muted/50">
-              <ChartTwoLines 
+              <ChartTwoLines
                 title="부평 헬스장"
                 description="2021년 1월 ~ 6월 매출"
                 data={chartData}
@@ -111,9 +119,6 @@ export default function Page() {
             </div>
           </div>
         </div>
-
-
-        
       </SidebarInset>
     </SidebarProvider>
   )
