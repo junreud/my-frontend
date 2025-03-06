@@ -60,8 +60,7 @@ export default function LoginPage() {
   return (
     <div className="bg-white min-h-screen flex flex-col">
       <LogInHeader />
-      <main className="flex-grow">
-        {/* LogInBox에다가 onSubmit 콜백으로 handleLocalLogin 연결 (예시) */}
+      <main>
         <LogInBox onLogin={handleLocalLogin} />
       </main>
     </div>

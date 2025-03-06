@@ -1,87 +1,43 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import EmailInputSection from "./EmailInputSection";
-import PasswordInputSection from "./PasswordInputSection";
-import BasicInfoSection from "./BasicInfoSection";
-import TermsAgreeSection from "./TermsAgreeSection";
-import VerificationSection from "./VerificationSection";
-import TermsDialogGroup from "./TermsDialogGroup";
-
+import React, { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { checkEmailAvailability as apiCheckEmailAvailability } from "@/services/api";
-
-// --------- 타입 정의 (예시) -----------
-export type DialogOpenType =
-  | "serviceTerm"
-  | "privacyTerm"
-  | "authTerm"
-  | "thirdPartyTerm"
-  | "marketingTerm"
-  | null;
-
-// --------- 유틸 함수 (휴대폰번호, 생년월일 포맷 등) -----------
-function formatPhoneNumber(raw: string): string {
-  let digits = raw.replace(/\D/g, "");
-  if (digits.length > 11) {
-    digits = digits.slice(0, 11);
-  }
-  if (digits.length < 4) return digits;
-  if (digits.length < 8) {
-    return digits.slice(0, 3) + "-" + digits.slice(3);
-  }
-  return digits.slice(0, 3) + "-" + digits.slice(3, 7) + "-" + digits.slice(7);
-}
 
 export default function IdentityVerificationForm() {
   // -------------------------------------------------
-  // (1) 상태 (State)
+  // [A] 이메일 관련 상태
   // -------------------------------------------------
   const [email, setEmail] = useState("");
-  const [isEmailValid, setIsEmailValid] = useState(false);
   const [emailError, setEmailError] = useState("");
+  const [isEmailValid, setIsEmailValid] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
 
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const emailInputClass = () => {
+    if (email && isEmailValid && !emailError) {
+      return "border-green-500 focus:ring-green-200";
+    }
+    if (emailError) {
+      return "border-red-500 focus:ring-red-200";
+    }
+    return "border-gray-300 focus:ring-blue-200";
+  };
 
-  const [name, setName] = useState("");
-  const [birthday6, setBirthday6] = useState("");
-  const [phone, setPhone] = useState("");
-  const [phoneError, setPhoneError] = useState("");
-  const [operator, setOperator] = useState("");
-  const [gender, setGender] = useState<"MALE" | "FEMALE" | "">("");
-  const [foreigner, setForeigner] = useState(false);
-
-  // 약관
-  const [agreeAll, setAgreeAll] = useState(false);
-  const [agreeServiceTerm, setAgreeServiceTerm] = useState(false);
-  const [agreePrivacyTerm, setAgreePrivacyTerm] = useState(false);
-  const [agreeAuthTerm, setAgreeAuthTerm] = useState(false);
-  const [agreeThirdPartyTerm, setAgreeThirdPartyTerm] = useState(false);
-  const [agreeMarketingTerm, setAgreeMarketingTerm] = useState(false);
-
-  const [dialogOpen, setDialogOpen] = useState<DialogOpenType>(null);
-
-  // SMS 인증
-  const [hasSentCode, setHasSentCode] = useState(false);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [verificationError, setVerificationError] = useState("");
-  const verificationCodeInputRef = useRef<HTMLInputElement>(null!);
-
-  // -------------------------------------------------
-  // (2) 이메일 중복확인
-  // -------------------------------------------------
   const validateEmail = async (value: string) => {
     setEmail(value);
     setEmailError("");
     setIsEmailValid(false);
 
+    // (1) 이메일 형식 체크
     const regex = /\S+@\S+\.\S+/;
     if (!regex.test(value)) {
       setEmailError("이메일 형식이 올바르지 않습니다.");
       return;
     }
 
+    // (2) 중복확인 API
     const available = await apiCheckEmailAvailability(value);
     if (!available) {
       setEmailError("이미 가입된 이메일입니다.");
@@ -90,301 +46,455 @@ export default function IdentityVerificationForm() {
     setIsEmailValid(true);
   };
 
-  // -------------------------------------------------
-  // (3) 비밀번호 체크
-  // -------------------------------------------------
-  const passwordRegex =
-    /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()_+|}{":;'?/>.<,]).{8,}$/;
+  const handleEmailBlur = () => {
+    if (!email) {
+      setIsEmailFocused(false);
+    }
+    validateEmail(email);
+  };
 
+  // -------------------------------------------------
+  // [B] 비밀번호 관련 상태 & 로직
+  // -------------------------------------------------
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [isConfirmFocused, setIsConfirmFocused] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+
+  // 규칙: 10글자 이상
+  const hasMinLength = password.length >= 10;
+  // 규칙: 특수문자 포함
+  const hasSpecialChar = /[!@#$%^&*()_+|}{":;'?/>.<,]/.test(password);
+  // 모든 규칙 충족 여부
+  const isAllRulesPassed = hasMinLength && hasSpecialChar;
+  // 비밀번호 확인 일치
+  const hasMatch = password === confirmPassword;
+
+  // (B-1) 비밀번호 변경
   const handlePasswordChange = (value: string) => {
     setPassword(value);
-    setPasswordError("");
-    if (!passwordRegex.test(value)) {
-      setPasswordError("영문+숫자+특수문자를 포함해 8자 이상이어야 합니다.");
-    }
   };
-
+  // (B-2) 비밀번호 확인 변경
   const handleConfirmPasswordChange = (value: string) => {
     setConfirmPassword(value);
-    if (password && value && password !== value) {
-      setPasswordError("비밀번호가 일치하지 않습니다.");
-    } else {
-      if (passwordError === "비밀번호가 일치하지 않습니다.") {
-        setPasswordError("");
-      }
-    }
   };
 
-  // -------------------------------------------------
-  // (4) 휴대전화
-  // -------------------------------------------------
-  const handlePhoneChange = (value: string) => {
-    setPhoneError("");
-    const formatted = formatPhoneNumber(value);
-    setPhone(formatted);
-    const digits = formatted.replace(/\D/g, "");
-    if (digits.length < 10) {
-      setPhoneError("휴대전화 번호가 올바르지 않습니다.");
+  // (B-3) 라벨 애니메이션 + 테두리 색상
+  const passwordInputClass = () => {
+    if (password && isAllRulesPassed) {
+      return "border-green-500 focus:ring-green-200";
     }
+    return "border-gray-300 focus:ring-blue-200";
+  };
+  const confirmPasswordInputClass = () => {
+    if (confirmPassword && hasMatch) {
+      return "border-green-500 focus:ring-green-200";
+    }
+    return "border-gray-300 focus:ring-blue-200";
   };
 
-  // -------------------------------------------------
-  // (5) 약관 전체 동의
-  // -------------------------------------------------
-  useEffect(() => {
-    if (
-      agreeServiceTerm &&
-      agreePrivacyTerm &&
-      agreeAuthTerm &&
-      agreeThirdPartyTerm
-    ) {
-      setAgreeAll(true);
-    } else {
-      setAgreeAll(false);
-    }
-  }, [agreeServiceTerm, agreePrivacyTerm, agreeAuthTerm, agreeThirdPartyTerm]);
-
-  const handleAgreeAllChange = (checked: boolean) => {
-    setAgreeAll(checked);
-    setAgreeServiceTerm(checked);
-    setAgreePrivacyTerm(checked);
-    setAgreeAuthTerm(checked);
-    setAgreeThirdPartyTerm(checked);
-    setAgreeMarketingTerm(checked);
+  const handlePasswordBlur = () => {
+    if (!password) setIsPasswordFocused(false);
+  };
+  const handleConfirmBlur = () => {
+    if (!confirmPassword) setIsConfirmFocused(false);
   };
 
-  // -------------------------------------------------
-  // (6) 전체 필드 유효성
-  // -------------------------------------------------
-  const allFieldsValid = () => {
-    if (!isEmailValid || emailError) return false;
-    if (!password || passwordError) return false;
-    if (!confirmPassword || confirmPassword !== password) return false;
-    if (!name) return false;
-    if (!birthday6 || birthday6.length < 6) return false;
-    if (!phone || phoneError) return false;
-    if (!operator) return false;
-    if (!gender) return false;
-    // 필수 약관
-    if (
-      !agreeServiceTerm ||
-      !agreePrivacyTerm ||
-      !agreeAuthTerm ||
-      !agreeThirdPartyTerm
-    ) {
-      return false;
-    }
-    return true;
-  };
+  // 규칙 박스에서 "비밀번호 일치" 항목을 표시할지 여부
+  const showMatchItem =
+    isAllRulesPassed && (confirmPassword.length > 0 || isConfirmFocused);
 
   // -------------------------------------------------
-  // (7) SMS 인증 재전송
+  // [C] 인증번호 관련 상태
   // -------------------------------------------------
-  const resendSMSCode = async () => {
+  // (1) '인증하기' 버튼 클릭 후, 인증번호 입력 섹션을 열지 여부
+  const [showVerificationInput, setShowVerificationInput] = useState(false);
+  // (2) 사용자 입력 인증번호
+  const [verificationCode, setVerificationCode] = useState("");
+
+  // (C-1) '인증하기' 버튼 클릭 => /auth/signup 호출, 인증 메일 발송
+  const handleAuthClick = async () => {
+    // (1) 조건 모두 충족해야 진행
+    if (!isEmailValid || !isAllRulesPassed || !hasMatch) {
+      return;
+    }
+
     try {
-      const response = await fetch("http://localhost:4000/auth/phone/send", {
+      // (2) 서버에 signup 요청 -> 인증 메일 발송 & Redis 저장
+      const response = await fetch("http://localhost:4000/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: phone.replace(/\D/g, ""), 
-          name,
-          birthday6,
-          operator,
-          gender,
-          foreigner,
-        }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        alert("재전송 실패: " + (errorData.message || "서버 오류"));
+        alert("인증 이메일 발송 실패 (이미 가입된 이메일이거나 서버 에러 등)");
         return;
       }
 
-      alert("인증번호를 다시 보냈습니다.");
-      setVerificationError("");
-      setVerificationCode("");
-      setTimeout(() => {
-        verificationCodeInputRef.current?.focus();
-      }, 300);
+      // (3) 인증번호 입력 섹션 열기
+      alert("인증 이메일이 발송되었습니다. 메일 내 코드를 확인 후 입력하세요.");
+      setShowVerificationInput(true);
     } catch (err) {
       console.error(err);
       alert("서버 오류");
     }
   };
 
-  // -------------------------------------------------
-  // (8) "인증하기" 또는 "가입하기" 클릭
-  // -------------------------------------------------
-  const onClickFinalButton = async () => {
-    if (!hasSentCode) {
-      // 1) 아직 인증번호 전송 전 => 먼저 /phone/send 호출
-      try {
-        const response = await fetch("http://localhost:4000/auth/phone/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: phone.replace(/\D/g, ""),
-          }),
-        });
+  // (C-2) '인증번호 확인' 버튼 클릭 => /auth/verify 호출
+  const handleVerifyCode = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: verificationCode }),
+      });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          alert("인증번호 발송 실패: " + (errorData.message || "서버 오류"));
-          return;
-        }
-
-        // 전송 성공
-        alert("인증번호가 발송되었습니다.");
-        setHasSentCode(true);
-        setVerificationError("");
-
-        // focus 이동
-        setTimeout(() => {
-          verificationCodeInputRef.current?.focus();
-        }, 300);
-      } catch (err) {
-        console.error(err);
-        alert("서버 오류");
-      }
-    } else {
-      // 2) 인증번호 이미 전송됨 -> 이제 /phone/verify 로 검증 & 가입
-      if (!verificationCode) {
-        setVerificationError("인증번호를 입력해주세요.");
+      if (!response.ok) {
+        alert("인증번호 검증 실패! 다시 시도해주세요.");
         return;
       }
 
-      try {
-        const response = await fetch("http://localhost:4000/auth/phone/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            // 회원 기본 정보
-            email,
-            password,
-            name,
-            birthday6,
-            phone: phone.replace(/\D/g, ""),
-            operator,
-            gender,
-            foreigner,
-            agreeMarketingTerm,
-            // 인증번호
-            code: verificationCode,
-          }),
-        });
+      const data = await response.json();
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          if (errorData.message === "INVALID_CODE") {
-            setVerificationError("인증번호가 일치하지 않습니다.");
-            return;
-          }
-          alert("가입(인증) 실패: " + (errorData.message || "서버 오류"));
-          return;
-        }
-
-        // 성공
-        const data = await response.json();
-        alert("가입이 완료되었습니다! userId = " + data.user?.id);
-
-        // 가입 완료 후 페이지 이동 등
-        // router.push("/somewhere");
-      } catch (err) {
-        console.error(err);
-        alert("서버 오류");
+      alert("인증 성공! 가입이 완료되었습니다.");
+      if (data.redirectUrl) {
+        // Next.js 라우터(예: next/router)나 window.location.assign 등
+        // 원하는 방법으로 이동
+        window.location.href = data.redirectUrl;
       }
+    } catch (err) {
+      console.error(err);
+      alert("서버 오류!");
     }
   };
 
   // -------------------------------------------------
-  // (9) 렌더링
+  // [D] 소셜 로그인
+  // -------------------------------------------------
+  const handleGoogleLogin = () => {
+    window.location.href = "http://localhost:4000/auth/google";
+  };
+  const handleKakaoLogin = () => {
+    window.location.href = "http://localhost:4000/auth/kakao";
+  };
+
+  // -------------------------------------------------
+  // [E] 렌더링
   // -------------------------------------------------
   return (
-    <div className="max-w-md mx-auto p-8 border border-gray-300 rounded-lg bg-white">
-      <h1 className="text-xl font-bold mb-4 p-4 text-center">라카비 회원가입</h1>
+    <div 
+      // 상단 정렬(예시). 중앙 정렬(items-center) 시 높이 변동 시 폼이 흔들릴 수 있음
+      className="min-h-screen bg-white flex flex-col items-start pt-12 mt-24"
+    >
+      <div className="w-full max-w-[280px] mx-auto p-4">
+        {/* 상단 타이틀 */}
+        <h1 className="text-xl font-semibold mb-8 text-center">계정 만들기</h1>
 
-      {/* (1) 이메일 입력 섹션 */}
-      <EmailInputSection
-        email={email}
-        setEmail={setEmail}
-        emailError={emailError}
-        validateEmail={validateEmail}
-        isEmailValid={isEmailValid}
-      />
+        {/* 이메일 입력 */}
+        <div className="mb-3">
+          <div className="relative">
+            <AnimatePresence>
+              {(isEmailFocused || email) && (
+                <motion.label
+                  key="emailLabel"
+                  initial={{ y: 8, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 8, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none bg-white px-1"
+                  style={{ zIndex: 1 }}
+                >
+                  이메일 주소
+                </motion.label>
+              )}
+            </AnimatePresence>
 
-      {/* (2) 비밀번호 입력 섹션 */}
-      <PasswordInputSection
-        password={password}
-        setPassword={handlePasswordChange}
-        passwordError={passwordError}
-        confirmPassword={confirmPassword}
-        setConfirmPassword={handleConfirmPasswordChange}
-      />
+            <motion.input
+              type="email"
+              placeholder={isEmailFocused || email ? "" : "이메일 주소"}
+              className={`w-full px-3 py-3 rounded border focus:outline-none focus:ring text-sm bg-white ${emailInputClass()}`}
+              value={email}
+              onFocus={() => setIsEmailFocused(true)}
+              onBlur={handleEmailBlur}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+        </div>
 
-      {/* (3) 기본정보 입력 섹션 */}
-      <BasicInfoSection
-        isEmailValid={isEmailValid}
-        emailError={emailError}
-        password={password}
-        passwordError={passwordError}
-        confirmPassword={confirmPassword}
-        name={name}
-        setName={setName}
-        birthday6={birthday6}
-        setBirthday6={setBirthday6}
-        phone={phone}
-        handlePhoneChange={handlePhoneChange}
-        phoneError={phoneError}
-        operator={operator}
-        setOperator={setOperator}
-        gender={gender}
-        setGender={setGender}
-        foreigner={foreigner}
-        setForeigner={setForeigner}
-      />
+        {/* 비밀번호 입력 */}
+        <div className="mb-3">
+          <div className="relative">
+            <AnimatePresence>
+              {(isPasswordFocused || password) && (
+                <motion.label
+                  key="passwordLabel"
+                  initial={{ y: 8, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 8, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none bg-white px-1"
+                  style={{ zIndex: 1 }}
+                >
+                  비밀번호
+                </motion.label>
+              )}
+            </AnimatePresence>
 
-      {/* (4) 약관 동의 섹션 */}
-      <TermsAgreeSection
-        isEmailValid={isEmailValid}
-        emailError={emailError}
-        password={password}
-        passwordError={passwordError}
-        confirmPassword={confirmPassword}
-        agreeAll={agreeAll}
-        handleAgreeAllChange={handleAgreeAllChange}
-        agreeServiceTerm={agreeServiceTerm}
-        setAgreeServiceTerm={setAgreeServiceTerm}
-        agreePrivacyTerm={agreePrivacyTerm}
-        setAgreePrivacyTerm={setAgreePrivacyTerm}
-        agreeAuthTerm={agreeAuthTerm}
-        setAgreeAuthTerm={setAgreeAuthTerm}
-        agreeThirdPartyTerm={agreeThirdPartyTerm}
-        setAgreeThirdPartyTerm={setAgreeThirdPartyTerm}
-        agreeMarketingTerm={agreeMarketingTerm}
-        setAgreeMarketingTerm={setAgreeMarketingTerm}
-        dialogOpen={dialogOpen}
-        setDialogOpen={setDialogOpen}
-      />
+            <motion.input
+              type={isPasswordVisible ? "text" : "password"}
+              placeholder={
+                isPasswordFocused || password ? "" : "비밀번호"
+              }
+              className={`w-full px-3 py-3 pr-10 rounded border focus:outline-none focus:ring text-sm bg-white ${passwordInputClass()}`}
+              value={password}
+              onFocus={() => setIsPasswordFocused(true)}
+              onBlur={handlePasswordBlur}
+              onChange={(e) => handlePasswordChange(e.target.value)}
+            />
 
-      {/* (5) 인증/가입 섹션 */}
-      <VerificationSection
-        allFieldsValid={allFieldsValid}
-        hasSentCode={hasSentCode}
-        onClickFinalButton={onClickFinalButton}
-        verificationCode={verificationCode}
-        setVerificationCode={setVerificationCode}
-        verificationError={verificationError}
-        setVerificationError={setVerificationError}
-        verificationCodeInputRef={verificationCodeInputRef}
-        onResendCode={resendSMSCode}
-      />
+            <button
+              type="button"
+              onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-500"
+            >
+              {isPasswordVisible ? "숨기기" : "보이기"}
+            </button>
+          </div>
+        </div>
 
-      {/* (6) 약관 모달들 */}
-      <TermsDialogGroup
-        dialogOpen={dialogOpen}
-        setDialogOpen={setDialogOpen}
-      />
+        {/* 비밀번호 규칙 박스 */}
+        <AnimatePresence>
+          {(password.length > 0 || isPasswordFocused) && (
+            <motion.div
+              key="passwordRules"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ overflow: "hidden" }}
+              className="mb-3 p-3 border border-gray-200 rounded bg-gray-50 text-sm"
+            >
+              <p className="font-semibold mb-2 text-gray-600">비밀번호 규칙</p>
+
+              {/* 규칙 1: 10글자 이상 */}
+              <div className="flex items-center mb-1">
+                {hasMinLength ? (
+                  <span className="text-green-500 mr-2">✔</span>
+                ) : (
+                  <span className="text-gray-500 mr-2">-</span>
+                )}
+                <span className={hasMinLength ? "text-green-700" : "text-red-700"}>
+                  10글자 이상
+                </span>
+              </div>
+
+              {/* 규칙 2: 특수문자 포함 */}
+              <div className="flex items-center">
+                {hasSpecialChar ? (
+                  <span className="text-green-500 mr-2">✔</span>
+                ) : (
+                  <span className="text-gray-500 mr-2">-</span>
+                )}
+                <span className={hasSpecialChar ? "text-green-700" : "text-red-700"}>
+                  특수문자 포함
+                </span>
+              </div>
+
+              {/* 규칙 3: 비밀번호 확인 일치여부 */}
+              <AnimatePresence>
+                {showMatchItem && (
+                  <motion.div
+                    key="matchItem"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center mt-1 overflow-hidden"
+                  >
+                    {hasMatch ? (
+                      <>
+                        <span className="text-green-500 mr-2">✔</span>
+                        <span className="text-green-700">비밀번호가 일치합니다.</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-red-500 mr-2">✘</span>
+                        <span className="text-red-700">비밀번호가 일치하지 않습니다.</span>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 비밀번호 확인 */}
+        <AnimatePresence>
+          {password.length > 0 && (
+            <motion.div
+              key="confirmPassword"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-3"
+            >
+              <div className="relative">
+                <AnimatePresence>
+                  {(isConfirmFocused || confirmPassword) && (
+                    <motion.label
+                      key="confirmPasswordLabel"
+                      initial={{ y: 8, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 8, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none bg-white px-1"
+                      style={{ zIndex: 1 }}
+                    >
+                      비밀번호 확인
+                    </motion.label>
+                  )}
+                </AnimatePresence>
+
+                <motion.input
+                  type={isConfirmVisible ? "text" : "password"}
+                  placeholder={
+                    isConfirmFocused || confirmPassword ? "" : "비밀번호 확인"
+                  }
+                  className={`w-full px-3 py-3 pr-10 rounded border focus:outline-none focus:ring text-sm bg-white ${confirmPasswordInputClass()}`}
+                  value={confirmPassword}
+                  onFocus={() => setIsConfirmFocused(true)}
+                  onBlur={handleConfirmBlur}
+                  onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmVisible(!isConfirmVisible)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-500"
+                >
+                  {isConfirmVisible ? "숨기기" : "보이기"}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* (C-1) '인증하기' 버튼 */}
+        {!showVerificationInput && (
+          <button
+            className="mt-4 w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded 
+                       disabled:bg-gray-300 disabled:cursor-not-allowed"
+            onClick={handleAuthClick}
+            disabled={!isEmailValid || !isAllRulesPassed || !hasMatch}
+          >
+            인증하기
+          </button>
+        )}
+
+        {/* (C-2) 인증번호 입력 섹션 & '인증번호 확인' 버튼 */}
+        <AnimatePresence>
+          {showVerificationInput && (
+            <motion.div
+              key="verifySection"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mt-4"
+              style={{ overflow: "hidden" }}
+            >
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  인증번호 입력
+                </label>
+                <input
+                  type="text"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring text-sm"
+                  placeholder="인증번호 6자리"
+                />
+              </div>
+
+              <button
+                className="w-full py-2 bg-blue-500 text-white rounded 
+                           disabled:bg-gray-300 disabled:cursor-not-allowed"
+                onClick={handleVerifyCode}
+                disabled={!verificationCode}
+              >
+                인증번호 확인
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 구분선 */}
+        <div className="my-4 flex items-center">
+          <hr className="flex-grow border-gray-300" />
+          <span className="mx-2 text-gray-400 text-xs">또는</span>
+          <hr className="flex-grow border-gray-300" />
+        </div>
+
+        {/* 소셜 로그인 버튼 그룹 */}
+        <div className="space-y-2">
+          <button
+            className="relative w-full h-7 border border-gray-300 
+                       rounded-md hover:bg-gray-50"
+            onClick={handleGoogleLogin}
+          >
+            <Image
+              width={16}
+              height={16}
+              src="/icons/google96.svg"
+              alt="Google 로고"
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+            />
+            <span
+              className="absolute left-1/2 top-1/2 
+                         -translate-x-1/2 -translate-y-1/2 
+                         text-sm font-medium"
+            >
+              Google로 시작하기
+            </span>
+          </button>
+
+          <button
+            className="relative w-full h-7 rounded-md
+                       hover:opacity-90 bg-[#FEE500] text-black"
+            onClick={handleKakaoLogin}
+          >
+            <Image
+              width={16}
+              height={16}
+              src="/icons/kakao-logo.png"
+              alt="Kakao 로고"
+              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+            />
+            <span
+              className="absolute left-1/2 top-1/2 
+                         -translate-x-1/2 -translate-y-1/2 
+                         text-sm font-medium"
+            >
+              카카오로 시작하기
+            </span>
+          </button>
+        </div>
+
+        {/* 하단부: 이미 회원이라면 로그인 유도 */}
+        <p className="text-center text-xs text-gray-500 mt-4">
+          이미 회원이신가요?{" "}
+          <Link href="/login" className="text-blue-600 hover:underline">
+            로그인하기
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
