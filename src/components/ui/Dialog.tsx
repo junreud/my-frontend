@@ -1,131 +1,111 @@
 "use client";
 
-import { Dialog, DialogPanel, DialogTitle } from "@headlessui/react";
+import { Dialog } from "@headlessui/react";
 import { useState } from "react";
 import Image from "next/image";
 
-/**
- * 기본 모달 레이아웃 (사진 + 문장)
- */
 export default function Page() {
-  // 어떤 모달을 열지 구분하기 위한 state
+  // "cheheomdan" | "gijadan" | null 타입으로 지정
   const [isOpen, setIsOpen] = useState(false);
-  const [modalType, setModalType] = useState<"cheheomdan" | "gijadan" | null>(
-    null
-  );
+  const [modalType, setModalType] = useState<"cheheomdan" | "gijadan" | null>(null);
 
-  function openCheheomdan() {
+  const openCheheomdan = () => {
     setModalType("cheheomdan");
     setIsOpen(true);
-  }
+  };
 
-  function openGijadan() {
+  const openGijadan = () => {
     setModalType("gijadan");
     setIsOpen(true);
-  }
+  };
 
-  function close() {
+  const close = () => {
     setIsOpen(false);
     setModalType(null);
-  }
+  };
 
-  // 모달에 들어갈 내용(예시)
   const content = {
     cheheomdan: {
       title: "체험단이란?",
-      imgUrl: "/images/cheheomdan.png", // 임의로 경로 지정
-      description:
-        "체험단은 실제로 제품이나 서비스를 사용해본 후 후기를 작성하는 그룹입니다. (예시 설명)",
+      imgUrl: "/images/cheheomdan.png",
+      description: "체험단은 실제로 제품, 서비스를 경험하고 후기를 공유하는 그룹입니다.",
     },
     gijadan: {
       title: "기자단이란?",
-      imgUrl: "/images/gijadan.png", // 임의로 경로 지정
-      description:
-        "기자단은 다양한 현장을 취재하고 기사를 작성하는 역할을 맡은 그룹입니다. (예시 설명)",
+      imgUrl: "/images/gijadan.png",
+      description: "기자단은 다양한 현장을 취재하고 기사를 작성하는 그룹입니다.",
     },
   };
 
-  // 현재 모달에 표시할 정보
+  // modalType이 null이면 content[modalType] 접근 시 오류가 나므로 조건부로 사용
   const currentContent = modalType ? content[modalType] : null;
 
   return (
     <>
-      <section className="bg-black text-white px-6 py-8 sm:p-8">
-        <div className="text-center text-base sm:text-lg">
-          <span
-            className="text-red-500 font-bold cursor-pointer mr-2"
-            onClick={openCheheomdan}
-          >
-            체험단
-          </span>
-          /
-          <span
-            className="text-blue-500 font-bold cursor-pointer ml-2"
-            onClick={openGijadan}
-          >
-            기자단
-          </span>
-          <p className="mt-2 text-sm sm:text-base">“무엇인지 궁금하다면 클릭!”</p>
-        </div>
+      <section className="text-center mt-8">
+        <span onClick={openCheheomdan} className="cursor-pointer text-blue-500 px-2">
+          체험단
+        </span>
+        /
+        <span onClick={openGijadan} className="cursor-pointer text-green-500 px-2">
+          기자단
+        </span>
       </section>
 
       {/* Headless UI Dialog */}
-      <Dialog
-        open={isOpen}
-        as="div"
-        className="relative z-10 focus:outline-none"
-        onClose={close}
-      >
-        <div className="fixed inset-0 bg-black/50" aria-hidden="true" />
-        {/* 배경: 반투명 배경 (원하시면 삭제 가능) */}
+      <Dialog open={isOpen} onClose={close}>
+        {/* 어두운 배경 */}
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        {/* Dialog를 화면 중앙에 배치 */}
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            {/* modalType이 존재하면(즉 cheheomdan 혹은 gijadan일 때)만 내용 표시 */}
+            {currentContent && (
+              <>
+                <Dialog.Title className="text-xl font-bold text-gray-900 mb-4">
+                  {currentContent.title}
+                </Dialog.Title>
 
-        <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
-          {/* Dialog 정중앙 배치 */}
-          <div className="flex min-h-full items-center justify-center p-4">
-            <DialogPanel
-              // 기본 Transition 효과
-              transition
-              className="w-full max-w-md rounded-xl bg-white/5 p-6 backdrop-blur-2xl duration-300 ease-out
-                         data-[closed]:transform data-[closed]:scale-95 data-[closed]:opacity-0"
-            >
-              {/* 모달 상단 타이틀 */}
-              <DialogTitle
-                as="h3"
-                className="text-lg font-semibold text-white mb-4"
-              >
-                {currentContent?.title ?? ""}
-              </DialogTitle>
+                {/* 이미지 */}
+                <Image
+                  src={currentContent.imgUrl}
+                  alt={currentContent.title}
+                  width={400}
+                  height={300}
+                  className="rounded-md my-2 object-cover"
+                />
 
-              {/* 이미지 + 본문 내용 */}
-              {currentContent && (
-                <div className="space-y-4 text-sm text-white/80">
-                  {/* 이미지 */}
-                  <Image
-                    src={currentContent.imgUrl}
-                    alt={currentContent.title}
-                    fill
-                    className="w-full h-auto rounded-md"
-                  />
+                {/* 설명 문구 */}
+                <p className="text-gray-800 mt-2">{currentContent.description}</p>
 
-                  {/* 설명 문구 */}
-                  <p>{currentContent.description}</p>
-                </div>
-              )}
-
-              {/* 닫기 버튼 */}
-              <div className="mt-6">
+                {/* 닫기 버튼 */}
                 <button
-                  className="inline-flex items-center gap-2 rounded-md bg-gray-700 py-1.5 px-3 text-sm font-semibold text-white shadow-inner shadow-white/10 
-                             hover:bg-gray-600 focus:outline-none focus:ring focus:ring-gray-300"
                   onClick={close}
+                  className="mt-4 bg-gray-700 text-white px-4 py-2 rounded focus:outline-none"
                 >
                   닫기
                 </button>
-              </div>
-            </DialogPanel>
-          </div>
+              </>
+            )}
+          </Dialog.Panel>
         </div>
       </Dialog>
+
+      {/* 임의로 하단에 두 개의 버튼을 배치해서 모달 열기 테스트 가능 */}
+      <div className="flex justify-center mt-4 gap-2">
+        <button 
+          onClick={openCheheomdan}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          체험단 열기
+        </button>
+        <button 
+          onClick={openGijadan}
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
+          기자단 열기
+        </button>
+      </div>
     </>
   );
 }

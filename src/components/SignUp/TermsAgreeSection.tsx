@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { DialogOpenType } from "./types";
+
+type DialogOpenType =
+  | "serviceTerm"
+  | "privacyTerm"
+  | "authTerm"
+  | "thirdPartyTerm"
+  | "marketingTerm"
+  | null;
 
 interface TermsAgreeSectionProps {
   isEmailValid: boolean;

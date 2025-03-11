@@ -27,7 +27,10 @@ export default function LoginPage({
   return (
     <>
       <LogInNavbar />
+      <div className="w-full max-w-md px-4">
+
       <LinkAccountLoginBox defaultEmail={email} />
+      </div>
     </>
   );
 }

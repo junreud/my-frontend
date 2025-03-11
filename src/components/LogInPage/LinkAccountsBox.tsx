@@ -1,64 +1,105 @@
-// app/components/LogInPage/LinkAccountsBox.tsx
-"use client"; // 여기서는 클라이언트 사이드 로직(이벤트 처리, Hooks)을 사용
+"use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface LinkAccountLoginBoxProps {
-  defaultEmail: string; // 읽어올 이메일
-  onSuccess?: () => void; // 성공 시 실행할 함수 (선택)
+  defaultEmail: string; // 쿼리 파라미터 등으로 받은 이메일
+  onSuccess?: () => void; // 인증/연동 성공 시 수행할 콜백 (선택)
 }
 
 const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
   defaultEmail,
-  onSuccess
+  onSuccess,
 }) => {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // 클라이언트 사이드 상태 관리
-  const [email] = useState(defaultEmail); // readOnly
+  // (A) URL 쿼리에서 provider / providerId 받기 (ex: "kakao", "google")
+  const provider = searchParams.get("provider") || "kakao";
+  const providerId = searchParams.get("providerId") || "";
+
+  // (B) 상태: 이메일은 readOnly, 비번은 사용자가 입력
+  const [email] = useState(defaultEmail);
   const [password, setPassword] = useState("");
 
-  // "로그인" 이벤트 핸들러 (fetch 예시)
+  /**
+   * (C) "연동 로그인" 버튼 클릭 -> 한 번에:
+   *   1) /auth/checkEmailAndPassword 로 비번 검증
+   *   2) 성공 시 /auth/link-accounts 로 provider, providerId 업데이트
+   *   3) 끝나면 대시보드 이동(혹은 onSuccess())
+   */
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+    e.preventDefault(); // form submit 시 새로고침 방지
+  
     try {
-      const res = await fetch("http://localhost:4000/auth/check-email", {
+      // 1) 비밀번호 인증
+      const res = await fetch("http://localhost:4000/auth/checkEmailAndPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
         credentials: "include",
+        body: JSON.stringify({ email, password }),
       });
-
       if (!res.ok) {
-        const errorData = await res.json();
-        alert("로그인 실패: " + (errorData.message || "알 수 없는 오류"));
+        const errData = await res.json();
+        alert("비번 인증 실패: " + errData.message);
         return;
       }
+  
+      alert("비번 인증 성공! 계정 연동 진행...");
+  
+      // 2) 소셜 계정 연동 -> /auth/link-accounts (토큰 발급)
+      const linkRes = await fetch("http://localhost:4000/auth/link-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          provider,
+          providerId,
+        }),
+      });
+  
+      if (!linkRes.ok) {
+        const linkErr = await linkRes.json();
+        alert("연동 실패: " + linkErr.message);
+        return;
+      }
+  
+      // 링크 성공 → 백엔드가 { message, accessToken } 반환
+      const data = await linkRes.json();
+      console.log("linkRes data =>", data); // { message, accessToken: ??? }
 
-      const data = await res.json();
-      alert("로그인 성공: " + data.message);
-
-      // 연동 로직 이후 동작
+      alert("연동 완료! " + data.message);
+  
+      // 3) localStorage에 accessToken 저장
+      if (data.accessToken) {
+        localStorage.setItem("accessToken", data.accessToken);
+        console.log("Access token stored in localStorage:", data.accessToken);
+      } else {
+        console.warn("No accessToken in response data");
+      }
+  
+      // 4) onSuccess 콜백 or /dashboard 이동
       if (onSuccess) {
         onSuccess();
       } else {
-        // 예: 대시보드로 이동
         router.push("/dashboard");
       }
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error(err);
       alert("서버 오류");
     }
   };
+  
 
   return (
-    <div className="mt-20 md:mt-36 bg-white flex flex-col items-center justify-center">
-      <div className="w-full max-w-[280px] border border-gray-200 rounded-md p-4 shadow-sm">
-        <h1 className="text-ml font-semibold mb-2 text-center">계정 연동 로그인</h1>
+    <div className="min-h-screen bg-white flex flex-col items-center pt-24">
+      <div className="w-full max-w-[280px] mx-auto p-4">
+        <h1 className="text-xl font-semibold mb-8 text-center">계정 연동 로그인</h1>
 
         <form onSubmit={handleSubmit}>
+          {/* (1) 이메일: readOnly */}
           <div className="mb-4">
             <label className="block text-xs font-medium text-gray-700 mb-1">
               이메일 주소
@@ -73,6 +114,7 @@ const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
             />
           </div>
 
+          {/* (2) 비밀번호 입력 */}
           <div className="mb-6">
             <div className="flex items-center justify-between">
               <label className="block text-xs font-medium text-gray-700">
@@ -96,6 +138,7 @@ const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
             />
           </div>
 
+          {/* (3) "로그인" 버튼 -> handleSubmit */}
           <button
             type="submit"
             className="w-full bg-green-600 hover:bg-green-700

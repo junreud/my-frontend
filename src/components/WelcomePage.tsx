@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import apiClient from "@/lib/apiClient";
 
 interface KeywordData {
   keyword: string;
@@ -46,43 +47,38 @@ const WelcomePage: React.FC = () => {
 
     try {
       // 1) URL 정규화
-      setProgressMessages((prev) => [...prev, "URL 정규화 진행중..."]);
-      const normalizeRes = await fetch(
-        `http://localhost:4000/keyword/analysis/normalize?url=${encodeURIComponent(businessLink)}`
+      setProgressMessages((prev) => [...prev, "업체 찾는중..."]);
+      const normalizeRes = await apiClient.get(
+        `/keyword/analysis/normalize`,
+        {
+          params: { url: businessLink },
+        }
       );
-      const normalizeData = await normalizeRes.json();
+      const normalizeData = normalizeRes.data; // axios는 응답을 `.data`에 담음
       if (!normalizeData.success) {
-        throw new Error(normalizeData.message || "정규화 실패");
+        throw new Error(normalizeData.message || "업체찾기 실패");
       }
 
-      setProgressMessages((prev) => [...prev, "정규화 완료! 업체 정보 분석중..."]);
+      setProgressMessages((prev) => [...prev, "업체 분석을 시작합니다..."]);
 
       // 2) 크롤링 + ChatGPT + 검색량 조회
-      const crawlRes = await fetch(`http://localhost:4000/keyword/analysis/crawl`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          normalizedUrl: normalizeData.normalizedUrl,
-        }),
+      const crawlRes = await apiClient.post(`/keyword/analysis/crawl`, {
+        normalizedUrl: normalizeData.normalizedUrl,
       });
-      const crawlData = await crawlRes.json();
+      const crawlData = crawlRes.data;
       if (!crawlData.success) {
-        throw new Error(crawlData.message || "크롤링/분석 실패");
+        throw new Error(crawlData.message || "분석 실패");
       }
 
-      setProgressMessages((prev) => [...prev, "타겟 키워드 분석중..."]);
+      setProgressMessages((prev) => [...prev, "키워드 분석중..."]);
 
       // 3) 키워드 그룹핑
-      const groupRes = await fetch(`http://localhost:4000/keyword/analysis/group`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          externalDataList: crawlData.externalDataList,
-        }),
+      const groupRes = await apiClient.post(`/keyword/analysis/group`, {
+        externalDataList: crawlData.externalDataList,
       });
-      const groupData = await groupRes.json();
+      const groupData = groupRes.data;
       if (!groupData.success) {
-        throw new Error(groupData.message || "키워드 그룹핑 실패");
+        throw new Error(groupData.message || "키워드 분석 실패");
       }
 
       if (Array.isArray(groupData.finalKeywords)) {

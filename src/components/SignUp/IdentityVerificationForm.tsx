@@ -110,6 +110,23 @@ export default function IdentityVerificationForm() {
   // -------------------------------------------------
   // [C] 인증번호 관련 상태
   // -------------------------------------------------
+   // (C-0) 인증번호 인풋 포커스 상태
+ const [isVerificationFocused, setIsVerificationFocused] = useState(false);
+
+ // (C-0) 테두리 색상 로직 (예: 값이 있으면 초록, 없으면 기본)
+ const verificationInputClass = () => {
+   if (verificationCode) {
+     return "border-green-500 focus:ring-green-200";
+   }
+   return "border-gray-300 focus:ring-blue-200";
+ };
+
+ // (C-0) blur 시, 값이 없으면 포커스 해제
+ const handleVerificationBlur = () => {
+   if (!verificationCode) {
+     setIsVerificationFocused(false);
+   }
+ };
   // (1) '인증하기' 버튼 클릭 후, 인증번호 입력 섹션을 열지 여부
   const [showVerificationInput, setShowVerificationInput] = useState(false);
   // (2) 사용자 입력 인증번호
@@ -150,7 +167,7 @@ export default function IdentityVerificationForm() {
       const response = await fetch("http://localhost:4000/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: verificationCode }),
+        body: JSON.stringify({ email, code: verificationCode, password }),
       });
 
       if (!response.ok) {
@@ -160,18 +177,39 @@ export default function IdentityVerificationForm() {
 
       const data = await response.json();
 
-      alert("인증 성공! 가입이 완료되었습니다.");
-      if (data.redirectUrl) {
-        // Next.js 라우터(예: next/router)나 window.location.assign 등
-        // 원하는 방법으로 이동
-        window.location.href = data.redirectUrl;
+      if (data.verified) {
+        // (1) 인증 성공 메시지
+        alert(data.message || "인증 성공!");
+
+        // (2) add-info 페이지로 이동
+        window.location.href = `/add-info?email=${encodeURIComponent(email)}`;
+      } else {
+        // (3) 인증 실패 or verified=false
+        alert("인증이 완료되지 않았습니다.");
       }
     } catch (err) {
       console.error(err);
       alert("서버 오류!");
     }
   };
-
+   // [C-3] '재발송' 버튼 로직
+   const handleResendCode = async () => {
+     try {
+       const response = await fetch("http://localhost:4000/auth/signup", {
+         method: "POST",
+         headers: { "Content-Type": "application/json" },
+         body: JSON.stringify({ email, password }),
+       });
+       if (!response.ok) {
+         alert("재발송 실패 (이미 가입된 이메일이거나 서버 에러 등)");
+         return;
+       }
+       alert("인증 이메일을 다시 발송했습니다. 메일 내 코드를 확인하세요.");
+     } catch (err) {
+       console.error(err);
+       alert("서버 오류(재발송 실패).");
+     }
+   };
   // -------------------------------------------------
   // [D] 소셜 로그인
   // -------------------------------------------------
@@ -205,10 +243,14 @@ export default function IdentityVerificationForm() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 8, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none bg-white px-1"
+                  // 라벨 전체에는 bg-white 제거
+                  className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none"
                   style={{ zIndex: 1 }}
                 >
-                  이메일 주소
+                  {/* 글자만 흰색 배경 => span으로 감싸기 */}
+                  <span className="bg-white inline-block leading-none">
+                    이메일 주소
+                  </span>
                 </motion.label>
               )}
             </AnimatePresence>
@@ -237,19 +279,19 @@ export default function IdentityVerificationForm() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 8, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none bg-white px-1"
+                  className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none"
                   style={{ zIndex: 1 }}
                 >
-                  비밀번호
+                  <span className="bg-white inline-block leading-none">
+                    비밀번호
+                  </span>
                 </motion.label>
               )}
             </AnimatePresence>
 
             <motion.input
               type={isPasswordVisible ? "text" : "password"}
-              placeholder={
-                isPasswordFocused || password ? "" : "비밀번호"
-              }
+              placeholder={isPasswordFocused || password ? "" : "비밀번호"}
               className={`w-full px-3 py-3 pr-10 rounded border focus:outline-none focus:ring text-sm bg-white ${passwordInputClass()}`}
               value={password}
               onFocus={() => setIsPasswordFocused(true)}
@@ -283,24 +325,34 @@ export default function IdentityVerificationForm() {
 
               {/* 규칙 1: 10글자 이상 */}
               <div className="flex items-center mb-1">
-                {hasMinLength ? (
+                {password.length >= 10 ? (
                   <span className="text-green-500 mr-2">✔</span>
                 ) : (
                   <span className="text-gray-500 mr-2">-</span>
                 )}
-                <span className={hasMinLength ? "text-green-700" : "text-red-700"}>
+                <span
+                  className={
+                    password.length >= 10 ? "text-green-700" : "text-red-700"
+                  }
+                >
                   10글자 이상
                 </span>
               </div>
 
               {/* 규칙 2: 특수문자 포함 */}
               <div className="flex items-center">
-                {hasSpecialChar ? (
+                {/[!@#$%^&*()_+|}{":;'?/>.<,]/.test(password) ? (
                   <span className="text-green-500 mr-2">✔</span>
                 ) : (
                   <span className="text-gray-500 mr-2">-</span>
                 )}
-                <span className={hasSpecialChar ? "text-green-700" : "text-red-700"}>
+                <span
+                  className={
+                    /[!@#$%^&*()_+|}{":;'?/>.<,]/.test(password)
+                      ? "text-green-700"
+                      : "text-red-700"
+                  }
+                >
                   특수문자 포함
                 </span>
               </div>
@@ -316,7 +368,7 @@ export default function IdentityVerificationForm() {
                     transition={{ duration: 0.3 }}
                     className="flex items-center mt-1 overflow-hidden"
                   >
-                    {hasMatch ? (
+                    {password === confirmPassword ? (
                       <>
                         <span className="text-green-500 mr-2">✔</span>
                         <span className="text-green-700">비밀번호가 일치합니다.</span>
@@ -354,10 +406,12 @@ export default function IdentityVerificationForm() {
                       animate={{ y: 0, opacity: 1 }}
                       exit={{ y: 8, opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none bg-white px-1"
+                      className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none"
                       style={{ zIndex: 1 }}
                     >
-                      비밀번호 확인
+                      <span className="bg-white inline-block leading-none">
+                        비밀번호 확인
+                      </span>
                     </motion.label>
                   )}
                 </AnimatePresence>
@@ -408,23 +462,57 @@ export default function IdentityVerificationForm() {
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
               className="mt-4"
-              style={{ overflow: "hidden" }}
+              style={{ overflow: "visible" }}
             >
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  인증번호 입력
-                </label>
-                <input
+
+
+              <div className="relative mb-3">
+                <AnimatePresence>
+                  {(isVerificationFocused || verificationCode) && (
+                    <motion.label
+                      key="verificationLabel"
+                      initial={{ y: 8, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      exit={{ y: 8, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                        className="absolute left-3 -top-1.5 text-xs text-gray-600 pointer-events-none"
+                      style={{ zIndex: 1 }}
+                    >
+                      <span className="bg-white inline-block leading-none">
+                        인증번호 6자리
+                      </span>
+                    </motion.label>
+                  )}
+                </AnimatePresence>
+  
+                <motion.input
                   type="text"
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring text-sm"
-                  placeholder="인증번호 6자리"
+                  placeholder={
+                    isVerificationFocused || verificationCode ? "" : "인증번호 6자리"
+                  }
+                  className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring text-sm ${verificationInputClass()}`}
+                  onFocus={() => setIsVerificationFocused(true)}
+                  onBlur={handleVerificationBlur}
                 />
+
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  className="
+                    absolute right-2 top-1/2 -translate-y-1/2 
+                    text-blue-600 text-sm 
+                    hover:underline
+                  "
+                >
+                  재발송
+                </button>
               </div>
 
+
               <button
-                className="w-full py-2 bg-blue-500 text-white rounded 
+                className="w-full py-2 bg-green-600 hover:bg-green-700 text-white rounded 
                            disabled:bg-gray-300 disabled:cursor-not-allowed"
                 onClick={handleVerifyCode}
                 disabled={!verificationCode}

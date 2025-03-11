@@ -1,41 +1,64 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    // 어떤 버전의 ECMAScript로 컴파일할지 결정 (ES2017, ES5, ESNext 등)
+    "target": "ESNext",
+    // 사용할 라이브러리 (DOM, ESNext 등). 여기서는 브라우저/DOM 관련 기능과 최신 JS 기능을 포함
     "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
     ],
+    // .js 파일도 타입체킹(혹은 트랜스파일) 범위에 포함시킬지 여부
     "allowJs": true,
+    // import/export 방식에서 default import 등을 더 유연하게 다룰 수 있게 함
+    "allowSyntheticDefaultImports": true,
+    // node_modules 등 타입 정의를 자세히 검사하지 않고 건너뜀 (빌드 속도 개선)
     "skipLibCheck": true,
+    // 타입 검사에서 엄격 모드를 적용 (권장)
     "strict": true,
+    // 파일명 대소문자 규칙을 엄격하게 관리 (다른 OS 간 충돌 방지)
+    "forceConsistentCasingInFileNames": true,
+    // 실제 컴파일 결과물(.js)을 생성하지 않음(Next.js는 자체적으로 빌드 프로세스를 관리하므로 필요 없음)
     "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
+    // 각 파일을 독립 모듈로 처리 (Next.js 권장 설정)
     "isolatedModules": true,
+    // ESNext 모듈 시스템 사용
+    "module": "ESNext",
+    // Next 13 환경에서는 "bundler" 설정을 권장
+    "moduleResolution": "Node",
+    // .json 파일을 import할 수 있도록 허용
+    "resolveJsonModule": true,
+    // JSX 변환은 Next.js가 자체적으로 처리하므로 "preserve"로 둠
     "jsx": "preserve",
+    // 점진적 빌드 기능 (컴파일 속도 개선)
     "incremental": true,
+    // Next.js에서 사용되는 TS 플러그인 (권장)
     "plugins": [
       {
         "name": "next"
       }
     ],
+    // 절대 경로 alias 설정 예: import "~" -> src 폴더로 매핑
     "paths": {
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "esModuleInterop": true
   },
   "include": [
+    // Next.js에서 자동 생성되는 타입 정의
     "next-env.d.ts",
+    // 모든 TS/TSX/JS/JSX 파일 포함
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    "src/components/ui/ArrowIcon.jsx"
-, "src/app/welcomepage"  ],
+    "**/*.js",
+    "**/*.jsx",
+    // .next 내부 타입 정의
+    ".next/types/**/*.ts"
+, "src/context/authContext.tss"  ],
   "exclude": [
+    // node_modules 폴더는 기본적으로 제외
     "node_modules"
   ]
 }

@@ -1,125 +1,63 @@
-// src/app/dashboard/page.tsx
+"use client"
 
-"use client";
-
-import { AppSidebar } from "@/components/Dashboard/app-sidebar"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-import MyCalendarPage from "@/components/ui/Calendar"
-import { ChartTwoLines } from "@/components/Dashboard/twolinechart"
-import { useRouter } from "next/navigation" // 클라이언트 라우팅 훅
+import { useRouter } from "next/navigation" // App Router에서는 next/navigation
 import { useEffect, useState } from "react"
+import apiClient from "@/lib/apiClient"
 
+/**
+ * /dashboard 로 접근했을 때 토큰을 검사한 뒤,
+ * 없으면 /login,
+ * url_registration이 0이면 /welcomepage,
+ * 그 외에는 /dashboard/home 으로 이동.
+ */
 export default function DashboardPage() {
-  const router = useRouter();
-  const [checkDone, setCheckDone] = useState(false);
+  const router = useRouter()
+  const [checkDone, setCheckDone] = useState(false)
 
   useEffect(() => {
-    // 여기서는 더 이상 쿼리 파라미터 처리 안 해도 됨!
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken")
     if (!token) {
-      router.replace("/login");
-    } else {
-      setCheckDone(true);
+      // 토큰이 없으면 /login 이동
+      router.replace("/login")
+      return
     }
-  }, [router]);
 
-  // (2) 로딩 스피너 표시
+    // 토큰이 있다면 백엔드로 me 요청
+    apiClient
+      .get("/api/user/me")
+      .then((res) => {
+        const { url_registration } = res.data
+        if (url_registration === 0) {
+          // 가입 완료 전이면 /welcomepage
+          router.replace("/welcomepage")
+        } else {
+          // 정상 사용자면 /dashboard/home
+          router.replace("/dashboard/home")
+        }
+      })
+      .catch((err) => {
+        console.error(err)
+        // 에러 시(토큰 만료 등) 로그인 페이지
+        router.replace("/login")
+      })
+      .finally(() => {
+        setCheckDone(true)
+      })
+  }, [router])
+
+  // 아직 검사 중(로딩)일 때 보여줄 스피너
   if (!checkDone) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
-        {/* Tailwind 예시: 회전 애니메이션으로 로딩 원 만들기 */}
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-solid border-gray-300 border-t-transparent"></div>
       </div>
-    );
+    )
   }
 
-  // ---------------------------
-  // (3) 여기부터 "로그인된 사용자"만 보게 될 내용
-  // ---------------------------
-
-  const lines = [
-    {
-      dataKey: "desktop" as const,
-      label: "데스크톱",
-      stroke: "hsl(var(--chart-1))",
-    },
-    {
-      dataKey: "mobile" as const,
-      label: "모바일",
-      stroke: "hsl(var(--chart-2))",
-    },
-  ]
-
-  const chartData = [
-    { date: "12.04", desktop: 71, mobile: 80 },
-    { date: "12.05", desktop: 71, mobile: 80 },
-    { date: "12.06", desktop: 73, mobile: 80 },
-    // ...
-    { date: "12.31", desktop: 3, mobile: 1 },
-  ]
-
+  // 토큰 검증이 끝나면 즉시 리다이렉트되므로, 실제로는 잠깐만 노출되거나 거의 노출 안 될 수 있음
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="/">LAKABE</BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Home</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {/* 1) 위쪽 그리드 (aspect-video) */}
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-          </div>
-
-          {/* 2) 스크롤 스내핑 영역 */}
-          <div className="fle flex-col snap-y snap-mandatory">
-            {/* (1) 첫 번째 스크린 */}
-            <div className="mb-4 h-[90vh] snap-start rounded-xl bg-muted/50">
-              <MyCalendarPage />
-            </div>
-
-            {/* (2) 두 번째 스크린 */}
-            <div className="h-[90vh] snap-start rounded-xl bg-muted/50">
-              <ChartTwoLines
-                title="부평 헬스장"
-                description="2021년 1월 ~ 6월 매출"
-                data={chartData}
-                lines={lines}
-              />
-            </div>
-          </div>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="text-center pt-20">
+      <p>Redirecting...</p>
+    </div>
   )
 }

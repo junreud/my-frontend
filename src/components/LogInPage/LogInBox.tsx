@@ -74,10 +74,12 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 16, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute left-3 -top-2 text-xs text-gray-600 bg-white px-1 pointer-events-none"
+                  className="absolute left-3 -top-2 text-xs text-gray-600 -translate-y-1/2 pointer-events-none"
                   style={{ zIndex: 1 }}
                 >
-                  이메일 주소
+                  <span className="bg-white inline-block leading-none">
+                    이메일 주소
+                  </span>
                 </motion.label>
               )}
             </AnimatePresence>
@@ -114,10 +116,12 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 16, opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute left-3 -top-3 text-xs text-gray-600 bg-white px-1 pointer-events-none"
+                    className="absolute left-3 top-3 text-xs text-gray-600 -translate-y-1/2 pointer-events-none"
                     style={{ zIndex: 1 }}
                   >
+                    <span className="bg-white inline-block leading-none">
                     비밀번호
+                    </span>
                   </motion.label>
                 )}
               </AnimatePresence>

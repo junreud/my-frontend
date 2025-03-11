@@ -2,13 +2,13 @@
 "use client";
 
 import LogInHeader from '@/components/LogInPage/LogInHeader';
-import SocialAddInfoForm from '@/components/LogInPage/SocialAddInfoForm';
+import AddInfoForm from '@/components/LogInPage/AddInfoForm';
 
-export default function SocialAddInfo() {
+export default function AddInfo() {
   return (
     <>
         <LogInHeader />
-        <SocialAddInfoForm />
+        <AddInfoForm />
     </>
   );
 }

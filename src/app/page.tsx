@@ -22,7 +22,6 @@ const HomePage = () => {
       <Homepage />
     </Container>
     <IsItImposible />
-    
     <Cheheom />
     
     <Page />

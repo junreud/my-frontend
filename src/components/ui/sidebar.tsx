@@ -7,7 +7,7 @@ import { PanelLeft } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -512,16 +512,15 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button group flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-gray-200 hover:text-sidebar-accent-foreground hover:[&_*]:text-sidebar-accent-foreground hover:font-semibold focus-visible:ring-2 active:bg-gray-300 active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        outline:
-          "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+        default: "",
+        outline: "",
       },
       size: {
-        default: "h-8 text-sm",
+        default: "h-8 text-sm font-bold",
         sm: "h-7 text-xs",
         lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
       },
@@ -682,22 +681,58 @@ const SidebarMenuSkeleton = React.forwardRef<
 })
 SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
-const SidebarMenuSub = React.forwardRef<
-  HTMLUListElement,
-  React.ComponentProps<"ul">
->(({ className, ...props }, ref) => (
-  <ul
-    ref={ref}
-    data-sidebar="menu-sub"
-    className={cn(
-      "mx-3.5 flex min-w-0 translate-x-px flex-col gap-1 border-l border-sidebar-border px-2.5 py-0.5",
-      "group-data-[collapsible=icon]:hidden",
-      className
-    )}
-    {...props}
-  />
-))
+const SidebarMenuSub = React.forwardRef<HTMLUListElement, React.ComponentProps<"ul">>(
+  ({ className, ...props }, ref) => (
+    <ul
+      ref={ref}
+      data-sidebar="menu-sub"
+      className={cn(
+        // 기본 여백
+        "relative ml-3 pl-4",
+        // 각 li는 relative
+        "[&>li]:relative",
+
+        // (1) 마지막이 아닌 항목(:not(:last-child)) 세로줄만
+        "[&>li:not(:last-child)]:pb-2", 
+        "[&>li:not(:last-child)]:before:content-['']",
+        "[&>li:not(:last-child)]:before:absolute",
+        "[&>li:not(:last-child)]:before:left-[-1rem]",
+        "[&>li:not(:last-child)]:before:top-0",
+        "[&>li:not(:last-child)]:before:bottom-0",
+        "[&>li:not(:last-child)]:before:border-l",
+        "[&>li:not(:last-child)]:before:border-sidebar-border",
+
+        // (2) 마지막 항목(:last-child) ㄴ 모양
+        "[&>li:last-child]:pb-1", // 더 작게
+        "[&>li:last-child]:before:content-['']",
+        "[&>li:last-child]:before:absolute",
+        "[&>li:last-child]:before:left-[-1rem]",
+        "[&>li:last-child]:before:top-0",
+        "[&>li:last-child]:before:bottom-auto",
+        "[&>li:last-child]:before:h-[1rem]",
+        "[&>li:last-child]:before:border-l",
+        "[&>li:last-child]:before:border-sidebar-border",
+
+        "[&>li:last-child]:after:content-['']",
+        "[&>li:last-child]:after:absolute",
+        "[&>li:last-child]:after:left-[-1rem]",
+        "[&>li:last-child]:after:top-[1rem]",
+        "[&>li:last-child]:after:w-4",
+        "[&>li:last-child]:after:border-b",
+        "[&>li:last-child]:after:border-sidebar-border",
+
+        className
+      )}
+      {...props}
+    />
+  )
+)
 SidebarMenuSub.displayName = "SidebarMenuSub"
+
+
+
+SidebarMenuSub.displayName = "SidebarMenuSub"
+
 
 const SidebarMenuSubItem = React.forwardRef<
   HTMLLIElement,
