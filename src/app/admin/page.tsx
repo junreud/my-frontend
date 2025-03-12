@@ -1,4 +1,6 @@
-import { AppSidebar } from "@/components/Dashboard/app-sidebar"
+// app/admin/page.tsx
+
+import { AppSidebar } from "@/components/dashboard/app-sidebar"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,53 +16,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import  MyCalendarPage  from "@/components/ui/Calendar"
-import { ChartTwoLines } from "@/components/Dashboard/twolinechart"
 
 export default function Page() {
-  const lines = [
-    {
-      dataKey: "desktop" as const,
-      label: "데스크톱",
-      stroke: "hsl(var(--chart-1))",
-    },
-    {
-      dataKey: "mobile" as const,
-      label: "모바일",
-      stroke: "hsl(var(--chart-2))",
-    },
-  ];
+
   
-  
-  const chartData = [
-    { date: "12.04", desktop: 71, mobile: 80 },
-    { date: "12.05", desktop: 71, mobile: 80 },
-    { date: "12.06", desktop: 73, mobile: 80 },
-    { date: "12.07", desktop: 43, mobile: 80 },
-    { date: "12.08", desktop: 43, mobile: 80 },
-    { date: "12.09", desktop: 27, mobile: 80 },
-    { date: "12.10", desktop: 21, mobile: 80 },
-    { date: "12.11", desktop: 15, mobile: 80 },
-    { date: "12.12", desktop: 15, mobile: 80 },
-    { date: "12.13", desktop: 14, mobile: 80 },
-    { date: "12.14", desktop: 14, mobile: 80 },
-    { date: "12.15", desktop: 11, mobile: 80 },
-    { date: "12.16", desktop: 11, mobile: 80 },
-    { date: "12.17", desktop: 11, mobile: 80 },
-    { date: "12.18", desktop: 13, mobile: 80 },
-    { date: "12.19", desktop: 12, mobile: 80 },
-    { date: "12.20", desktop: 12, mobile: 80 },
-    { date: "12.21", desktop: 10, mobile: 80 },
-    { date: "12.22", desktop: 6, mobile: 80 },
-    { date: "12.23", desktop: 7, mobile: 80 },
-    { date: "12.24", desktop: 5, mobile: 80 },
-    { date: "12.25", desktop: 4, mobile: 80 },
-    { date: "12.26", desktop: 3, mobile: 80 },
-    { date: "12.27", desktop: 4, mobile: 80 },
-    { date: "12.28", desktop: 3, mobile: 80 },
-    { date: "12.29", desktop: 4, mobile: 80 },
-    { date: "12.30", desktop: 3, mobile: 80 },
-    { date: "12.31", desktop: 3, mobile: 1 },
-  ];
   
   return (
     <SidebarProvider>
@@ -102,12 +61,7 @@ export default function Page() {
 
             {/* (2) 두 번째 스크린 */}
             <div className="h-[90vh] snap-start rounded-xl bg-muted/50">
-              <ChartTwoLines 
-                title="부평 헬스장"
-                description="2021년 1월 ~ 6월 매출"
-                data={chartData}
-                lines={lines}
-              />
+
             </div>
           </div>
         </div>

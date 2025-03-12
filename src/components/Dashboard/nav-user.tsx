@@ -1,4 +1,3 @@
-// components/dashboard/nav-user.tsx
 "use client"
 
 import React from "react"
@@ -26,14 +25,14 @@ import { useUser } from "@/hooks/useUser"
 
 export function NavUser() {
   // (1) 사용자 정보 불러오기
-  const { data: user } = useUser()
+  const { data: user, isLoading, isError } = useUser()
 
-  // (2) 아직 사용자 정보 로딩 중이거나, 로그인 안 된 상태면 표시 X
-  if (!user) {
+  // 로딩 중이거나 에러면 임시로 null 표시(프로젝트 상황에 따라 로딩 스피너, 에러 처리 등)
+  if (isLoading || isError || !user) {
     return null
   }
 
-  // (3) 실제 렌더링
+  // (2) 실제 렌더링
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -44,7 +43,7 @@ export function NavUser() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={user.avatar_url} alt={user.name} />
                 <AvatarFallback className="rounded-lg">U</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
@@ -57,7 +56,6 @@ export function NavUser() {
 
           <DropdownMenuContent
             className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
-            // isMobile이 필요하다면, useSidebar() 등에서 가져오거나 고정값 사용
             side="right"
             align="end"
             sideOffset={4}
@@ -65,7 +63,7 @@ export function NavUser() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.avatar_url} alt={user.name} />
                   <AvatarFallback className="rounded-lg">U</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
@@ -97,7 +95,14 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                // 예: 로그아웃 처리
+                localStorage.removeItem("accessToken")
+                // 쿠키도 제거 or 서버 로그아웃 API 호출
+                window.location.href = "/login"
+              }}
+            >
               <LogOut />
               Log out
             </DropdownMenuItem>

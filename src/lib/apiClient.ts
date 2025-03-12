@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "http://localhost:4000",
+  baseURL: "https://localhost:4000",
   withCredentials: true, // HttpOnly 쿠키 전송을 위해 필요
 });
 
@@ -45,7 +45,7 @@ apiClient.interceptors.response.use(
       try {
         // (3) /auth/refresh로 POST
         const res = await axios.post(
-          "http://localhost:4000/auth/refresh",
+          "https://localhost:4000/auth/refresh",
           {},
           { withCredentials: true }
         );

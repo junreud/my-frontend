@@ -56,8 +56,8 @@ export default function DashboardPage() {
 
   // 토큰 검증이 끝나면 즉시 리다이렉트되므로, 실제로는 잠깐만 노출되거나 거의 노출 안 될 수 있음
   return (
-    <div className="text-center pt-20">
-      <p>Redirecting...</p>
-    </div>
+    <div className="flex items-center justify-center min-h-screen bg-white">
+    <div className="animate-spin rounded-full h-16 w-16 border-4 border-solid border-gray-300 border-t-transparent"></div>
+  </div>
   )
 }

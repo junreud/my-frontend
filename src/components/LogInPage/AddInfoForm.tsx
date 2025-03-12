@@ -1,9 +1,8 @@
-// components/LogInPage/AddInfoForm.tsx
-
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input"; // shadcn/ui - 실제 경로 맞춰 수정
 import { SERVICE_TERM_TEXT } from "@/app/terms/serviceTerm";
 import { PRIVACY_TERM_TEXT } from "@/app/terms/privacyTerm";
 import { MARKETING_TERM_TEXT } from "@/app/terms/marketingTerm";
@@ -24,10 +23,26 @@ function formatPhoneNumber(raw: string): string {
   return digits.slice(0, 3) + "-" + digits.slice(3, 7) + "-" + digits.slice(7);
 }
 
+/**
+ * [유틸] 유효성 클래스 반환
+ *  - 에러가 있으면 빨간색, 
+ *  - 값이 있고 에러가 없으면 초록색,
+ *  - 둘 다 아니면(빈값이고 에러 없으면) 회색
+ */
+function getValidationClass(value: string, error?: string) {
+  if (error && error.length > 0) {
+    // 에러 상태 -> 빨간색
+    return "border-red-500 focus:border-red-500";
+  } else if (value.trim().length > 0) {
+    // 값 있음 & 에러 없음 -> 초록색
+    return "border-green-500 focus:border-green-500";
+  } else {
+    // 초기(빈값) -> 기본 테두리
+    return "border-gray-300 focus:border-gray-600";
+  }
+}
+
 export default function AddInfoForm() {
-  // ---------------------------
-  // (A) 쿼리 파라미터
-  // ---------------------------
   const searchParams = useSearchParams();
   const rawProvider = searchParams.get("provider");
   const paramProvider: "local" | "kakao" | "google" =
@@ -40,9 +55,11 @@ export default function AddInfoForm() {
   const [isFocusedEmail, setIsFocusedEmail] = useState(false);
 
   const [name, setName] = useState("");
+  const [nameError, setNameError] = useState(""); // 이름 에러 메시지
   const [isFocusedName, setIsFocusedName] = useState(false);
 
   const [birthday8, setBirthday8] = useState("");
+  const [birthError, setBirthError] = useState(""); // 생일 에러 메시지
   const [isFocusedBirth, setIsFocusedBirth] = useState(false);
 
   const [phone, setPhone] = useState("");
@@ -89,29 +106,54 @@ export default function AddInfoForm() {
   // [3] 휴대전화 입력
   // ---------------------------
   const handlePhoneChange = (value: string) => {
-    setPhoneError("");
+    // 실시간 검사할 수도 있고, blur 시점에만 검사할 수도 있음
+    // 여기서는 blur까지 기다리지 않고, 입력 시점에 검사 예시
     const formatted = formatPhoneNumber(value);
     setPhone(formatted);
+
     const digits = formatted.replace(/\D/g, "");
     if (digits.length < 10) {
       setPhoneError("휴대전화 번호가 올바르지 않습니다.");
+    } else {
+      setPhoneError("");
     }
   };
 
   // ---------------------------
-  // 4) 플로팅 라벨 blur 처리
+  // 4) blur 시 유효성 검사
   // ---------------------------
-  const handleBlurEmail = () => {
-    if (!email) setIsFocusedEmail(false);
-  };
   const handleBlurName = () => {
-    if (!name) setIsFocusedName(false);
+    if (!name) {
+      setNameError("이름을 입력해주세요.");
+      setIsFocusedName(false);
+    } else {
+      setNameError("");
+      setIsFocusedName(false);
+    }
   };
+
   const handleBlurBirth = () => {
-    if (!birthday8) setIsFocusedBirth(false);
+    if (!birthday8) {
+      setBirthError("생년월일을 입력해주세요.");
+      setIsFocusedBirth(false);
+    } else if (birthday8.length !== 8) {
+      setBirthError("정확한 8자리를 입력해주세요.");
+      setIsFocusedBirth(false);
+    } else {
+      setBirthError("");
+      setIsFocusedBirth(false);
+    }
   };
+
   const handleBlurPhone = () => {
-    if (!phone) setIsFocusedPhone(false);
+    if (!phone) {
+      setPhoneError("휴대전화 번호를 입력해주세요.");
+      setIsFocusedPhone(false);
+    } else {
+      // 이미 handlePhoneChange()에서 기본 검사는 진행 중
+      // 혹시 더 정교한 검사(예: 010-xxxx-xxxx 형태)도 할 수 있음
+      setIsFocusedPhone(false);
+    }
   };
 
   // ---------------------------
@@ -168,6 +210,10 @@ export default function AddInfoForm() {
       alert("필수 약관에 동의해주세요.");
       return;
     }
+    if (nameError || birthError || phoneError) {
+      alert("입력값에 오류가 있습니다. 다시 확인해주세요.");
+      return;
+    }
 
     // (B) payload
     const payload: AddInfoPayload = {
@@ -183,7 +229,7 @@ export default function AddInfoForm() {
 
     try {
       // (C) /auth/addinfo 요청
-      const response = await fetch("http://localhost:4000/auth/addinfo", {
+      const response = await fetch("https://localhost:4000/auth/addinfo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -203,7 +249,7 @@ export default function AddInfoForm() {
 
       // (F) accessToken or redirectUrl 처리
       if (data.accessToken) {
-        window.location.href = `http://localhost:3000/oauth-redirect?accessToken=${data.accessToken}`;
+        window.location.href = `https://localhost:3000/oauth-redirect?accessToken=${data.accessToken}`;
       } else if (data.redirectUrl) {
         window.location.href = data.redirectUrl;
       } else {
@@ -219,15 +265,25 @@ export default function AddInfoForm() {
   // ---------------------------
   // 7) UI 렌더링
   // ---------------------------
-  const baseInputClass =
-    "w-full px-3 py-3 rounded border focus:outline-none focus:ring text-sm bg-white";
+  // shadcn/ui Input에 공통으로 넣을 최소 스타일 (px, py 등)
+  const baseInputClass = `
+    w-full
+    px-3 py-3
+    rounded
+    text-sm
+    bg-white
+    focus:outline-none
+    focus:ring-0
+  `;
 
   return (
     <div className="min-h-screen flex flex-col items-center pt-24 pb-24 bg-white">
       <div className="max-w-md w-full mx-auto p-8 bg-white">
-        <h1 className="text-xl font-bold mb-6 text-center mb-8">마무리 가입하기</h1>
+        <h1 className="text-xl font-bold mb-6 text-center mb-8">
+          마무리 가입하기
+        </h1>
 
-        {/* (1) 이메일 (readOnly) */}
+        {/* (1) 이메일 - disabled 처리 */}
         <div className="mb-4 relative">
           <AnimatePresence>
             {(isFocusedEmail || email) && (
@@ -245,16 +301,27 @@ export default function AddInfoForm() {
             )}
           </AnimatePresence>
 
-          <motion.input
-            layout
-            type="email"
-            readOnly
-            placeholder={isFocusedEmail || email ? "" : "이메일"}
-            className={`${baseInputClass} border-gray-300 bg-gray-100 text-gray-500`}
-            value={email}
-            onFocus={() => setIsFocusedEmail(true)}
-            onBlur={handleBlurEmail}
-          />
+          {/* shadcn/ui의 Input + disabled */}
+          <motion.div layout>
+            <Input
+              type="email"
+              disabled
+              placeholder={isFocusedEmail || email ? "" : "이메일"}
+              className={`
+                ${baseInputClass} 
+                border 
+                border-gray-300
+                bg-gray-100 text-gray-500 
+                focus:ring-0
+                focus:border-gray-300
+              `}
+              value={email}
+              onFocus={() => setIsFocusedEmail(true)}
+              onBlur={() => {
+                if (!email) setIsFocusedEmail(false);
+              }}
+            />
+          </motion.div>
         </div>
 
         {/* (2) 이름 */}
@@ -275,16 +342,24 @@ export default function AddInfoForm() {
             )}
           </AnimatePresence>
 
-          <motion.input
-            layout
-            type="text"
-            placeholder={isFocusedName || name ? "" : "이름"}
-            className={`${baseInputClass} border-gray-300 focus:ring-blue-200`}
-            value={name}
-            onFocus={() => setIsFocusedName(true)}
-            onBlur={handleBlurName}
-            onChange={(e) => setName(e.target.value)}
-          />
+          <motion.div layout>
+            <Input
+              type="text"
+              placeholder={isFocusedName || name ? "" : "이름"}
+              className={`
+                ${baseInputClass}
+                border
+                ${getValidationClass(name, nameError)}
+              `}
+              value={name}
+              onFocus={() => setIsFocusedName(true)}
+              onBlur={handleBlurName}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </motion.div>
+          {nameError && (
+            <p className="text-red-500 text-sm mt-1">{nameError}</p>
+          )}
         </div>
 
         {/* (3) 생년월일(8자리) */}
@@ -305,20 +380,34 @@ export default function AddInfoForm() {
             )}
           </AnimatePresence>
 
-          <motion.input
-            layout
-            type="text"
-            maxLength={8}
-            placeholder={isFocusedBirth || birthday8 ? "" : "YYYYMMDD"}
-            className={`${baseInputClass} border-gray-300 focus:ring-blue-200`}
-            value={birthday8}
-            onFocus={() => setIsFocusedBirth(true)}
-            onBlur={handleBlurBirth}
-            onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, "").slice(0, 8);
-              setBirthday8(digits);
-            }}
-          />
+          <motion.div layout>
+            <Input
+              type="text"
+              maxLength={8}
+              placeholder={isFocusedBirth || birthday8 ? "" : "생년월일 8자리"}
+              className={`
+                ${baseInputClass}
+                border
+                ${getValidationClass(birthday8, birthError)}
+              `}
+              value={birthday8}
+              onFocus={() => setIsFocusedBirth(true)}
+              onBlur={handleBlurBirth}
+              onChange={(e) => {
+                // 1) 숫자가 아닌 것(\D)을 모두 제거
+                const digits = e.target.value.replace(/\D/g, "");
+                
+                // 2) 최대 8글자까지만 유지
+                const trimmed = digits.slice(0, 8);
+                
+                // 3) 상태에 저장
+                setBirthday8(trimmed);
+              }}
+            />
+          </motion.div>
+          {birthError && (
+            <p className="text-red-500 text-sm mt-1">{birthError}</p>
+          )}
         </div>
 
         {/* (4) 휴대전화 */}
@@ -339,26 +428,28 @@ export default function AddInfoForm() {
             )}
           </AnimatePresence>
 
-          <motion.input
-            layout
-            type="tel"
-            placeholder={isFocusedPhone || phone ? "" : "휴대전화"}
-            className={`${baseInputClass} ${
-              phoneError
-                ? "border-red-500 focus:ring-red-200"
-                : "border-gray-300 focus:ring-blue-200"
-            }`}
-            value={phone}
-            onFocus={() => setIsFocusedPhone(true)}
-            onBlur={handleBlurPhone}
-            onChange={(e) => handlePhoneChange(e.target.value)}
-          />
+          <motion.div layout>
+            <Input
+              type="tel"
+              placeholder={isFocusedPhone || phone ? "" : "휴대전화"}
+              className={`
+                ${baseInputClass}
+                border
+                ${getValidationClass(phone, phoneError)}
+              `}
+              value={phone}
+              onFocus={() => setIsFocusedPhone(true)}
+              onBlur={handleBlurPhone}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+            />
+          </motion.div>
+
           {phoneError && (
             <p className="text-red-500 text-sm mt-1">{phoneError}</p>
           )}
         </div>
 
-        {/* (5) 약관 */}
+        {/* (5) 약관들 */}
         <div className="mb-4 border rounded p-3 bg-gray-50">
           <div className="flex items-center justify-between mb-2">
             <label className="flex items-center font-bold text-black">
@@ -439,6 +530,7 @@ export default function AddInfoForm() {
           </div>
         </div>
 
+        {/* 가입하기 버튼 */}
         <button
           className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded"
           onClick={onSubmit}

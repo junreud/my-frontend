@@ -5,6 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
+// ───────────────────────────────────────────────────
+// shadcn/ui 컴포넌트 import
+// ───────────────────────────────────────────────────
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
 type LogInBoxProps = {
   onLogin: (email: string, password: string) => Promise<void>;
 };
@@ -29,19 +35,10 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
 
   // 소셜 로그인
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:4000/auth/google";
+    window.location.href = "https://localhost:4000/auth/google";
   };
   const handleKakaoLogin = () => {
-    window.location.href = "http://localhost:4000/auth/kakao";
-  };
-
-  // 인풋 테두리 색상 (현재는 간단히 기본색만 사용)
-  const emailInputClass = () => {
-    // 확장 가능: 에러가 있다면 빨간색, 유효하면 초록색 등
-    return "border-gray-300 focus:ring-blue-200";
-  };
-  const passwordInputClass = () => {
-    return "border-gray-300 focus:ring-blue-200";
+    window.location.href = "https://localhost:4000/auth/kakao";
   };
 
   // blur 시, 값이 없으면 라벨 내리기
@@ -60,7 +57,7 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
     <div className="min-h-screen bg-white flex items-start justify-center pt-12 mt-24">
       <div className="w-full max-w-[280px] p-4">
         <h1 className="text-xl font-semibold mb-2 text-center mb-8">로그인하기</h1>
-        
+
         <form onSubmit={handleSubmit}>
           {/* =============================
               이메일 입력 (플로팅 라벨)
@@ -74,7 +71,7 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: 16, opacity: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="absolute left-3 -top-2 text-xs text-gray-600 -translate-y-1/2 pointer-events-none"
+                  className="absolute left-3 -top-2 text-xs text-gray-600 pointer-events-none"
                   style={{ zIndex: 1 }}
                 >
                   <span className="bg-white inline-block leading-none">
@@ -84,67 +81,80 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
               )}
             </AnimatePresence>
 
-            <motion.input
-              layout
-              type="text"
-              placeholder={isFocusedEmail || email ? "" : "이메일 주소"}
-              className={`w-full px-3 py-3 border rounded-md focus:outline-none focus:ring text-sm bg-white ${emailInputClass()}`}
-              value={email}
-              onFocus={() => setIsFocusedEmail(true)}
-              onBlur={handleBlurEmail}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            {/* (1) shadcn/ui - Input 컴포넌트 */}
+            <motion.div layout>
+              <Input
+                type="text"
+                placeholder={isFocusedEmail || email ? "" : "이메일 주소"}
+                className="w-full px-3 py-3 text-sm bg-white 
+                           border border-gray-300 rounded-md 
+                           focus:outline-none focus:ring focus:ring-blue-200"
+                value={email}
+                onFocus={() => setIsFocusedEmail(true)}
+                onBlur={handleBlurEmail}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </motion.div>
           </div>
 
+          {/* =============================
+              비밀번호 입력 (플로팅 라벨)
+             ============================= */}
           <div className="mb-6 relative">
-              {/* 상단의 "비밀번호를 잊으셨나요?" 링크 */}
-              <div className="flex items-center justify-between mb-1">
-                <Link
-                  href="/password_reset"
-                  className="text-xs text-blue-600 hover:underline ml-auto"
+            {/* 상단의 "비밀번호를 잊으셨나요?" 링크 */}
+            <div className="flex items-center justify-between mb-1">
+              <Link
+                href="/password_reset"
+                className="text-xs text-blue-600 hover:underline ml-auto"
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
+            </div>
+
+            <AnimatePresence>
+              {(isFocusedPassword || password) && (
+                <motion.label
+                  key="passwordLabel"
+                  initial={{ y: 16, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 16, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute left-3 top-3 text-xs text-gray-600 pointer-events-none"
+                  style={{ zIndex: 1 }}
                 >
-                  비밀번호를 잊으셨나요?
-                </Link>
-              </div>
-
-              {/* (2) AnimatePresence로 플로팅 라벨 제어 */}
-              <AnimatePresence>
-                {(isFocusedPassword || password) && (
-                  <motion.label
-                    key="passwordLabel"
-                    initial={{ y: 16, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: 16, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute left-3 top-3 text-xs text-gray-600 -translate-y-1/2 pointer-events-none"
-                    style={{ zIndex: 1 }}
-                  >
-                    <span className="bg-white inline-block leading-none">
+                  <span className="bg-white inline-block leading-none">
                     비밀번호
-                    </span>
-                  </motion.label>
-                )}
-              </AnimatePresence>
+                  </span>
+                </motion.label>
+              )}
+            </AnimatePresence>
 
-              {/* (3) passwordInputClass() 호출로 경고 제거 & 실제 사용 */}
-              <motion.input
-                layout
+            {/* (2) shadcn/ui - Input 컴포넌트 */}
+            <motion.div layout>
+              <Input
                 type="password"
                 placeholder={isFocusedPassword || password ? "" : "비밀번호"}
-                className={`w-full px-3 py-3 border rounded-md focus:outline-none focus:ring text-sm bg-white ${passwordInputClass()}`}
+                className="w-full px-3 py-3 text-sm bg-white 
+                           border border-gray-300 rounded-md 
+                           focus:outline-none focus:ring focus:ring-blue-200"
                 value={password}
                 onFocus={() => setIsFocusedPassword(true)}
                 onBlur={handleBlurPassword}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </div>
+            </motion.div>
+          </div>
 
-          <button
+          {/* =============================
+              로그인 버튼
+             ============================= */}
+          <Button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-3 rounded-md text-sm"
+            className="w-full bg-green-600 hover:bg-green-700 text-white 
+                       font-medium py-2 px-3 rounded-md text-sm"
           >
             로그인
-          </button>
+          </Button>
         </form>
 
         <div className="my-4 flex items-center">
@@ -153,46 +163,50 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
           <hr className="flex-grow border-gray-300" />
         </div>
 
+        {/* =============================
+            소셜 로그인 버튼들
+           ============================= */}
         <div className="space-y-2">
-          <button
-            className="relative w-full h-7 border border-gray-300 rounded-md hover:bg-gray-50"
+          {/* (1) Google 로그인 버튼 */}
+          <Button
+            variant="outline"
             onClick={handleGoogleLogin}
+            className="relative w-full h-7 
+                       border-gray-300 
+                       rounded-md hover:bg-gray-100 
+                       flex items-center justify-center
+                       text-sm font-medium"
           >
             <Image
               width={16}
               height={16}
-              src="/icons/google96.svg"
+              src="/images/platform/google96.svg"
               alt="Google 로고"
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+              className="absolute left-3 h-4 w-4"
             />
-            <span
-              className="absolute left-1/2 top-1/2 
-                         -translate-x-1/2 -translate-y-1/2 
-                         text-sm font-medium"
-            >
-              Google로 시작하기
-            </span>
-          </button>
+            Google로 시작하기
+          </Button>
 
-          <button
-            className="relative w-full h-7 rounded-md hover:opacity-90 bg-[#FEE500] text-black"
+          {/* (2) Kakao 로그인 버튼 */}
+          <Button
+            variant="outline"
             onClick={handleKakaoLogin}
+            className="relative w-full h-7 
+                       rounded-md hover:bg-[#e0b000] 
+                       bg-[#FEE500] text-black 
+                       border-none
+                       flex items-center justify-center
+                       text-sm font-medium"
           >
             <Image
               width={16}
               height={16}
               src="/icons/kakao-logo.png"
               alt="Kakao 로고"
-              className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+              className="absolute left-3 h-4 w-4"
             />
-            <span
-              className="absolute left-1/2 top-1/2 
-                         -translate-x-1/2 -translate-y-1/2 
-                         text-sm font-medium"
-            >
-              카카오로 시작하기
-            </span>
-          </button>
+            카카오로 시작하기
+          </Button>
         </div>
 
         <p className="text-center text-xs text-gray-500 mt-4">

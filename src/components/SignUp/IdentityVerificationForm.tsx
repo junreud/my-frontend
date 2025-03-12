@@ -141,7 +141,7 @@ export default function IdentityVerificationForm() {
 
     try {
       // (2) 서버에 signup 요청 -> 인증 메일 발송 & Redis 저장
-      const response = await fetch("http://localhost:4000/auth/signup", {
+      const response = await fetch("https://localhost:4000/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -164,7 +164,7 @@ export default function IdentityVerificationForm() {
   // (C-2) '인증번호 확인' 버튼 클릭 => /auth/verify 호출
   const handleVerifyCode = async () => {
     try {
-      const response = await fetch("http://localhost:4000/auth/verify", {
+      const response = await fetch("https://localhost:4000/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code: verificationCode, password }),
@@ -195,7 +195,7 @@ export default function IdentityVerificationForm() {
    // [C-3] '재발송' 버튼 로직
    const handleResendCode = async () => {
      try {
-       const response = await fetch("http://localhost:4000/auth/signup", {
+       const response = await fetch("https://localhost:4000/auth/signup", {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({ email, password }),
@@ -214,10 +214,10 @@ export default function IdentityVerificationForm() {
   // [D] 소셜 로그인
   // -------------------------------------------------
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:4000/auth/google";
+    window.location.href = "https://localhost:4000/auth/google";
   };
   const handleKakaoLogin = () => {
-    window.location.href = "http://localhost:4000/auth/kakao";
+    window.location.href = "https://localhost:4000/auth/kakao";
   };
 
   // -------------------------------------------------

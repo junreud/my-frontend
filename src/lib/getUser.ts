@@ -1,7 +1,7 @@
 // lib/getUser.ts
 
 export async function fetchUserData() {
-    const res = await fetch("http://localhost:4000/auth/me", {
+    const res = await fetch("https://localhost:4000/auth/me", {
       // SSR에서 쿠키가 필요하다면, 아래와 같이 설정 (Next.js 13의 request cookies는 별도 처리)
       // credentials: "include",
       // headers: {...}
