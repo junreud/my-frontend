@@ -74,22 +74,22 @@ export function NavUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-gray-100">
                 <Sparkles />
                 Upgrade to Pro
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-gray-100">
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-gray-100">
                 <CreditCard />
                 Billing
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-gray-100 !important">
                 <Bell />
                 Notifications
               </DropdownMenuItem>

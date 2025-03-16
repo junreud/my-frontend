@@ -1,26 +1,30 @@
 "use client"
 
 import Link from "next/link"
-import * as Icons from "lucide-react"
-import { LucideProps } from "lucide-react"
+import clsx from "clsx"
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 
-/** 아이콘 타입 필터링 (에러 방지) */
-type MyLucideIcon = (props: LucideProps) => JSX.Element
+import type { LucideProps } from "lucide-react"
+import * as Icons from "lucide-react"
+
+// 아이콘 필터링
+export type MyLucideIcon = (props: LucideProps) => JSX.Element
 type IconObject = typeof Icons
 type ValidIconKeys = {
   [K in keyof IconObject]: IconObject[K] extends MyLucideIcon ? K : never
 }[keyof IconObject]
-type FilteredIcons = { [K in ValidIconKeys]: IconObject[K] }
+type FilteredIcons = {
+  [K in ValidIconKeys]: IconObject[K]
+}
 const iconsMap = Icons as FilteredIcons
 
 function getIconByName(iconName: string): MyLucideIcon {
@@ -30,29 +34,28 @@ function getIconByName(iconName: string): MyLucideIcon {
   return iconsMap["HelpCircle"]
 }
 
-// 타입들
+// NavCommon 타입
 interface SubItem {
   title: string
   url: string
 }
-
 interface ParentItem {
   title: string
   url: string
   icon: string
   items?: SubItem[]
 }
-
-interface NavSection {
+export interface NavSection {
   label: string
   items: ParentItem[]
 }
 
 interface NavCommonProps {
   sections: NavSection[]
+  currentPath: string
 }
 
-export function NavCommon({ sections }: NavCommonProps) {
+export function NavCommon({ sections, currentPath }: NavCommonProps) {
   return (
     <>
       {sections.map((section) => (
@@ -63,6 +66,11 @@ export function NavCommon({ sections }: NavCommonProps) {
               const IconComponent = getIconByName(item.icon)
               const hasSubItems = item.items && item.items.length > 0
 
+              // 부모 메뉴 활성화 여부
+              // 부분 매칭: currentPath.startsWith(item.url)
+              // 정확 매칭: currentPath === item.url
+              const isActiveParent = currentPath.startsWith(item.url)
+
               return (
                 <div key={item.title}>
                   {/* (1) 부모 메뉴 */}
@@ -70,19 +78,10 @@ export function NavCommon({ sections }: NavCommonProps) {
                     <SidebarMenuButton asChild>
                       <Link
                         href={item.url}
-                        className="
-                          flex
-                          items-center
-                          gap-3
-                          px-4
-                          py-3
-                          text-base
-                          font-medium
-                          transition-colors
-                          rounded-md
-                          hover:bg-accent
-                          hover:text-accent-foreground
-                        "
+                        className={clsx(
+                          "flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground",
+                          isActiveParent && "bg-accent text-accent-foreground"
+                        )}
                       >
                         <IconComponent className="shrink-0 h-5 w-5" />
                         <span>{item.title}</span>
@@ -90,31 +89,27 @@ export function NavCommon({ sections }: NavCommonProps) {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
 
-                  {/* (2) 서브 아이템 (항상 펼쳐서 표시) */}
+                  {/* (2) 하위 메뉴 (항상 펼쳐서 보여주는 버전) */}
                   {hasSubItems && (
                     <SidebarMenuSub className="ml-4 mt-1">
-                      {item.items?.map((sub) => (
-                        <SidebarMenuSubItem key={sub.title}>
-                          <SidebarMenuSubButton asChild>
-                            <Link
-                              href={sub.url}
-                              className="
-                                block
-                                px-3
-                                py-2
-                                text-sm
-                                rounded-md
-                                font-normal
-                                transition-colors
-                                hover:bg-accent
-                                hover:text-accent-foreground
-                              "
-                            >
-                              {sub.title}
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
+                      {item.items?.map((sub) => {
+                        const isActiveSub = currentPath.startsWith(sub.url)
+                        return (
+                          <SidebarMenuSubItem key={sub.title}>
+                            <SidebarMenuSubButton asChild>
+                              <Link
+                                href={sub.url}
+                                className={clsx(
+                                  "block px-3 py-2 text-sm rounded-md font-normal transition-colors hover:bg-accent hover:text-accent-foreground",
+                                  isActiveSub && "bg-accent text-accent-foreground"
+                                )}
+                              >
+                                {sub.title}
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        )
+                      })}
                     </SidebarMenuSub>
                   )}
                 </div>

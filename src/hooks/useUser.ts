@@ -1,3 +1,5 @@
+// hooks/useUser.ts
+
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
@@ -17,6 +19,7 @@ export interface User {
   avatar_url?: string
   // ...
   businesses?: Business[]
+  role?: string; // Add this line to include the role property
 }
 
 // (C) React Query로 user 정보 가져오기 + staleTime 설정

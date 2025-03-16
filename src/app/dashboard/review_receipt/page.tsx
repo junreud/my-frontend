@@ -45,7 +45,8 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
       </div>
-      <div className="relative w-full overflow-x-hidden">    </div>
+      <div className="relative w-full overflow-x-hidden">
+            </div>
       {/* 아래쪽: 그래프 + 키워드 테이블 영역 */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* 그래프 */}

@@ -17,6 +17,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts"
+import { Card } from "../ui/card"
 
 export default function RankReviewChart() {
   // (A) 2주간 “순위” 데이터 (예시)
@@ -58,8 +59,8 @@ export default function RankReviewChart() {
   ]
 
   return (
-    <div className="rounded-xl bg-gray-100 p-4">
-      <h2 className="mb-2 text-lg font-semibold">메인 키워드 순위변동 그래프</h2>
+  <Card className="p-4">      
+    <h2 className="mb-2 text-lg font-semibold">메인 키워드 순위변동 그래프</h2>
       <Tabs defaultValue="rank">
         <TabsList className="mb-4">
           <TabsTrigger value="rank">순위</TabsTrigger>
@@ -68,7 +69,7 @@ export default function RankReviewChart() {
 
         {/* (1) 순위 탭 */}
         <TabsContent value="rank">
-          <div className="h-64 w-full bg-white rounded shadow flex items-center justify-center">
+          <div className="h-64 w-full bg-white rounded  flex items-center justify-center">
             {/* ResponsiveContainer: 반응형 차트 */}
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={rankData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -132,6 +133,6 @@ export default function RankReviewChart() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+    </Card>
   )
 }

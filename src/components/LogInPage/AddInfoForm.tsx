@@ -7,6 +7,7 @@ import { SERVICE_TERM_TEXT } from "@/app/terms/serviceTerm";
 import { PRIVACY_TERM_TEXT } from "@/app/terms/privacyTerm";
 import { MARKETING_TERM_TEXT } from "@/app/terms/marketingTerm";
 import { useSearchParams } from "next/navigation";
+import { Checkbox } from "@/components/ui/checkbox"
 
 /** 
  * 휴대전화 포맷팅 (010-1234-5678)
@@ -450,85 +451,80 @@ export default function AddInfoForm() {
         </div>
 
         {/* (5) 약관들 */}
-        <div className="mb-4 border rounded p-3 bg-gray-50">
-          <div className="flex items-center justify-between mb-2">
-            <label className="flex items-center font-bold text-black">
-              <input
-                type="checkbox"
-                className="mr-2"
-                checked={agreeAll}
-                onChange={(e) => handleAgreeAll(e.target.checked)}
-              />
-              모든 약관에 전체 동의
-            </label>
-          </div>
+        <div className="mb-4 border rounded p-3 bg-white">
+      {/* 모든 약관 전체 동의 */}
+      <div className="flex items-center justify-between mb-2">
+        <label className="flex items-center font-bold text-black">
+          <Checkbox
+            className="mr-2"
+            checked={agreeAll}
+            onCheckedChange={(checked) => handleAgreeAll(Boolean(checked))}
+          />
+          모든 약관에 전체 동의
+        </label>
+      </div>
 
-          {/* 서비스 약관 (필수) */}
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <input
-                type="checkbox"
-                className="mr-2"
-                checked={agreeServiceTerm}
-                onChange={(e) => setAgreeServiceTerm(e.target.checked)}
-              />
-              <span className="text-sm font-medium">
-                서비스 이용약관 <span className="font-bold">(필수)</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => openTermModal(SERVICE_TERM_TEXT)}
-              className="text-gray-700 font-bold text-lg px-2"
-            >
-              ▶
-            </button>
-          </div>
-
-          {/* 개인정보 처리방침 (필수) */}
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <input
-                type="checkbox"
-                className="mr-2"
-                checked={agreePrivacyTerm}
-                onChange={(e) => setAgreePrivacyTerm(e.target.checked)}
-              />
-              <span className="text-sm font-medium">
-                개인정보 처리방침 <span className="font-bold">(필수)</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => openTermModal(PRIVACY_TERM_TEXT)}
-              className="text-gray-700 font-bold text-lg px-2"
-            >
-              ▶
-            </button>
-          </div>
-
-          {/* 마케팅 (선택) */}
-          <div className="flex items-center justify-between">
-            <div>
-              <input
-                type="checkbox"
-                className="mr-2"
-                checked={agreeMarketingTerm}
-                onChange={(e) => setAgreeMarketingTerm(e.target.checked)}
-              />
-              <span className="text-sm font-medium">
-                마케팅 및 광고성 정보 수신 동의 (선택)
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => openTermModal(MARKETING_TERM_TEXT)}
-              className="text-gray-700 font-bold text-lg px-2"
-            >
-              ▶
-            </button>
-          </div>
+      {/* 서비스 이용약관 (필수) */}
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <Checkbox
+            className="mr-2"
+            checked={agreeServiceTerm}
+            onCheckedChange={(checked) => setAgreeServiceTerm(Boolean(checked))}
+          />
+          <span className="text-sm font-medium">
+            서비스 이용약관 <span className="font-bold">(필수)</span>
+          </span>
         </div>
+        <button
+          type="button"
+          onClick={() => openTermModal(SERVICE_TERM_TEXT)}
+          className="text-gray-700 font-bold text-lg px-2"
+        >
+          ▶
+        </button>
+      </div>
+
+      {/* 개인정보 처리방침 (필수) */}
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <Checkbox
+            className="mr-2"
+            checked={agreePrivacyTerm}
+            onCheckedChange={(checked) => setAgreePrivacyTerm(Boolean(checked))}
+          />
+          <span className="text-sm font-medium">
+            개인정보 처리방침 <span className="font-bold">(필수)</span>
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => openTermModal(PRIVACY_TERM_TEXT)}
+          className="text-gray-700 font-bold text-lg px-2"
+        >
+          ▶
+        </button>
+      </div>
+
+      {/* 마케팅 및 광고성 정보 수신 (선택) */}
+      <div className="flex items-center justify-between">
+        <div>
+          <Checkbox
+            className="mr-2"
+            checked={agreeMarketingTerm}
+            onCheckedChange={(checked) => setAgreeMarketingTerm(Boolean(checked))}
+          />
+          <span className="text-sm font-medium">
+            마케팅 및 광고성 정보 수신 동의 (선택)
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => openTermModal(MARKETING_TERM_TEXT)}
+          className="text-gray-700 font-bold text-lg px-2"
+        >
+          ▶
+        </button>
 
         {/* 가입하기 버튼 */}
         <button
@@ -574,6 +570,8 @@ export default function AddInfoForm() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+      </div>
     </div>
   );
 }

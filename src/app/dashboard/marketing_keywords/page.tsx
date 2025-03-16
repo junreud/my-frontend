@@ -5,7 +5,6 @@
 import { AnimatedNumber } from "@/components/animations/AnimatedNumber"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import RankReviewChart from '@/components/dashboard/charts'
-import  CardStack  from '@/components/dashboard/cardstack'
 export default function DashboardHome() {
 
 
@@ -46,7 +45,8 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
       </div>
-      <CardStack />
+      <div className="relative w-full overflow-x-hidden">
+            </div>
       {/* 아래쪽: 그래프 + 키워드 테이블 영역 */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* 그래프 */}

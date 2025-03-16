@@ -1,8 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
-
 import { ReactNode } from "react";;
-import CustomCursor from "@/components/animations/CustomCursor";
+// import CustomCursor from "@/components/animations/CustomCursor";
 
 export const metadata = {
   title: "라카비, 온라인 마케팅 솔루션과 관리를 한 번에",
@@ -41,7 +40,7 @@ export default function RootLayout({
         {/* 전역 head 요소들 (폰트, 메타 태그 등) */}
       </head>
       <body>
-        <CustomCursor />
+        {/* <CustomCursor /> */}
         <main>{children}</main>
       </body>
     </html>
