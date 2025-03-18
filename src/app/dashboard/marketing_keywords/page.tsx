@@ -67,6 +67,16 @@ export default function Page() {
   const keywords = ["Pizza", "Burger", "Sushi", "Steak", "Pasta"];
   const [selectedKeyword, setSelectedKeyword] = useState("");
 
+  // NEW: Create alias with proper props for Combobox
+  const ComboboxWithProps = Combobox as React.FC<{
+    options: string[];
+    value: string;
+    onChange: React.Dispatch<React.SetStateAction<string>>;
+    placeholder: string;
+    renderOption: (option: string) => React.ReactElement;
+    className: string;
+  }>;
+
   // Data shown in the table
   const tableData = allTableData.slice(0, visibleRows);
 
@@ -123,7 +133,7 @@ export default function Page() {
 
           {/* Combobox on the right for user keywords */}
           <div className="w-64">
-            <Combobox
+            <ComboboxWithProps
               options={keywords}
               value={selectedKeyword}
               onChange={setSelectedKeyword}

@@ -17,19 +17,19 @@ interface RowData {
   금액: number;
   작업량: number;
 }
-function MyTableColumns() {
-  // Example widths or percentages. Adjust as needed.
-  return (
-    <colgroup>
-      <col style={{ width: "10%" }} />
-      <col style={{ width: "20%" }} />
-      <col style={{ width: "15%" }} />
-      <col style={{ width: "15%" }} />
-      <col style={{ width: "20%" }} />
-      <col style={{ width: "20%" }} />
-    </colgroup>
-  );
-}
+// function MyTableColumns() {
+//   // Example widths or percentages. Adjust as needed.
+//   return (
+//     <colgroup>
+//       <col style={{ width: "10%" }} />
+//       <col style={{ width: "20%" }} />
+//       <col style={{ width: "15%" }} />
+//       <col style={{ width: "15%" }} />
+//       <col style={{ width: "20%" }} />
+//       <col style={{ width: "20%" }} />
+//     </colgroup>
+//   );
+// }
 
 const PAGE_SIZE = 15;
 const allData: RowData[] = Array.from({ length: 30 }, (_, i) => ({
