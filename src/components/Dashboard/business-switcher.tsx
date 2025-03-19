@@ -24,17 +24,8 @@ import { getPlatformLogo } from "@/lib/getPlatformLogo"
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher"
 import { BusinessSheet } from "./BusinessSheet"
 
-// 예: Business 모델 (실제 정의에 맞게 수정)
-export type Business = {
-  place_name: string
-  platform: string
-  category?: string
-}
-
-// user 구조 (간단히)
-interface MyUser {
-  businesses?: Business[]
-}
+// Import the Business type from useBusinessSwitcher hook
+import { Business } from "@/types/index"
 
 // (A) LogoPart Props
 interface LogoPartProps {
@@ -82,10 +73,10 @@ function LogoPart({ isLoading, isError, activeBusiness }: LogoPartProps) {
 interface TextPartProps {
   isLoading: boolean
   isError: boolean
-  user?: MyUser
+  businesses?: Business[]
   activeBusiness: Business | null
 }
-function TextPart({ isLoading, isError, user, activeBusiness }: TextPartProps) {
+function TextPart({ isLoading, isError, businesses, activeBusiness }: TextPartProps) {
   if (isLoading) {
     return (
       <div className="grid flex-1 text-left text-sm leading-tight ml-3 gap-1">
@@ -102,7 +93,7 @@ function TextPart({ isLoading, isError, user, activeBusiness }: TextPartProps) {
       </div>
     )
   }
-  if (!user?.businesses || user.businesses.length === 0) {
+  if (!businesses || businesses.length === 0) {
     return (
       <div className="grid flex-1 text-left text-sm leading-tight ml-3">
         <span className="truncate font-semibold">업체 없음</span>
@@ -110,7 +101,7 @@ function TextPart({ isLoading, isError, user, activeBusiness }: TextPartProps) {
       </div>
     )
   }
-  // NEW: Guard against activeBusiness being null.
+  // Guard against activeBusiness being null.
   if (!activeBusiness) {
     return (
       <div className="grid flex-1 text-left text-sm leading-tight ml-3">
@@ -126,6 +117,7 @@ function TextPart({ isLoading, isError, user, activeBusiness }: TextPartProps) {
       </span>
       <span className="truncate text-xs">
         {activeBusiness.category}
+        {activeBusiness.isNewlyOpened && " • 신규"}
       </span>
     </div>
   )
@@ -135,7 +127,7 @@ function TextPart({ isLoading, isError, user, activeBusiness }: TextPartProps) {
 interface DropdownInnerProps {
   isLoading: boolean
   isError: boolean
-  user?: MyUser
+  businesses?: Business[]
   activeBusiness: Business | null
   onSelectBusiness: (b: Business) => void
   onClickAdd: () => void
@@ -144,7 +136,8 @@ interface DropdownInnerProps {
 function DropdownInner({
   isLoading,
   isError,
-  user,
+  businesses,
+  activeBusiness,
   onSelectBusiness,
   onClickAdd,
 }: DropdownInnerProps) {
@@ -164,7 +157,7 @@ function DropdownInner({
   }
 
   // 업체가 전혀 없는 경우
-  if (!user?.businesses || user.businesses.length === 0) {
+  if (!businesses || businesses.length === 0) {
     return (
       <>
         <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-2">
@@ -192,15 +185,28 @@ function DropdownInner({
       <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-2">
         업체 목록
       </DropdownMenuLabel>
-      {user.businesses.map((biz: Business, idx: number) => (
+      {businesses.map((biz: Business, idx: number) => (
         <DropdownMenuItem
-          key={biz.place_name + idx}
-          className="gap-2 p-2"
+          key={biz.place_id || idx}
+          className={`gap-2 p-2 ${activeBusiness?.place_id === biz.place_id ? 'bg-gray-100' : ''}`}
           onSelect={() => {
             onSelectBusiness(biz)
           }}
         >
-          {biz.place_name}
+          <div className="flex items-center gap-2">
+            <div className="size-4">
+              <Image
+                src={getPlatformLogo(biz.platform)}
+                alt={biz.platform}
+                width={16}
+                height={16}
+              />
+            </div>
+            <span>{biz.place_name}</span>
+            {biz.isNewlyOpened && (
+              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">신규</span>
+            )}
+          </div>
         </DropdownMenuItem>
       ))}
       <DropdownMenuSeparator />
@@ -223,7 +229,7 @@ function DropdownInner({
 export function BusinessSwitcher() {
   const { isMobile } = useSidebar()
   const {
-    user,
+    businesses,
     isLoading,
     isError,
     activeBusiness,
@@ -245,7 +251,7 @@ export function BusinessSwitcher() {
               <TextPart
                 isLoading={isLoading}
                 isError={isError}
-                user={user as MyUser} // Cast to MyUser to satisfy type requirements
+                businesses={businesses}
                 activeBusiness={activeBusiness}
               />
               <ChevronsUpDown className="ml-auto" />
@@ -261,7 +267,7 @@ export function BusinessSwitcher() {
             <DropdownInner
               isLoading={isLoading}
               isError={isError}
-              user={user as MyUser} // Cast here as well
+              businesses={businesses}
               activeBusiness={activeBusiness}
               onSelectBusiness={setActiveBusiness}
               onClickAdd={() => setSheetOpen(true)}

@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import clsx from "clsx"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -78,12 +77,13 @@ export function NavCommon({ sections, currentPath }: NavCommonProps) {
                     <SidebarMenuButton asChild>
                       <Link
                         href={item.url}
-                        className={clsx(
-                          "flex items-center gap-3 px-4 py-3 text-base font-medium transition-colors rounded-md hover:bg-accent hover:text-accent-foreground",
-                          isActiveParent && "bg-accent text-accent-foreground"
-                        )}
+                        className={`flex items-center gap-3 px-4 py-3 text-base transition-colors rounded-md ${
+                          isActiveParent 
+                            ? "bg-gray-200 text-black font-bold" 
+                            : "text-gray-500 hover:bg-gray-100 hover:text-black"
+                        }`}
                       >
-                        <IconComponent className="shrink-0 h-5 w-5" />
+                        <IconComponent className={`shrink-0 h-5 w-5 ${isActiveParent ? "stroke-[2px]" : ""}`} />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -99,10 +99,11 @@ export function NavCommon({ sections, currentPath }: NavCommonProps) {
                             <SidebarMenuSubButton asChild>
                               <Link
                                 href={sub.url}
-                                className={clsx(
-                                  "block px-3 py-2 text-sm rounded-md font-normal transition-colors hover:bg-accent hover:text-accent-foreground",
-                                  isActiveSub && "bg-accent text-accent-foreground"
-                                )}
+                                className={`block px-3 py-2 text-sm rounded-md transition-colors ${
+                                  isActiveSub 
+                                    ? "bg-gray-200 text-black font-medium" 
+                                    : "text-gray-500 hover:bg-gray-100 hover:text-black font-normal"
+                                }`}
                               >
                                 {sub.title}
                               </Link>

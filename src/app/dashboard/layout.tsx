@@ -24,6 +24,22 @@ import { Toaster } from "@/components/ui/sonner"
 //  position, duration 등은 <Toaster />에 prop으로 넘길 수 있음
 // ────────────────────────────────────────────────────────────
 
+// 경로와 한국어 이름 간의 매핑 정의
+const pathToKorean: Record<string, string> = {
+  'dashboard': '대시보드',
+  'marketing_keywords': '키워드 & 순위',
+  'marketing_status': '작업 현황',
+  'review_receipt': '영수증리뷰',
+  'review_blog': '블로그리뷰',
+  'payment_intro': 'Introduction',
+  'payment_started': 'Get Started',
+};
+
+// 경로 세그먼트를 한국어 이름으로 변환하는 함수
+const getKoreanName = (segment: string): string => {
+  return pathToKorean[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
+};
+
 export default function DashboardLayout({
   children,
 }: {
@@ -54,7 +70,8 @@ export default function DashboardLayout({
                     {segments.map((seg, index) => {
                       const href = "/" + segments.slice(0, index + 1).join("/")
                       const isLast = index === segments.length - 1
-                      const title = seg.charAt(0).toUpperCase() + seg.slice(1)
+                      // 한글 이름 가져오기
+                      const title = getKoreanName(seg)
 
                       return (
                         <BreadcrumbItem key={href}>

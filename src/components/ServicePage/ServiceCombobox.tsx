@@ -8,7 +8,6 @@ import {
   ComboboxOption,
 } from "@headlessui/react";
 import { CheckIcon, ChevronDownIcon } from "@heroicons/react/20/solid";
-import clsx from "clsx";
 
 interface Person {
   id: number;
@@ -58,7 +57,7 @@ export default function MyCombobox() {
               {({ selected }) => (
                 <div className="flex items-center gap-2">
                   <CheckIcon
-                    className={clsx("h-4 w-4", selected ? "visible" : "invisible")}
+                    className={`h-4 w-4 ${selected ? "visible" : "invisible"}`}
                   />
                   <span>{person.name}</span>
                 </div>

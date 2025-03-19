@@ -4,7 +4,6 @@ import * as React from "react"
 import * as Icons from "lucide-react"
 import { type LucideProps } from "lucide-react"
 import Link from "next/link"
-import clsx from "clsx"
 
 import {
   SidebarGroup,
@@ -63,12 +62,13 @@ export function NavSecondary({
                 <SidebarMenuButton asChild size="sm">
                   <Link
                     href={item.url}
-                    className={clsx(
-                      "flex items-center gap-2 px-3 py-2 transition-colors rounded-md hover:bg-accent hover:text-accent-foreground",
-                      isActive && "bg-accent text-accent-foreground"
-                    )}
+                    className={`flex items-center gap-2 px-3 py-2 transition-colors rounded-md ${
+                      isActive 
+                        ? "bg-gray-200 text-black font-medium" 
+                        : "text-gray-500 hover:bg-gray-100 hover:text-black"
+                    }`}
                   >
-                    <IconComponent className="h-4 w-4 shrink-0" />
+                    <IconComponent className={`h-4 w-4 shrink-0 ${isActive ? "stroke-[1.5px]" : ""}`} />
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>

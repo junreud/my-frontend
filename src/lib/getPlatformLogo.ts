@@ -2,9 +2,9 @@
 
 // (A) 플랫폼별 이미지 경로 딕셔너리
 const PLATFORM_LOGOS: Record<string, string> = {
-    naver: "/images/platforms/naver24.svg",
-    kakao: "/images/platforms/kakao96.svg",
-    google: "/images/platforms/google96.svg",
+    naver: "/images/platform/naver24.svg",
+    kakao: "/images/platform/kakao96.svg",
+    google: "/images/platform/google96.svg",
     // ...
   }
   
@@ -13,6 +13,6 @@ const PLATFORM_LOGOS: Record<string, string> = {
     if (platform in PLATFORM_LOGOS) {
       return PLATFORM_LOGOS[platform]
     }
-    return "/images/platforms/default.png"
+    return "/images/platform/default.png"
   }
   

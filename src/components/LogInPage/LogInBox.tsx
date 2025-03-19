@@ -180,7 +180,7 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
             <Image
               width={16}
               height={16}
-              src="/images/platform/google96.svg"
+              src="/icons/google96.svg"
               alt="Google 로고"
               className="absolute left-3 h-4 w-4"
             />

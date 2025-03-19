@@ -3,6 +3,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import { toast } from "sonner" // toast 임포트 추가
 import {
   Sheet,
   SheetContent,
@@ -26,9 +27,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 // (추가) shadcn/ui의 체크박스
 import { Checkbox } from "@/components/ui/checkbox"
-
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher"
-import type { FinalKeyword } from "@/hooks/useBusinessSwitcher"  // Add this import at the top
+import type { FinalKeyword, ApiError } from "@/types"  // Add ApiError import
 
 export function BusinessSheet({
   open,
@@ -45,6 +45,7 @@ export function BusinessSheet({
     dialogOpen,
     setDialogOpen,
     placeData,
+    normalizedData, // 추가: normalizedData를 가져옵니다
     setPlaceData,
     handleConfirmCreate,
     handleCheckPlace,
@@ -87,24 +88,36 @@ export function BusinessSheet({
     }
   }
 
-  // (B) 2차 Dialog “생성하기”
-  async function onConfirmCreate() {
-    // 일단 첫 번째 Dialog 닫기
-    setDialogOpen(false)
-    try {
-      setIsConfirming(true)
-      // store-place + etc
-      await handleConfirmCreate()
-
-      // 시트 닫기
-      onOpenChange(false)
-    } catch (err) {
-      console.error(err)
-      alert("업체 생성 과정 오류")
-    } finally {
-      setIsConfirming(false)
+// (B) 2차 Dialog "생성하기"
+async function onConfirmCreate() {
+  // 일단 첫 번째 Dialog 닫기
+  setDialogOpen(false)
+  try {
+    setIsConfirming(true)
+    console.log("Starting business creation process...");
+    
+    // store-place + etc
+    await handleConfirmCreate()
+    
+    // 시트 닫기
+    onOpenChange(false)
+  } catch (err: unknown) {
+    const error = err as ApiError;
+    console.error("Business creation error:", error);
+    
+    // 오류 메시지 추출 및 표시
+    let errorMessage = "업체 생성 과정에서 오류가 발생했습니다.";
+    if (error.response && error.response.data) {
+      errorMessage = error.response.data.message || errorMessage;
+    } else if (error.message) {
+      errorMessage = error.message;
     }
+    
+    toast.error(errorMessage);
+  } finally {
+    setIsConfirming(false)
   }
+}
 
   // 체크박스 토글
   function toggleKeyword(k: string) {
@@ -152,7 +165,7 @@ export function BusinessSheet({
       setPlaceUrl("")
       setPlaceData(null)
     }
-  }, [dialogOpen])
+  }, [dialogOpen, setSelectedPlatform, setPlaceUrl, setPlaceData])
 
   React.useEffect(() => {
     // whenever the dialog opens, close the sheet
@@ -161,11 +174,13 @@ export function BusinessSheet({
     }
   }, [dialogOpen, onOpenChange])
 
-  // URL이 너무 길면 ...으로 표시
+  // URL이 너무 길면 ...으로 표시 (수정) - 타입 안전성 개선
   const truncatedUrl =
-    placeData && placeData.normalizedUrl?.length > 30
-      ? placeData.normalizedUrl.slice(0, 30) + "..."
-      : placeData?.normalizedUrl
+    normalizedData?.normalizedUrl ? 
+      normalizedData.normalizedUrl.length > 30
+        ? normalizedData.normalizedUrl.slice(0, 30) + "..."
+        : normalizedData.normalizedUrl
+      : "";
 
   return (
     <>
@@ -303,7 +318,7 @@ export function BusinessSheet({
                 </div>
                 <Badge className="bg-white text-black">
                   <a
-                    href={placeData.normalizedUrl}
+                    href={normalizedData?.normalizedUrl} // 수정: normalizedData에서 URL 가져오기
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline"

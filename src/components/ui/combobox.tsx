@@ -21,24 +21,16 @@ import {
 
 const frameworks = [
   {
-    value: "next.js",
-    label: "Next.js",
+    value: "사당맛집",
+    label: "사당맛집",
   },
   {
-    value: "sveltekit",
-    label: "SvelteKit",
+    value: "사당고기집",
+    label: "사당고기집",
   },
   {
-    value: "nuxt.js",
-    label: "Nuxt.js",
-  },
-  {
-    value: "remix",
-    label: "Remix",
-  },
-  {
-    value: "astro",
-    label: "Astro",
+    value: "사당삼겹살",
+    label: "사당삼겹살",
   },
 ]
 

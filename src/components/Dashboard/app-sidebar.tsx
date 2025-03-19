@@ -82,6 +82,8 @@ interface UserMeResponse {
   role: string
 }
 
+// Remove the cn function - we'll use template literals directly
+
 /** (C) 메인 사이드바 컴포넌트 */
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   // (1) 현재 경로 가져오기
@@ -168,12 +170,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuButton asChild>
                 <Link
                   href="/dashboard"
-                  className={`
-                    flex items-center gap-3 px-4 py-3 text-base font-medium
-                    transition-colors rounded-md hover:bg-accent
-                  `}
+                  className={`flex items-center gap-3 px-4 py-3 text-base transition-colors rounded-md ${
+                    pathname === "/dashboard"
+                      ? "bg-gray-200 text-black font-medium"
+                      : "text-gray-500 hover:bg-gray-100 hover:text-black"
+                  }`}
                 >
-                  <Home className="shrink-0 h-5 w-5" />
+                  <Home className={`shrink-0 h-5 w-5 ${pathname === "/dashboard" ? "stroke-[2px]" : ""}`} />
                   <span>대시보드 홈</span>
                 </Link>
               </SidebarMenuButton>

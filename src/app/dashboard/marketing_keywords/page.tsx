@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 // shadcn/ui components – adjust import paths based on your project structure
 import {
   Accordion,
@@ -8,9 +8,12 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
+// 테이블 컴포넌트 임포트 추가
+import TableComponent from "@/components/TableComponent";
+// BusinessSwitcher 다시 추가
+import { BusinessSwitcher } from "@/components/dashboard/business-switcher";
+import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 
 // Recharts components
 import {
@@ -43,28 +46,17 @@ const detailedChartData = [
 ];
 
 // Generate 300 rows of sample data
-function createTableData() {
-  const rows = [];
-  for (let i = 1; i <= 300; i++) {
-    rows.push({
-      rank: i,
-      name: `Business ${i}`,
-      category: i % 2 === 0 ? "Restaurant" : "Cafe",
-      receiptReviews: Math.floor(Math.random() * 1000),
-      blogReviews: Math.floor(Math.random() * 2000),
-    });
-  }
-  return rows;
-}
-
-const allTableData = createTableData();
 
 export default function Page() {
   const [accordionOpen, setAccordionOpen] = useState(false);
-  const [visibleRows, setVisibleRows] = useState(150);
+  const [rangeValue, setRangeValue] = useState(25); // added state for range
+  const [isRangePressed, setIsRangePressed] = useState(false); // New state for press detection
+
+  // Get business information from the hook
+  const { activeBusiness } = useBusinessSwitcher();
 
   // For the combobox example (shadcn/ui)
-  const keywords = ["Pizza", "Burger", "Sushi", "Steak", "Pasta"];
+  const keywords = ["사당맛집", "사당고기집", "사당삼겹살",];
   const [selectedKeyword, setSelectedKeyword] = useState("");
 
   // NEW: Create alias with proper props for Combobox
@@ -76,13 +68,23 @@ export default function Page() {
     renderOption: (option: string) => React.ReactElement;
     className: string;
   }>;
-
-  // Data shown in the table
-  const tableData = allTableData.slice(0, visibleRows);
+  
+  // Update title with active business name
+  useEffect(() => {
+    if (activeBusiness?.place_name) {
+      document.title = `${activeBusiness.place_name} - 키워드 순위`;
+    } else {
+      document.title = "키워드 순위";
+    }
+  }, [activeBusiness]);
 
   return (
     <div className="p-6 space-y-8">
-      {/* --- SECTION 1: Accordion with Recharts --- */}
+      {/* Add BusinessSwitcher at the top */}
+      <div className="md:hidden mb-4">
+        <BusinessSwitcher />
+      </div>
+      
       <Accordion
         type="single"
         collapsible
@@ -90,26 +92,67 @@ export default function Page() {
         className="border rounded"
       >
         <AccordionItem value="item-1">
-          <AccordionTrigger className="p-4 text-left">
-            {/* Collapsed display: “1. 키워드명 & 간소화된 그래프” */}
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">1.</span>
-              <span>사당 고기집 (예시 키워드)</span>
+          <AccordionTrigger className="px-4">
+            <div className="grid grid-cols-3 items-center gap-4">
+              {/* Left text */}
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">1.</span>
+                <span>사당 고기집</span>
+              </div>
+
+              {/* Center chart */}
+              <div className="mx-auto w-80 h-16">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={simpleChartData}
+                    margin={{ top: 2, right: 2, left: 2, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" hide />
+                    <YAxis hide />
+                    <Tooltip />
+                    <Line
+                      type="monotone"
+                      dataKey="uv"
+                      stroke="#8884d8"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Right text */}
+              <div className="text-right">
+                <span>현재 순위: ?위</span>
+              </div>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="p-4">
-            {/* Expanded display: a bit more detailed chart */}
-            <div className="transition-all duration-300">
-              <ResponsiveContainer width="100%" height={300}>
+
+          {/* forceMount로 컴포넌트를 항상 DOM에 남도록 유지 */}
+          <AccordionContent forceMount>
+            {/* 아코디언이 열리고 닫힐 때, height를 0->300px으로 전환 */}
+            <div
+              className={`transition-all duration-300 overflow-hidden ${
+                accordionOpen ? "h-[300px]" : "h-0"
+              }`}
+            >
+              {/* ResponsiveContainer에 height="100%"로 주어야 트랜지션에 따라 동적으로 확대 */}
+              <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                  data={accordionOpen ? detailedChartData : simpleChartData}
+                  data={detailedChartData}
                   margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Line type="monotone" dataKey="uv" stroke="#8884d8" strokeWidth={2} />
+                  <Line
+                    type="monotone"
+                    dataKey="uv"
+                    stroke="#8884d8"
+                    strokeWidth={2}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -121,18 +164,8 @@ export default function Page() {
       <div className="space-y-4">
         {/* Table header row with Time Machine button (left) and Combobox (right) */}
         <div className="flex items-center justify-between">
-          {/* Time machine button + popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline">타임머신</Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-4">
-              <p className="text-sm">여기에 타임머신 관련 팝오버 내용을 넣을 수 있습니다.</p>
-            </PopoverContent>
-          </Popover>
-
-          {/* Combobox on the right for user keywords */}
-          <div className="w-64">
+          {/* Combobox on the left for user keywords */}
+          <div className="w-64 mb-4">
             <ComboboxWithProps
               options={keywords}
               value={selectedKeyword}
@@ -142,50 +175,46 @@ export default function Page() {
               className="border p-2 rounded"
             />
           </div>
+          {/* Time machine button + popover on the right */}
+          <div className="w-full max-w-xs relative">
+            {isRangePressed && (
+              <div
+                style={{ left: `${rangeValue}%`, transform: "translateX(-50%)" }}
+                className="absolute -top-8 px-2 py-1"
+              >
+                {rangeValue / 25 + 1}
+              </div>
+            )}
+            <input
+              type="range"
+              min={0}
+              max="100"
+              value={rangeValue}
+              className="range"
+              step="25"
+              onMouseDown={() => setIsRangePressed(true)}
+              onMouseUp={() => setIsRangePressed(false)}
+              onTouchStart={() => setIsRangePressed(true)}
+              onTouchEnd={() => setIsRangePressed(false)}
+              onChange={(e) => setRangeValue(Number(e.target.value))}
+            />
+
+            <div className="flex justify-between px-2.5 mt-0.5 text-xs">
+              <span>1</span>
+              <span>2</span>
+              <span>3</span>
+              <span>4</span>
+              <span>5</span>
+            </div>
+          </div>      
         </div>
 
-        {/* Striped table (HTML + Tailwind) */}
-        <div className="w-full overflow-auto border border-slate-200 rounded-lg">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gray-100 text-sm font-medium text-slate-600">
-              <tr>
-                <th className="px-2.5 py-2 text-start">순위</th>
-                <th className="px-2.5 py-2 text-start">업체명</th>
-                <th className="px-2.5 py-2 text-start">카테고리</th>
-                <th className="px-2.5 py-2 text-start">영수증리뷰</th>
-                <th className="px-2.5 py-2 text-start">블로그리뷰</th>
-                <th className="px-2.5 py-2 text-start">저장하기</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tableData.map((item, idx) => (
-                <tr
-                  key={idx}
-                  className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                >
-                  <td className="p-3">{item.rank}</td>
-                  <td className="p-3">{item.name}</td>
-                  <td className="p-3">{item.category}</td>
-                  <td className="p-3">{item.receiptReviews}</td>
-                  <td className="p-3">{item.blogReviews}</td>
-                  <td className="p-3">
-                    <Button variant="outline" size="sm">
-                      저장
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* "Load more" button at bottom center */}
-        <div className="flex justify-center mt-4">
-          {visibleRows < 300 && (
-            <Button onClick={() => setVisibleRows(300)}>
-              더보기
-            </Button>
-          )}
+        {/* 기존 테이블을 TableComponent로 교체 */}
+        <div className="overflow-x-auto">
+          <TableComponent 
+            title={`${selectedKeyword || '키워드'} 순위 테이블`}
+            selectedKeyword={selectedKeyword}
+          />
         </div>
       </div>
     </div>
