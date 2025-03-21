@@ -5,6 +5,10 @@ import { useUserBusinesses } from "./useUserBusinesses"
 import { useBusinessCreation } from "./useBusinessCreation"
 import { FinalKeyword, Platform } from "@/types"
 import { toast } from "sonner"
+import { createLogger } from "@/lib/logger"
+
+const logger = createLogger('BusinessSwitcher');
+
 export function useBusinessSwitcher() {
   // 1) 유저 가져오기
   const { data: user, isLoading: userIsLoading } = useUser()
@@ -17,15 +21,12 @@ export function useBusinessSwitcher() {
     isLoading: businessesLoading,
     isError: businessesError,
     refetch,
-  } = useUserBusinesses(user?.id ? String(user.id) : undefined) // Convert to string if needed
-
-  // // Add debugging console log to see if businesses data is received correctly
-  // console.log("Business data in useBusinessSwitcher:", {
-  //   businessesExist: !!businesses,
-  //   businessCount: businesses?.length,
-  //   firstBusiness: businesses?.[0],
-  //   activeBusiness
-  // });
+    // Add new properties
+    businessLimit,
+    canAddMoreBusinesses,
+    remainingBusinessCount,
+    userRole,
+  } = useUserBusinesses(user?.id ? String(user.id) : undefined)
 
   // 3) 비즈니스 생성 로직
   const {
@@ -33,15 +34,20 @@ export function useBusinessSwitcher() {
     progressPercent,
     normalizedData,
     finalKeywords,
+    keywordDialogOpen,
+    setKeywordDialogOpen,
     normalizeMutation,
     createBusinessMutation,
     saveKeywordsMutation,
-  } = useBusinessCreation(user?.id ? String(user.id) : undefined) // Convert to string if needed
+    savedPlaceId,
+    restoreState,
+    resetState,
+  } = useBusinessCreation(user?.id ? String(user.id) : undefined)
 
   // UI 상태 (Sheet, Dialog)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [keywordDialogOpen, setKeywordDialogOpen] = useState(false)
+  // keywordDialogOpen과 setKeywordDialogOpen은 useBusinessCreation에서 가져온 것을 사용
 
   // Form
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>("")
@@ -60,36 +66,30 @@ export function useBusinessSwitcher() {
   const handleCheckPlace = async () => {
     if (isDisabled) return
     
+    logger.info("URL 정규화 시작", { platform: selectedPlatform, url: placeUrl });
+    
     try {
-      console.log("URL 정규화 시작:", { platform: selectedPlatform, placeUrl });
-      
-      // URL 정규화 실행
       const res = await normalizeMutation.mutateAsync({
         platform: selectedPlatform,
         placeUrl,
       })
       
-      console.log("URL 정규화 응답:", res);
-      
-      // 응답 확인 및 안전하게 처리
       if (res && res.success && res.placeInfo) {
-        console.log("정규화 성공, placeData 설정:", res.placeInfo);
+        logger.info("URL 정규화 성공", { placeName: res.placeInfo.place_name });
         
-        // 정규화 성공 시 placeData 설정
         setPlaceData({
           place_name: res.placeInfo.place_name,
           category: res.placeInfo.category,
           platform: res.placeInfo.platform,
         });
         
-        // Dialog 열기
         setDialogOpen(true);
       } else {
-        console.error("정규화 응답이 유효하지 않음:", res);
+        logger.warn("URL 정규화 응답 유효성 검증 실패", res);
         toast.error("업체 정보를 불러올 수 없습니다. 다시 시도해주세요.");
       }
     } catch (error) {
-      console.error("URL 정규화 과정에서 오류 발생:", error);
+      logger.error("URL 정규화 오류", error);
       toast.error("업체 확인 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   }
@@ -100,10 +100,35 @@ export function useBusinessSwitcher() {
     createBusinessMutation.mutate()
   }
 
-  // 키워드 선택 저장
-  const handleSaveSelectedKeywords = (keywords: FinalKeyword[]) => {
-    saveKeywordsMutation.mutate(keywords)
+  // 키워드 선택 저장 - 타입 오류 수정
+  const handleSaveSelectedKeywords = (params: {
+    keywords: FinalKeyword[],
+    placeId: string | number
+  }) => {
+    saveKeywordsMutation.mutate(params)
   }
+
+  // 사용자가 새 비즈니스를 추가할 수 있는지 확인하는 함수
+  const checkCanAddBusiness = () => {
+    if (!canAddMoreBusinesses) {
+      if (userRole === 'user') {
+        toast.error("무료 계정은 최대 3개의 업체만 등록할 수 있습니다. 플러스 플랜으로 업그레이드하세요.");
+      } else if (userRole === 'plus') {
+        toast.error("플러스 계정은 최대 10개의 업체만 등록할 수 있습니다.");
+      } else {
+        toast.error("더 이상 업체를 등록할 수 없습니다.");
+      }
+      return false;
+    }
+    return true;
+  };
+
+  // Sheet 열기 함수 수정
+  const openBusinessSheet = () => {
+    if (checkCanAddBusiness()) {
+      setSheetOpen(true);
+    }
+  };
 
   return {
     // User & Business
@@ -115,10 +140,19 @@ export function useBusinessSwitcher() {
     isError: businessesError,
     refetchBusinesses: refetch,
 
+    // Business limit related
+    canAddMoreBusinesses,
+    businessLimit,
+    remainingBusinessCount,
+    userRole,
+    
+    // Open sheet with business limit check
+    openBusinessSheet,
+
     // UI State
     sheetOpen, setSheetOpen,
     dialogOpen, setDialogOpen,
-    keywordDialogOpen, setKeywordDialogOpen,
+    keywordDialogOpen, setKeywordDialogOpen,  // useBusinessCreation에서 바로 가져온 값
 
     // Form
     selectedPlatform, setSelectedPlatform,
@@ -144,8 +178,9 @@ export function useBusinessSwitcher() {
     handleConfirmCreate,
     handleSaveSelectedKeywords,
 
-    // Mutation states
-    isCreatingBusiness: createBusinessMutation.isPending, // Fix: Use isPending instead of isLoading
-    isSavingKeywords: saveKeywordsMutation.isPending, // Fix: Use isPending instead of isLoading
+
+    // 업체 생성 진행 상태 관리
+    restoreState,
+    resetState,
   }
 }

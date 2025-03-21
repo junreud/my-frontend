@@ -17,6 +17,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { BusinessSwitcherListener } from '@/components/ui/business-switcher-listener';
 
 // ────────────────────────────────────────────────────────────
 // 1) shadcn/ui Toast 불러오기
@@ -91,6 +92,7 @@ export default function DashboardLayout({
                 </Breadcrumb>
               </div>
             </header>
+            <BusinessSwitcherListener />
 
             <main className="flex-1 p-4">{children}</main>
           </SidebarInset>

@@ -131,6 +131,8 @@ interface DropdownInnerProps {
   activeBusiness: Business | null
   onSelectBusiness: (b: Business) => void
   onClickAdd: () => void
+  canAddMoreBusinesses: boolean
+  userRole: string
 }
 
 function DropdownInner({
@@ -140,6 +142,8 @@ function DropdownInner({
   activeBusiness,
   onSelectBusiness,
   onClickAdd,
+  canAddMoreBusinesses,
+  userRole,
 }: DropdownInnerProps) {
   // 로딩/에러
   if (isLoading || isError) {
@@ -166,7 +170,11 @@ function DropdownInner({
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="gap-2 p-2"
-          onSelect={() => {
+          onSelect={(e) => {
+            if (!canAddMoreBusinesses) {
+              e.preventDefault()
+              return
+            }
             onClickAdd()
           }}
         >
@@ -210,17 +218,31 @@ function DropdownInner({
         </DropdownMenuItem>
       ))}
       <DropdownMenuSeparator />
-      <DropdownMenuItem
-        className="gap-2 p-2"
-        onSelect={() => {
-          onClickAdd()
-        }}
-      >
-        <div className="flex size-6 items-center justify-center rounded-md border bg-background">
-          <Plus className="size-4" />
-        </div>
-        <div className="font-medium text-muted-foreground">업체 추가하기</div>
-      </DropdownMenuItem>
+      {canAddMoreBusinesses ? (
+        <DropdownMenuItem
+          className="gap-2 p-2"
+          onSelect={() => {
+            onClickAdd()
+          }}
+        >
+          <div className="flex size-6 items-center justify-center rounded-md border bg-background">
+            <Plus className="size-4" />
+          </div>
+          <div className="font-medium text-muted-foreground">업체 추가하기</div>
+        </DropdownMenuItem>
+      ) : (
+        <DropdownMenuItem
+          className="gap-2 p-2 opacity-70 cursor-not-allowed"
+          onSelect={(e) => e.preventDefault()}
+        >
+          <div className="flex size-6 items-center justify-center rounded-md border bg-background">
+            <Plus className="size-4" />
+          </div>
+          <div className="font-medium text-muted-foreground">
+            {userRole === 'user' ? "플랜 업그레이드 필요" : "업체 추가 불가"}
+          </div>
+        </DropdownMenuItem>
+      )}
     </>
   )
 }
@@ -236,6 +258,8 @@ export function BusinessSwitcher() {
     setActiveBusiness,
     sheetOpen,
     setSheetOpen,
+    canAddMoreBusinesses,
+    userRole,
   } = useBusinessSwitcher()
 
   return (
@@ -271,6 +295,8 @@ export function BusinessSwitcher() {
               activeBusiness={activeBusiness}
               onSelectBusiness={setActiveBusiness}
               onClickAdd={() => setSheetOpen(true)}
+              canAddMoreBusinesses={canAddMoreBusinesses}
+              userRole={userRole}
             />
           </DropdownMenuContent>
         </DropdownMenu>

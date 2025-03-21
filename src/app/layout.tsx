@@ -1,6 +1,6 @@
 // app/layout.tsx
 import "./globals.css";
-import { ReactNode } from "react";;
+import { ReactNode } from "react";
 // import CustomCursor from "@/components/animations/CustomCursor";
 
 export const metadata = {

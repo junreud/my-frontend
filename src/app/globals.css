@@ -27,7 +27,17 @@
     --border: 0 0% 90%;
     --radius: 8px;
     --card: oklch(1 0 0);
-
   }
- 
+  :root {
+    color-scheme: light !important;
+  }
+  /* 2) 기본 글씨/배경색 강제 덮어쓰기 */
+  html, body {
+    color: #000000 ;
+  }
+  /* 3) 혹시 버튼이나 테두리가 모두 회색이라면, 테두리 및 버튼 색도 강제 지정 */
+  button, a, input, select, textarea {
+    color: #000000 ;
+    border-color: #000000 ;
+  }
 }

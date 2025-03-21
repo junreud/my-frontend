@@ -1,170 +1,538 @@
-// hooks/useBusinessCreation.ts
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "@/components/ui/sonner"
+import { useProgressToast } from "@/hooks/useProgressToast"
+import { createLogger } from "@/lib/logger"
 import {
   normalizeUrl,
   storePlace,
-  generateKeywords,
+  chatgptKeywordsHandler,
   combineKeywords,
   checkSearchVolume,
   groupKeywords,
   saveSelectedKeywords,
 } from "@/services/keywordServices"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { toast } from "sonner"
-import {
+import type {
+  Platform,
+  ProgressStep,
   NormalizeResponse,
   FinalKeyword,
-  ProgressStep,
-  Platform,
-  PlaceInfoWithUser
 } from "@/types"
+
+// 로컬 스토리지 키 상수
+const STORAGE_KEY = 'business_creation_state'
+const logger = createLogger('BusinessCreation');
 
 export function useBusinessCreation(userId?: string) {
   const queryClient = useQueryClient()
   
-  // 단계별 Progress state
+  // 프로그레스 토스트 훅 사용
+  const progressToast = useProgressToast({
+    autoCloseDelay: 3000,
+    position: "bottom-right"
+  })
+
+  // 진행 상태
   const [currentStep, setCurrentStep] = useState<ProgressStep>("idle")
   const [progressPercent, setProgressPercent] = useState(0)
-  
-  // URL 정규화 결과
+
+  // 데이터 상태
   const [normalizedData, setNormalizedData] = useState<NormalizeResponse | null>(null)
   const [finalKeywords, setFinalKeywords] = useState<FinalKeyword[]>([])
+  
+  // 새 상태 추가: 저장된 place_id
+  const [savedPlaceId, setSavedPlaceId] = useState<string | number | null>(null)
+
+  // 키워드 다이얼로그 상태
+  const [keywordDialogOpen, setKeywordDialogOpen] = useState(false)
+
+  // 진행 상태 업데이트
+  const updateProgress = (step: ProgressStep, percent: number) => {
+    logger.debug("진행 상태 업데이트", { step, percent });
+    setCurrentStep(step)
+    setProgressPercent(percent)
+  }
+
+  // 상태 복구 함수
+  const restoreState = () => {
+    try {
+      logger.debug("저장된 상태 복구 시도");
+      const savedState = localStorage.getItem(STORAGE_KEY)
+      if (savedState) {
+        const parsed = JSON.parse(savedState)
+        
+        if (parsed.userId === userId) {
+          logger.info("저장된 상태 복구 성공", { 
+            step: parsed.currentStep, 
+            progress: parsed.progressPercent 
+          });
+          
+          updateProgress(parsed.currentStep, parsed.progressPercent)
+          if (parsed.normalizedData) setNormalizedData(parsed.normalizedData)
+          if (parsed.finalKeywords) setFinalKeywords(parsed.finalKeywords)
+          if (parsed.savedPlaceId) setSavedPlaceId(parsed.savedPlaceId)
+        } else {
+          logger.debug("저장된 상태의, 사용자 ID가 다름", {
+            savedId: parsed.userId,
+            currentId: userId
+          });
+        }
+      } else {
+        logger.debug("저장된 상태 없음");
+      }
+    } catch (error) {
+      logger.error("상태 복구 중 오류 발생", error);
+    }
+  }
+
+  // 상태 저장 함수
+  const saveState = () => {
+    try {
+      if (currentStep !== "idle") {
+        logger.debug("현재 상태 저장", { currentStep, progressPercent });
+        
+        const stateToSave = {
+          userId,
+          currentStep,
+          progressPercent,
+          normalizedData,
+          finalKeywords,
+          savedPlaceId
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+      }
+    } catch (error) {
+      logger.error("상태 저장 중 오류 발생", error);
+    }
+  }
+
+  // 상태 초기화 함수
+  const resetState = () => {
+    logger.info("상태 초기화");
+    updateProgress("idle", 0)
+    setNormalizedData(null)
+    setFinalKeywords([])
+    setSavedPlaceId(null)
+    localStorage.removeItem(STORAGE_KEY)
+    progressToast.resetProgress()
+  }
+
+  // 초기 마운트 시 저장된 상태 복구
+  useEffect(() => {
+    if (userId) {
+      logger.debug("컴포넌트 마운트 - 상태 복구 시도", { userId });
+      restoreState()
+    }
+  }, [userId])
+
+  // 상태 변경 시 저장
+  useEffect(() => {
+    saveState()
+  }, [currentStep, progressPercent, normalizedData, finalKeywords, savedPlaceId])
 
   // 1) URL 정규화
   const normalizeMutation = useMutation({
     mutationFn: async ({ platform, placeUrl }: { platform: Platform; placeUrl: string }) => {
-      setCurrentStep("normalizing")
-      setProgressPercent(10)
+      logger.info("URL 정규화 시작", { platform, placeUrl });
+      
+      progressToast.showNormalizing()
+      updateProgress("normalizing", 10)
+      
       try {
-        const res = await normalizeUrl(placeUrl, platform)
-        
-        // 반환값이 존재하고 success 속성이 있는지 확인
-        if (res && typeof res === 'object') {
-          return res
-        } else {
-          // 유효한 응답이 아닌 경우 적절한 오류 객체 반환
-          throw new Error('유효하지 않은 응답 형식입니다.');
-        }
+        // logTiming 사용하여 API 호출 시간 측정
+        return await logger.logTiming("정규화 API 호출", async () => {
+          const res = await normalizeUrl(placeUrl, platform, userId || "")
+          
+          logger.debug("정규화 API 응답 수신", {
+            success: res?.success,
+            hasPlaceInfo: !!res?.placeInfo
+          });
+          
+          if (res && typeof res === 'object') {
+            return res
+          } else {
+            logger.warn("유효하지 않은 응답 형식", { response: res });
+            throw new Error('유효하지 않은 응답 형식입니다.');
+          }
+        });
       } catch (error) {
-        console.error("URL 정규화 오류:", error)
-        throw error; // 오류를 다시 던져서 onError 핸들러가 처리하도록 함
+        logger.error("URL 정규화 실패", error);
+        throw error;
       }
     },
     onSuccess: (data) => {
       if (data?.success) {
-        setNormalizedData(data); // 이제 data는 항상 NormalizeResponse 타입
+        if (data.alreadyRegistered) {
+          logger.info("이미 등록된 URL 감지");
+          toast.error("이미 등록한 URL입니다.");
+          setCurrentStep("idle");
+          setProgressPercent(0);
+          return;
+        }
+        
+        logger.info("URL 정규화 성공", {
+          placeName: data.placeInfo?.place_name,
+          platform: data.placeInfo?.platform
+        });
+        
+        setNormalizedData(data);
+      } else {
+        logger.warn("정규화 응답에 success=false");
       }
-      setCurrentStep("idle")
-      setProgressPercent(0)
+      updateProgress("idle", 0)
     },
-    onError: (error: Error) => {
-      console.error(error)
-      toast.error(error.message || "URL 정규화 중 오류 발생")
-      setCurrentStep("idle")
-      setProgressPercent(0)
+    onError: (error: unknown) => {
+      logger.error("URL 정규화 오류 처리", error);
+      const errorMessage = error instanceof Error ? error.message : "URL 정규화 중 오류 발생";
+      toast.error(errorMessage);
+      updateProgress("idle", 0);
     }
   })
 
   // 2) 업체 저장 → 3) 키워드 생성 → 4) 키워드 조합 → 5) 검색량 체크 → 6) 키워드 그룹화
   const createBusinessMutation = useMutation({
     mutationFn: async () => {
-      if (!normalizedData?.placeInfo || !userId) {
-        throw new Error("정규화 데이터가 없거나 유저 정보가 없습니다.")
+      // 전체 프로세스 시작 로깅
+      logger.group("비즈니스 생성 프로세스", () => {
+        if (!normalizedData?.placeInfo || !userId) {
+          logger.error("필수 데이터 누락", { 
+            hasPlaceInfo: !!normalizedData?.placeInfo,
+            hasUserId: !!userId 
+          });
+          throw new Error("정규화 데이터가 없거나 유저 정보가 없습니다.");
+        }
+        
+        logger.info("비즈니스 생성 시작", { 
+          userId,
+          placeName: normalizedData.placeInfo.place_name 
+        });
+      });
+      
+      // 필수 데이터 확인 (TypeScript 오류 방지)
+      if (!normalizedData || !normalizedData.placeInfo || !userId) {
+        throw new Error("정규화 데이터가 없거나 유저 정보가 없습니다.");
       }
-
-      // ---- (2) 업체 저장 ----
-      setCurrentStep("storing")
-      setProgressPercent(20)
-      console.log("정규화 데이터 확인:", normalizedData.placeInfo);
-
-      const storeRes = await storePlace(userId, {
-        place_id: normalizedData.placeInfo.place_id || (normalizedData.placeInfo.placeId as string),
-        place_name: normalizedData.placeInfo.place_name,
-        category: normalizedData.placeInfo.category,
-        platform: normalizedData.placeInfo.platform as Platform, 
-      })
-      if (!storeRes.success) throw new Error("업체 저장 실패")
-
-      // ---- (3) 키워드 생성 ----
-      setCurrentStep("generating")
-      setProgressPercent(40)
-      const placeInfoWithUser: PlaceInfoWithUser = {
-        ...normalizedData.placeInfo,
-        userId,
-        platform: normalizedData.placeInfo.platform as Platform,
+      
+      // place_id 확인 및 저장 - 여러 가능한 위치에서 확인
+      const placeId = normalizedData.placeInfo.place_id || 
+                     (normalizedData.placeInfo as any).placeId ||
+                     normalizedData.placeInfo.id;
+      
+      if (!placeId) {
+        logger.error("place_id를 찾을 수 없습니다", normalizedData.placeInfo);
+        throw new Error("업체 ID 정보를 찾을 수 없습니다.");
       }
-      const genRes = await generateKeywords(placeInfoWithUser)
-      if (!genRes.success) throw new Error("키워드 생성 실패")
+      
+      // 명시적으로 값 로깅 및 저장
+      logger.info("place_id를 저장합니다", { placeId });
+      
+      // place_id를 상태와 로컬 스토리지에 저장
+      setSavedPlaceId(placeId);
+      localStorage.setItem('current_place_id', String(placeId));
+      
+      // 세션 스토리지에도 저장하여 페이지 새로고침 시에도 유지
+      sessionStorage.setItem('current_place_id', String(placeId));
+      
+      // 현재 사용자를 위한 고유한 스토리지 키 생성
+      if (userId) {
+        const userPlaceKey = `place_id_${userId}`;
+        localStorage.setItem(userPlaceKey, String(placeId));
+      }
+      try {
+        // ---- (2) 업체 저장 ----
+        logger.group("업체 저장 단계", () => {
+          progressToast.showStoring();
+          updateProgress("storing", 20);
+          
+          logger.debug("저장할 업체 정보", {
+            place_id: placeId,
+            place_name: normalizedData.placeInfo.place_name,
+            category: normalizedData.placeInfo.category,
+            platform: normalizedData.placeInfo.platform
+          });
+        });
+        
+        // logTiming 사용하여 업체 저장 시간 측정
+        const storeRes = await logger.logTiming("업체 저장 API 호출", async () => {
+          return await storePlace(userId, {
+            place_id: placeId,
+            place_name: normalizedData.placeInfo.place_name,
+            category: normalizedData.placeInfo.category,
+            platform: normalizedData.placeInfo.platform as Platform, 
+          });
+        });
+        
+        if (!storeRes.success) {
+          logger.error("업체 저장 실패", storeRes);
+          throw new Error("업체 저장 실패");
+        }
+        
+        logger.info("업체 저장 성공", { placeId });
+        
+        // ---- (3) 키워드 생성 ----
+        logger.info("키워드 생성 단계 시작");
+        progressToast.showChatgpt();
+        updateProgress("chatgpt", 40);
+        
+        // logTiming 사용하여 키워드 생성 시간 측정
+        const chatgptRes = await logger.logTiming("키워드 생성 API 호출", async () => {
+          return await chatgptKeywordsHandler({
+            ...normalizedData.placeInfo,
+            user_id: userId
+          });
+        });
+        
+        if (!chatgptRes.success) {
+          logger.error("키워드 생성 실패");
+          throw new Error("키워드 생성 실패");
+        }
+        
+        logger.info("키워드 생성 성공", {
+          locationKeywordCount: chatgptRes.locationKeywords.length,
+          featureKeywordCount: chatgptRes.featureKeywords.length
+        });
+        
+        // ---- (4) 키워드 조합 ----
+        logger.info("키워드 조합 단계 시작");
+        progressToast.showCombining();
+        updateProgress("combining", 55);
+        
+        // logTiming 사용하여 키워드 조합 시간 측정
+        const combineRes = await logger.logTiming("키워드 조합 API 호출", async () => {
+          return await combineKeywords(
+            chatgptRes.locationKeywords,
+            chatgptRes.featureKeywords
+          );
+        });
+        
+        if (!combineRes || typeof combineRes !== 'object') {
+            logger.error("키워드 조합 응답 형식 오류", { response: combineRes });
+            throw new Error("서버 응답 형식이 올바르지 않습니다.");
+          }
+          
+          if (!combineRes.success) {
+            logger.error("키워드 조합 실패");
+            throw new Error("키워드 조합 실패");
+          }
+          
+          // API 응답 필드 로깅
+          logger.debug("키워드 조합 API 응답 구조", {
+            hasSuccess: !!combineRes.success,
+            hasCombinedKeywords: !!combineRes.combinedKeywords,
+            hasCandidateKeywords: !!combineRes.candidateKeywords,
+            fields: Object.keys(combineRes)
+          });
 
-      // ---- (4) 키워드 조합 ----
-      setCurrentStep("combining")
-      setProgressPercent(55)
-      const combineRes = await combineKeywords(
-        genRes.locationKeywords,
-        genRes.featureKeywords  
-      )
-      if (!combineRes.success) throw new Error("키워드 조합 실패")
+        // combinedKeywords 또는 candidateKeywords 사용
+        const combinedKeywords = combineRes.combinedKeywords || combineRes.candidateKeywords;
 
-      // ---- (5) 검색량 체크 ----
-      setCurrentStep("checking")
-      setProgressPercent(70)
-      const volumeRes = await checkSearchVolume(
-        normalizedData.normalizedUrl,
-        combineRes.candidateKeywords
-      )
-      if (!volumeRes.success) throw new Error("검색량 조회 실패")
+        // 키워드 배열 유효성 확인
+        if (!Array.isArray(combinedKeywords)) {
+        logger.error("키워드 조합 응답 형식 오류", { 
+            hasCombinedKeywords: !!combineRes.combinedKeywords,
+            hasCandidateKeywords: !!combineRes.candidateKeywords
+        });
+        throw new Error("키워드 조합 결과 형식이 올바르지 않습니다.");
+        }
 
-      // ---- (6) 그룹화 ----
-      setCurrentStep("grouping")
-      setProgressPercent(85)
-      const groupRes = await groupKeywords(volumeRes.externalDataList)
-      if (!groupRes.success) throw new Error("키워드 그룹화 실패")
+        // 조합된 키워드가 없는 경우 처리
+        if (combinedKeywords.length === 0) {
+            logger.warn("조합된 키워드가 없음");
+            throw new Error("조합된 키워드가 없습니다. 다시 시도해주세요.");
+        }
+        
+        // 로그 메시지에서 combinedKeywords 변수 사용
+        logger.info("키워드 조합 성공", {
+            combinedKeywordCount: combinedKeywords.length 
+        });
+        
+        
 
-      // 최종 키워드 저장
-      setFinalKeywords(groupRes.finalKeywords || [])
-      setCurrentStep("complete")
-      setProgressPercent(100)
+        // ---- (5) 검색량 확인 ----
+        logger.info("검색량 확인 단계 시작");
+        progressToast.showChecking();
+        updateProgress("checking", 70);
 
-      // 캐시 무효화 (목록 다시 불러오기)
-      queryClient.invalidateQueries({
-        queryKey: ["userBusinesses", userId]
-      })
-
-      toast.success("업체 등록이 완료되었습니다.")
+        // 정규화된 URL 확인 (TypeScript 오류 방지)
+        const normalizedUrl = normalizedData.normalizedUrl || "";
+        if (!normalizedUrl) {
+        logger.warn("정규화된 URL이 없음");
+        }
+        
+        // logTiming 사용하여 검색량 확인 시간 측정
+        logger.debug("검색량 확인에 사용할 키워드", {
+            keywordCount: combinedKeywords.length,
+            sampleKeywords: combinedKeywords.slice(0, 5)
+        });
+        
+        // logTiming 사용하여 검색량 확인 시간 측정 (combinedKeywords 변수 사용)
+        const checkRes = await logger.logTiming("검색량 확인 API 호출", async () => {
+            return await checkSearchVolume(
+            normalizedUrl,
+            combinedKeywords // combineRes.combinedKeywords 대신 combinedKeywords 사용
+            );
+        });
+        
+        // ---- (6) 키워드 그룹화 ----
+        logger.info("키워드 그룹화 단계 시작");
+        progressToast.showGrouping();
+        updateProgress("grouping", 85);
+        
+        // logTiming 사용하여 키워드 그룹화 시간 측정
+        const groupRes = await logger.logTiming("키워드 그룹화 API 호출", async () => {
+          return await groupKeywords(checkRes.externalDataList);
+        });
+        
+        if (!groupRes.success) {
+          logger.error("키워드 그룹화 실패");
+          throw new Error("키워드 그룹화 실패");
+        }
+        
+        logger.info("키워드 그룹화 성공", {
+          finalKeywordCount: groupRes.finalKeywords.length
+        });
+        
+        // ---- 완료 ----
+        logger.info("비즈니스 생성 프로세스 완료", {
+          placeId,
+          finalKeywordCount: groupRes.finalKeywords.length
+        });
+        
+        progressToast.showComplete();
+        updateProgress("complete", 100);
+        
+        // 이제 키워드 선택 대화상자를 열 상태로 만들기
+        setFinalKeywords(groupRes.finalKeywords);
+        
+        // 키워드 선택 다이얼로그를 열기 위한 상태 설정
+        setKeywordDialogOpen(true);
+        
+        return groupRes;
+      } catch (error) {
+        // 오류 발생 시 상세 로깅
+        logger.error("비즈니스 생성 과정 오류", {
+          step: currentStep,
+          progress: progressPercent,
+          error: error instanceof Error ? error.message : String(error)
+        });
+        
+        throw error;
+      }
     },
-    onError: (error: Error) => {
-      console.error(error)
-      toast.error(error.message || "업체 등록 중 오류 발생")
-      setCurrentStep("idle")
-      setProgressPercent(0)
+    onError: (error: unknown) => {
+      logger.error("비즈니스 생성 오류 처리", error);
+      const errorMessage = error instanceof Error ? error.message : "업체 생성 중 오류 발생";
+      toast.error(errorMessage);
+      updateProgress("idle", 0);
     },
   })
 
-  // 7) 선택된 키워드 저장
+  // (7) 선택한 키워드 저장
   const saveKeywordsMutation = useMutation({
-    mutationFn: async (keywords: FinalKeyword[]) => {
-      if (!keywords.length) return
-      await saveSelectedKeywords(keywords)
+    mutationFn: async (params: {
+      keywords: FinalKeyword[], 
+      placeId: string | number
+    }) => {
+      const { keywords, placeId } = params;
+      
+      logger.info("키워드 저장 시작", {
+        keywordCount: keywords.length,
+        placeId
+      });
+      
+      if (!keywords.length) {
+        logger.warn("저장할 키워드가 없음");
+        return;
+      }
+      
+      if (!userId) {
+        logger.error("사용자 ID 없음");
+        throw new Error("사용자 정보가 없습니다.");
+      }
+      
+      logger.debug("키워드 저장 요청", {
+        keywords: keywords.map(k => k.combinedKeyword),
+        userId,
+        placeId
+      });
+      
+      // logTiming 사용하여 키워드 저장 시간 측정
+      await logger.logTiming("키워드 저장 API 호출", async () => {
+        return await saveSelectedKeywords(keywords, userId, placeId);
+      });
+      
+      logger.info("키워드 저장 성공");
+      
+      // 저장 성공 후 업체 목록 갱신
+      queryClient.invalidateQueries({ queryKey: ["userBusinesses", userId] });
     },
     onSuccess: () => {
-      toast.success("키워드가 저장되었습니다.")
+      logger.info("키워드 저장 완료 후 상태 정리");
+      toast.success("키워드가 저장되었습니다.");
+      
+      // 업체 생성 완료 후 초기화 (place_id 유지)
+      updateProgress("idle", 0);
+      setNormalizedData(null);
     },
-    onError: (error: Error) => {
-      console.error(error)
-      toast.error("키워드 저장에 실패했습니다.")
+    onError: (error: unknown) => {
+      logger.error("키워드 저장 실패", error);
+      const errorMessage = error instanceof Error ? error.message : "키워드 저장 중 오류 발생";
+      toast.error(errorMessage);
     }
   })
 
+  // URL 입력으로 업체 정보 확인
+  const handleCheckPlace = (platform: Platform, placeUrl: string) => {
+    logger.info("업체 정보 확인 요청", { platform, placeUrl });
+    return normalizeMutation.mutateAsync({ platform, placeUrl });
+  }
+
+  // 업체 생성 프로세스 실행
+  const handleConfirmCreate = () => {
+    logger.info("업체 생성 프로세스 시작 요청");
+    return createBusinessMutation.mutateAsync();
+  }
+
+  // 선택한 키워드 저장
+  const handleSaveSelectedKeywords = (params: {
+    keywords: FinalKeyword[], 
+    placeId: string | number
+  }) => {
+    logger.info("선택한 키워드 저장 요청", {
+      keywordCount: params.keywords.length,
+      keywords: params.keywords.map(k => k.combinedKeyword),
+      placeId: params.placeId
+    });
+    
+    return saveKeywordsMutation.mutateAsync(params);
+  }
+
   return {
-    // State
+    // 진행 상태
     currentStep,
     progressPercent,
+    
+    // 결과 데이터
     normalizedData,
     finalKeywords,
+    savedPlaceId,
     
-    // Mutations
-    normalizeMutation, // (1) URL 정규화
-    createBusinessMutation, // (2)~(6) 일괄 처리
-    saveKeywordsMutation,   // (7) 키워드 저장
+    // 키워드 대화상자 상태
+    keywordDialogOpen,
+    setKeywordDialogOpen,
+    
+    // mutations
+    normalizeMutation,
+    createBusinessMutation,
+    saveKeywordsMutation,
+    
+    // handlers
+    handleCheckPlace,
+    handleConfirmCreate,
+    handleSaveSelectedKeywords,
+    
+    // 상태 관리
+    restoreState,
+    resetState,
   }
 }

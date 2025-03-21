@@ -4,14 +4,14 @@
 import * as React from "react"
 import Image from "next/image"
 import { toast } from "sonner" // toast 임포트 추가
+import { createLogger } from "@/lib/logger"
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
   SheetFooter,
   SheetClose,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet"
 import {
   Dialog,
@@ -29,6 +29,8 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher"
 import type { FinalKeyword, ApiError } from "@/types"  // Add ApiError import
+
+const logger = createLogger('BusinessSheet');
 
 export function BusinessSheet({
   open,
@@ -57,6 +59,7 @@ export function BusinessSheet({
     keywordDialogOpen,
     setKeywordDialogOpen,
     handleSaveSelectedKeywords,
+    savedPlaceId,
   } = useBusinessSwitcher()
 
   // (A) 1차 “생성하기” 버튼 로딩 상태
@@ -80,44 +83,42 @@ export function BusinessSheet({
   async function onCheckPlace() {
     try {
       setIsChecking(true)
+      logger.info("업체 확인 시작");
       await handleCheckPlace()
     } catch (err) {
-      console.error(err)
+      logger.error("업체 확인 중 오류", err)
     } finally {
       setIsChecking(false)
     }
   }
 
-// (B) 2차 Dialog "생성하기"
-async function onConfirmCreate() {
-  // 일단 첫 번째 Dialog 닫기
-  setDialogOpen(false)
-  try {
-    setIsConfirming(true)
-    console.log("Starting business creation process...");
-    
-    // store-place + etc
-    await handleConfirmCreate()
-    
-    // 시트 닫기
-    onOpenChange(false)
-  } catch (err: unknown) {
-    const error = err as ApiError;
-    console.error("Business creation error:", error);
-    
-    // 오류 메시지 추출 및 표시
-    let errorMessage = "업체 생성 과정에서 오류가 발생했습니다.";
-    if (error.response && error.response.data) {
-      errorMessage = error.response.data.message || errorMessage;
-    } else if (error.message) {
-      errorMessage = error.message;
+
+  // 2차 Dialog "생성하기"
+  async function onConfirmCreate() {
+    setDialogOpen(false)
+    try {
+      setIsConfirming(true)
+      logger.info("업체 생성 프로세스 시작");
+      
+      await handleConfirmCreate()
+      
+      onOpenChange(false)
+    } catch (err: unknown) {
+      const error = err as ApiError;
+      logger.error("업체 생성 오류", error);
+      
+      let errorMessage = "업체 생성 과정에서 오류가 발생했습니다.";
+      if (error.response && error.response.data) {
+        errorMessage = error.response.data.message || errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsConfirming(false)
     }
-    
-    toast.error(errorMessage);
-  } finally {
-    setIsConfirming(false)
   }
-}
 
   // 체크박스 토글
   function toggleKeyword(k: string) {
@@ -137,26 +138,62 @@ async function onConfirmCreate() {
   // 2차 다이얼로그(키워드 선택) 열릴 때 체크 상태 초기화
   React.useEffect(() => {
     if (keywordDialogOpen) {
+      logger.info("키워드 선택 다이얼로그 열림", { 
+        keywordCount: finalKeywords?.length || 0,
+        savedPlaceId: savedPlaceId // 추가: savedPlaceId 로깅
+      });
       setSelectedKeywords([])
     }
-  }, [keywordDialogOpen])
+  }, [keywordDialogOpen, finalKeywords, savedPlaceId])  
 
-  // 최종 선택하
+  // 최종 선택하기
   async function onSubmitKeywords() {
     if (!selectedKeywords.length) {
-      alert("최소 1개 이상 키워드를 선택해주세요.")
+      toast.warning("최소 1개 이상 키워드를 선택해주세요.")
       return
     }
-    // 서버 저장 로직
-    await handleSaveSelectedKeywords(
-      selectedKeywords.map((k) => ({
-        combinedKeyword: k,
-        details: [],
-      }))
-    )
-    // 성공 시 닫음 (handleSaveSelectedKeywords 안에서 닫아도 됨)
-    setKeywordDialogOpen(false)
+    // 저장된 placeId 또는 로컬 스토리지에서 복구
+    const placeIdToUse = savedPlaceId || 
+    sessionStorage.getItem('temp_place_id') ||
+    localStorage.getItem('current_place_id') ||
+    (normalizedData?.placeInfo?.place_id) ||
+    (placeData as any)?.place_id;
+
+    if (!placeIdToUse) {
+      toast.error("업체 정보를 찾을 수 없습니다.")
+      logger.error("업체 ID를 여러 곳에서 찾았으나 없음", {
+        savedPlaceId,
+        sessionStoragePlaceId: sessionStorage.getItem('temp_place_id'),
+        localStoragePlaceId: localStorage.getItem('current_place_id'),
+        normalizedDataPlaceId: normalizedData?.placeInfo?.place_id,
+        placeDataPlaceId: (placeData as any)?.place_id
+      });
+      return
+    }
+
+    try {
+      // 서버 저장 로직
+      await handleSaveSelectedKeywords({
+        keywords: selectedKeywords.map((k) => ({
+          combinedKeyword: k,
+          details: [],
+        })),
+        placeId: placeIdToUse
+      });
+      
+      // 성공 시 닫음 및 임시 저장 삭제
+      setKeywordDialogOpen(false);
+      sessionStorage.removeItem('temp_place_id');
+      
+      // 성공 메시지 추가
+      toast.success("키워드가 성공적으로 저장되었습니다.");
+    } catch (error) {
+      // 에러 처리
+      logger.error("키워드 저장 중 오류 발생", error);
+      toast.error("키워드 저장 중 오류가 발생했습니다.");
+    }
   }
+
 
   // dialogOpen 닫힐 때 폼 초기화
   React.useEffect(() => {
@@ -182,6 +219,8 @@ async function onConfirmCreate() {
         : normalizedData.normalizedUrl
       : "";
 
+
+
   return (
     <>
       {/* ============ (1) Sheet ============ */}
@@ -203,11 +242,8 @@ async function onConfirmCreate() {
         >
           <SheetHeader>
             <SheetTitle>업체 추가하기</SheetTitle>
-            <SheetDescription className="mb-2 block text-sm font-medium text-center">
-              플랫폼을 선택하세요
-            </SheetDescription>
           </SheetHeader>
-
+          
           {/* (1) 플랫폼 선택 */}
           <div className="flex gap-3 mt-4 justify-center">
             {platforms.map((plat) => {
@@ -376,8 +412,10 @@ async function onConfirmCreate() {
               {isUserRole
                 ? "최대 3개까지 선택할 수 있습니다."
                 : "원하는 만큼 선택할 수 있습니다."}
+              {finalKeywords?.length ? ` (총 ${finalKeywords.length}개 키워드)` : ''}
             </DialogDescription>
           </DialogHeader>
+
 
         {/* 키워드 리스트 */}
         <div className="mt-4 space-y-3 max-h-[50vh] overflow-auto px-1">
@@ -429,6 +467,10 @@ async function onConfirmCreate() {
           ) : (
             <p className="text-sm text-gray-500">
               아직 생성된 키워드가 없습니다.
+              {/* 디버깅 정보 */}
+              <span className="block mt-2 text-xs text-red-500">
+                {JSON.stringify(finalKeywords)}
+              </span>
             </p>
           )}
         </div>
@@ -438,7 +480,10 @@ async function onConfirmCreate() {
             <DialogClose asChild>
               <Button variant="outline">취소</Button>
             </DialogClose>
-            <Button onClick={onSubmitKeywords}>
+            <Button 
+              onClick={onSubmitKeywords}
+              disabled={selectedKeywords.length === 0}
+            >
               선택하기
             </Button>
           </DialogFooter>

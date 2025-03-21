@@ -4,8 +4,29 @@ import { useEffect, useState } from "react"
 import apiClient from "@/lib/apiClient"
 import { Business } from "@/types"
 
+// Business limits by role
+const BUSINESS_LIMITS = {
+  user: 1,
+  plus: 10,
+  admin: 999, // Admins can create virtually unlimited businesses
+} as const;
+
 export function useUserBusinesses(userId: string | undefined) {
   const [activeBusiness, setActiveBusiness] = useState<Business | null>(null)
+  const [userRole, setUserRole] = useState<string>("user") // Default to 'user' role
+
+  // Get user role
+  useEffect(() => {
+    if (userId) {
+      apiClient.get<{ role: string }>("/api/user/me")
+        .then(response => {
+          setUserRole(response.data.role);
+        })
+        .catch(error => {
+          console.error("Failed to fetch user role:", error);
+        });
+    }
+  }, [userId]);
 
   const {
     data: businesses,
@@ -63,6 +84,23 @@ export function useUserBusinesses(userId: string | undefined) {
     staleTime: 1000 * 60 * 5,
   })
 
+  // Helper functions for business limit checks
+  const getBusinessLimit = (role: string) => {
+    return BUSINESS_LIMITS[role as keyof typeof BUSINESS_LIMITS] || BUSINESS_LIMITS.user;
+  };
+  
+  const canAddMoreBusinesses = () => {
+    if (!businesses) return false;
+    const limit = getBusinessLimit(userRole);
+    return businesses.length < limit;
+  };
+  
+  const getRemainingBusinessCount = () => {
+    if (!businesses) return 0;
+    const limit = getBusinessLimit(userRole);
+    return Math.max(0, limit - businesses.length);
+  };
+
   // 첫 로드 시 첫 번째 비즈니스를 active로 설정
   useEffect(() => {
     if (businesses?.length && !activeBusiness) {
@@ -77,5 +115,10 @@ export function useUserBusinesses(userId: string | undefined) {
     isLoading,
     isError,
     refetch,
+    // Add new properties
+    businessLimit: getBusinessLimit(userRole),
+    canAddMoreBusinesses: canAddMoreBusinesses(),
+    remainingBusinessCount: getRemainingBusinessCount(),
+    userRole,
   }
 }

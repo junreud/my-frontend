@@ -39,6 +39,7 @@ export interface Business {
 export interface NormalizeResponse {
   success: boolean
   normalizedUrl: string
+  alreadyRegistered: boolean
   placeInfo: {
     place_id: string
     place_name: string
@@ -62,8 +63,10 @@ export interface ChatGptKeywords {
  * 키워드 조합 API 응답
  */
 export interface CombinedKeywordsResponse {
-  success: boolean
-  candidateKeywords: string[]
+  success: boolean;
+  // API가 candidateKeywords 또는 combinedKeywords를 반환할 수 있음
+  candidateKeywords?: string[];
+  combinedKeywords?: string[];
 }
 
 /**
@@ -108,7 +111,7 @@ export type ProgressStep =
   | "idle" 
   | "normalizing" 
   | "storing" 
-  | "generating" 
+  | "chatgpt" 
   | "combining" 
   | "checking" 
   | "grouping" 
@@ -123,5 +126,18 @@ export interface PlaceInfoWithUser {
   category?: string;
   platform: Platform;
   userId: string;
+  
+  // 실제 데이터에 있는 추가 필드들을 명시적으로 정의
+  address?: string;
+  roadAddress?: string;
+  x?: number;
+  y?: number;
+  placeId?: string;
+  keywordList?: string[];
+  blogReviewTitles?: string[];
+  shopIntro?: string;
+  isNewlyOpened?: boolean;
+  
+  // 그외 추가 필드를 위한 인덱스 시그니처
   [key: string]: unknown;
 }
