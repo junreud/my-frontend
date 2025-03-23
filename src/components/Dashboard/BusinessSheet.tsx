@@ -92,6 +92,18 @@ export function BusinessSheet({
     }
   }
 
+  // 로컬 스토리지에서 dialogOpen 상태를 복구
+  React.useEffect(() => {
+    const savedDialogOpen = localStorage.getItem('dialogOpen')
+    if (savedDialogOpen) {
+      setDialogOpen(savedDialogOpen === 'true')
+    }
+  }, [setDialogOpen])
+
+  // dialogOpen 상태가 변경될 때 로컬 스토리지에 저장
+  React.useEffect(() => {
+    localStorage.setItem('dialogOpen', dialogOpen.toString())
+  }, [dialogOpen])
 
   // 2차 Dialog "생성하기"
   async function onConfirmCreate() {
@@ -194,7 +206,6 @@ export function BusinessSheet({
     }
   }
 
-
   // dialogOpen 닫힐 때 폼 초기화
   React.useEffect(() => {
     if (!dialogOpen) {
@@ -218,8 +229,6 @@ export function BusinessSheet({
         ? normalizedData.normalizedUrl.slice(0, 30) + "..."
         : normalizedData.normalizedUrl
       : "";
-
-
 
   return (
     <>
@@ -311,7 +320,11 @@ export function BusinessSheet({
       </Sheet>
 
       {/* ============ (2) 첫 번째 Dialog(확인) ============ */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => {
+        // Dialog가 닫히지 않도록 설정
+        if (!open) return
+        setDialogOpen(open)
+      }}>
         <DialogContent 
           className="max-w-sm bg-white text-foreground"     
           onPointerDownOutside={(event) => {
@@ -323,10 +336,11 @@ export function BusinessSheet({
           onEscapeKeyDown={(event) => {
             event.preventDefault()
           }}
+          aria-describedby="confirm-dialog-description"
         >
           <DialogHeader>
             <DialogTitle className="text-red-600">주의</DialogTitle>
-            <DialogDescription>
+            <DialogDescription id="confirm-dialog-description">
               무료로 등록할 수 있는 업체는 한 번 뿐입니다.
             </DialogDescription>
           </DialogHeader>
@@ -405,10 +419,11 @@ export function BusinessSheet({
           onEscapeKeyDown={(event) => {
             event.preventDefault()
           }}
+          aria-describedby="keyword-dialog-description"
         >
           <DialogHeader>
             <DialogTitle>최종 키워드 선택</DialogTitle>
-            <DialogDescription>
+            <DialogDescription id="keyword-dialog-description">
               {isUserRole
                 ? "최대 3개까지 선택할 수 있습니다."
                 : "원하는 만큼 선택할 수 있습니다."}

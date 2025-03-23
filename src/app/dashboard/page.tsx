@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import apiClient from "@/lib/apiClient"
+import { useUser } from "@/hooks/useUser" // useUser 훅 import
 
 // 아래는 원래 home/page.tsx에서 불러오던 컴포넌트들
 import { AnimatedNumber } from "@/components/animations/AnimatedNumber"
@@ -19,15 +19,12 @@ import RankReviewChart from "@/components/dashboard/charts"
 
 export default function DashboardPage() {
   const router = useRouter()
-
-  // 통신/검증이 끝났는지 여부
-  const [checkDone, setCheckDone] = useState(false)
+  
+  // useUser 훅으로 데이터 및 상태 관리
+  const { data: user, isLoading, error: userError } = useUser()
 
   // 사용자 접근 권한: "정상적으로 대시보드 렌더해도 되는가?"
   const [isAuthorized, setIsAuthorized] = useState(false)
-
-  // 에러 메시지 (ex. 서버 연결 불가 등)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     // (A) 먼저 토큰 확인
@@ -38,33 +35,20 @@ export default function DashboardPage() {
       return
     }
 
-    // (B) 백엔드 요청 시작
-    setCheckDone(false)
-    apiClient
-      .get("/api/user/me")
-      .then((res) => {
-        const { url_registration } = res.data
-        if (url_registration === 0) {
-          // 가입 완료 전이면 /welcomepage
-          router.replace("/welcomepage")
-        } else {
-          // 정상 사용자
-          setIsAuthorized(true)
-        }
-      })
-      .catch((err) => {
-        console.error("GET /api/user/me 에러:", err)
-        // 네트워크 에러 or 401 등 => 여기서 바로 로그인으로 튕기면
-        // 무한 반복 가능성 있으므로, 일단 에러 메시지 표출
-        setError(err.message || "서버 연결 실패")
-      })
-      .finally(() => {
-        setCheckDone(true)
-      })
-  }, [router])
+    // (B) 백엔드 데이터 확인 (useUser 훅 결과 활용)
+    if (!isLoading && user) {
+      if (user.url_registration === 0) {
+        // 가입 완료 전이면 /welcomepage
+        router.replace("/welcomepage")
+      } else {
+        // 정상 사용자
+        setIsAuthorized(true)
+      }
+    }
+  }, [router, user, isLoading])
 
   // (C) 아직 서버 응답 대기 중이면 로딩 스피너
-  if (!checkDone) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="animate-spin rounded-full h-16 w-16 border-4 border-solid border-gray-300 border-t-transparent" />
@@ -73,12 +57,12 @@ export default function DashboardPage() {
   }
 
   // (D) 통신 완료 후, 에러가 있다면 에러 메시지 표시
-  if (error) {
+  if (userError) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white text-red-500">
         <div>
           <p className="mb-4">오류가 발생했습니다.</p>
-          <p>{error}</p>
+          <p>{(userError as Error).message || "서버 연결 실패"}</p>
           {/* 필요 시, "재시도" 버튼 등 추가 */}
         </div>
       </div>

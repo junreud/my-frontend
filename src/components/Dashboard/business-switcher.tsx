@@ -287,7 +287,11 @@ export function BusinessSwitcher() {
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
+            aria-describedby="business-list-description"
           >
+            <span id="business-list-description" className="sr-only">
+              등록된 비즈니스 목록입니다. 원하는 비즈니스를 선택하거나 새 비즈니스를 추가할 수 있습니다.
+            </span>
             <DropdownInner
               isLoading={isLoading}
               isError={isError}

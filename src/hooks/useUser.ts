@@ -19,7 +19,8 @@ export interface User {
   avatar_url?: string
   // ...
   businesses?: Business[]
-  role?: string; // Add this line to include the role property
+  role?: string;
+  url_registration?: number; // 추가: 사용자 가입 상태 확인용
 }
 
 // (C) React Query로 user 정보 가져오기 + staleTime 설정

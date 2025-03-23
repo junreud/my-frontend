@@ -81,11 +81,16 @@ const toast = {
     // 기존 sonner 스타일의 토스트로 표시 (함수 형태로 수정)
     sonnerToast.custom(
       () => (
-        <ProgressContent 
-          id={id} 
-          message={config.message} 
-          progress={initialProgress} 
-        />
+        <div aria-describedby={`toast-description-${id}`}>
+          <span id={`toast-description-${id}`} className="sr-only">
+            진행 상태 알림: {config.message}
+          </span>
+          <ProgressContent 
+            id={id} 
+            message={config.message} 
+            progress={initialProgress} 
+          />
+        </div>
       ),
       { 
         id,
@@ -102,11 +107,16 @@ const toast = {
     if (activeProgressToasts[id]) {
       sonnerToast.custom(
         () => (
-          <ProgressContent 
-            id={id} 
-            message={activeProgressToasts[id].message} 
-            progress={progress} 
-          />
+          <div aria-describedby={`toast-description-${id}`}>
+            <span id={`toast-description-${id}`} className="sr-only">
+              진행 상태 알림: {activeProgressToasts[id].message}
+            </span>
+            <ProgressContent 
+              id={id} 
+              message={activeProgressToasts[id].message} 
+              progress={progress} 
+            />
+          </div>
         ),
         { 
           id,
@@ -122,11 +132,16 @@ const toast = {
     if (activeProgressToasts[id]) {
       sonnerToast.success(
         () => (
-          <ProgressContent 
-            id={id} 
-            message={message || "완료되었습니다"} 
-            progress={100} 
-          />
+          <div aria-describedby={`toast-description-${id}`}>
+            <span id={`toast-description-${id}`} className="sr-only">
+              완료 알림: {message || "완료되었습니다"}
+            </span>
+            <ProgressContent 
+              id={id} 
+              message={message || "완료되었습니다"} 
+              progress={100} 
+            />
+          </div>
         ),
         { 
           id,
@@ -174,6 +189,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
+        // Add global accessibility attributes
+        descriptionAs: "div",
+        closeButtonAriaLabel: "닫기",
       }}
       {...props}
     />

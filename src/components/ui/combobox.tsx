@@ -1,10 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
-
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import * as React from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -12,37 +11,19 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 
-// 하드코딩된 프레임워크 데이터 제거
-// const frameworks = [
-//   {
-//     value: "사당맛집",
-//     label: "사당맛집",
-//   },
-//   {
-//     value: "사당고기집",
-//     label: "사당고기집",
-//   },
-//   {
-//     value: "사당삼겹살",
-//     label: "사당삼겹살",
-//   },
-// ]
-
-interface ComboboxProps {
+export interface ComboboxProps {
   options: string[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  searchPlaceholder?: string;
-  emptyMessage?: string;
-  renderOption?: (option: string) => React.ReactNode;
+  renderOption?: (option: string) => React.ReactElement;
   className?: string;
 }
 
@@ -50,13 +31,11 @@ export function Combobox({
   options,
   value,
   onChange,
-  placeholder = "선택해주세요",
-  searchPlaceholder = "검색...",
-  emptyMessage = "결과가 없습니다",
+  placeholder = "선택하기...",
   renderOption,
-  className = "w-[200px]",
+  className,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -65,36 +44,40 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={`justify-between ${className}`}
+          className={cn("w-full justify-between", className)}
         >
-          {value
-            ? options.find((option) => option === value) || placeholder
-            : placeholder}
-          <ChevronsUpDown className="opacity-50" />
+          {value || placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className={className + " p-0"}>
+      <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput placeholder={`${placeholder} 검색...`} />
+          <CommandEmpty>찾는 항목이 없습니다</CommandEmpty>
           <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option}
                   value={option}
-                  onSelect={(currentValue) => {
-                    onChange(currentValue === value ? "" : currentValue)
-                    setOpen(false)
+                  onSelect={() => {
+                    onChange(option);
+                    setOpen(false);
                   }}
                 >
-                  {renderOption ? renderOption(option) : option}
-                  <Check
-                    className={cn(
-                      "ml-auto",
-                      value === option ? "opacity-100" : "opacity-0"
-                    )}
-                  />
+                  {renderOption ? (
+                    renderOption(option)
+                  ) : (
+                    <>
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === option ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option}
+                    </>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -102,5 +85,5 @@ export function Combobox({
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

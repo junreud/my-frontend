@@ -9,12 +9,11 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { Combobox } from "@/components/ui/combobox";
-// 새로운 Hook 불러오기
+// Hooks
 import { useKeywordData } from "@/hooks/useKeywordData";
 import { useUserKeywords } from "@/hooks/useUserKeywords";
-// BusinessSwitcher 훅
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
-
+import { createLogger } from "@/lib/logger";
 // Recharts components
 import {
   ResponsiveContainer,
@@ -26,10 +25,11 @@ import {
   Tooltip,
 } from "recharts";
 
-import { BusinessSwitcherListener } from '@/components/ui/business-switcher-listener';
+const logger = createLogger("MarketingKeywordsPage");
 
 export default function Page() {
-  const [accordionOpen, setAccordionOpen] = useState(false);
+  // Replace the boolean accordionOpen with a string value to track which accordion item is open
+  const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
   const [rangeValue, setRangeValue] = useState(25);
   const [isRangePressed, setIsRangePressed] = useState(false);
   const [selectedKeyword, setSelectedKeyword] = useState("");
@@ -40,7 +40,7 @@ export default function Page() {
   // 디버깅용 로그 추가
   useEffect(() => {
     if (activeBusiness) {
-      console.log("활성 업체 정보:", activeBusiness);
+      logger.info("활성 업체 정보:", activeBusiness);
     }
   }, [activeBusiness]);
 
@@ -53,11 +53,11 @@ export default function Page() {
   
   // 디버깅용: 키워드 데이터 로깅
   useEffect(() => {
-    console.log("가져온 사용자 키워드:", userKeywordObjects);
+    logger.info("가져온 사용자 키워드:", userKeywordObjects);
   }, [userKeywordObjects]);
   
-  // 키워드 이름 배열 추출 (ComboBox 옵션용)
-  const userKeywords = userKeywordObjects.map(k => k.name);
+  // 키워드 문자열 배열 추출 (ComboBox 옵션용)
+  const userKeywords = userKeywordObjects.map(k => k.keyword);
 
   // 선택한 키워드의 순위 데이터 가져오기 (keyword_crawl_results 테이블에서)
   const { 
@@ -140,49 +140,59 @@ export default function Page() {
            option === "키워드를 추가해주세요";
   };
 
-  // 업체 선택 창 열기 함수
-  const handleOpenBusinessSelector = () => {
-    // BusinessSwitcher에서 가져온 함수를 이용해 업체 선택 시트 열기
-    if (typeof window !== 'undefined') {
-      // 전역 이벤트를 발생시켜 업체 선택기를 열도록 함
-      const event = new CustomEvent('open-business-switcher');
-      window.dispatchEvent(event);
-    }
+  // 키워드로 userKeywordObject 찾기
+  const findKeywordObject = (keywordText: string) => {
+    return userKeywordObjects.find(k => k.keyword === keywordText);
   };
 
   return (
-    <div className="p-6 space-y-8">
-      {/* BusinessSwitcherListener 추가 */}
-      <BusinessSwitcherListener />
-      
+    <div className="p-6 space-y-8">      
       {/* 키워드 아코디언 */}
       <Accordion
         type="single"
         collapsible
-        onValueChange={(val) => setAccordionOpen(Boolean(val))}
+        value={openAccordionItem}
+        onValueChange={setOpenAccordionItem}
         className="border rounded"
       >
-        {userKeywords.map((keyword, index) => (
-          <AccordionItem key={keyword} value={`item-${index}`}>
-            <AccordionTrigger className="px-4">
-              <div className="grid grid-cols-3 items-center gap-4">
-                {/* 키워드 이름 */}
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{index + 1}.</span>
-                  <span>{keyword}</span>
-                </div>
+        {userKeywords.map((keyword, index) => {
+          // 해당 키워드의 객체 찾기
+          const keywordObject = findKeywordObject(keyword);
+          const itemValue = `item-${index}`;
+          
+          return (
+            <AccordionItem key={keywordObject?.id || index} value={itemValue}>
+              <AccordionTrigger className="px-4">
+                <div className="grid grid-cols-3 items-center gap-4">
+                  {/* 키워드 이름 */}
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{index + 1}.</span>
+                    <span>{keyword}</span>
+                  </div>
 
-                {/* 간략 차트 */}
-                <div className="mx-auto w-80 h-16">
+                  {/* 현재 순위 */}
+                  <div className="text-right mr-2">
+                    <span>현재 순위: {
+                      chartData.length > 0 && keyword === selectedKeyword
+                        ? chartData[chartData.length - 1].ranking
+                        : '?'
+                    }위</span>
+                  </div>
+                </div>
+              </AccordionTrigger>
+
+              {/* 상세 차트 */}
+              <AccordionContent>
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                      data={keyword === selectedKeyword ? chartData.slice(-4) : []}
-                      margin={{ top: 2, right: 2, left: 2, bottom: 10 }}
+                      data={keyword === selectedKeyword ? chartData : []}
+                      margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" hide />
-                      <YAxis hide domain={[0, 300]} reversed />
-                      <Tooltip 
+                      <XAxis dataKey="date" />
+                      <YAxis domain={[0, 300]} reversed label={{ value: '순위', angle: -90, position: 'insideLeft' }} />
+                      <Tooltip
                         formatter={(value, name) => [
                           name === 'uv' ? 300 - Number(value) : value, 
                           name === 'uv' ? '순위' : name
@@ -193,56 +203,14 @@ export default function Page() {
                         dataKey="uv"
                         stroke="#8884d8"
                         strokeWidth={2}
-                        dot={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
-
-                {/* 현재 순위 */}
-                <div className="text-right">
-                  <span>현재 순위: {
-                    chartData.length > 0 && keyword === selectedKeyword
-                      ? chartData[chartData.length - 1].ranking
-                      : '?'
-                  }위</span>
-                </div>
-              </div>
-            </AccordionTrigger>
-
-            {/* 상세 차트 */}
-            <AccordionContent forceMount>
-              <div
-                className={`transition-all duration-300 overflow-hidden ${
-                  accordionOpen ? "h-[300px]" : "h-0"
-                }`}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={keyword === selectedKeyword ? chartData : []}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[0, 300]} reversed label={{ value: '순위', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip
-                      formatter={(value, name) => [
-                        name === 'uv' ? 300 - Number(value) : value, 
-                        name === 'uv' ? '순위' : name
-                      ]}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="uv"
-                      stroke="#8884d8"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
       </Accordion>
 
       {/* 키워드 선택 및 테이블 섹션 */}
@@ -255,11 +223,6 @@ export default function Page() {
               value={selectedKeyword}
               onChange={(value) => {
                 // 특별 액션 처리
-                if (value.includes('업체를 먼저 선택해주세요') || value.includes('업체 선택이 필요합니다')) {
-                  // 업체 선택기 열기
-                  handleOpenBusinessSelector();
-                  return;
-                }
                 
                 // 일반 키워드 선택은 기존 로직대로 처리
                 if (!isMessageOption(value)) {
@@ -280,17 +243,6 @@ export default function Page() {
               )}
               className="border p-2 rounded"
             />
-            
-            {!activeBusiness && (
-              <div className="mt-2">
-                <button 
-                  onClick={handleOpenBusinessSelector}
-                  className="text-sm text-blue-500 hover:text-blue-700 underline"
-                >
-                  업체 선택하기
-                </button>
-              </div>
-            )}
           </div>
           
           {/* 타임머신 슬라이더 */}

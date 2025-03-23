@@ -1,74 +1,51 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { UserKeyword, ApiKeywordResponse } from '@/types/index';
+import apiClient from '@/lib/apiClient';
+import { createLogger } from '@/lib/logger';
 
-// API base URL 정의 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const logger = createLogger('useUserKeywords');
 
-export interface UserKeyword {
-  id: number;
-  name: string;
-  keyword_id: number;
-  user_id: number;
-  place_id: number;
-  created_at?: string;
-  updated_at?: string;
-}
+// 백엔드 API 응답 타입
 
-// 사용자의 업체별 키워드 목록을 가져오는 Hook
-export function useUserKeywords(userId?: string | number, placeId?: string | number) {
-  const [keywords, setKeywords] = useState<UserKeyword[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  useEffect(() => {
-    async function fetchKeywords() {
-      if (!userId || !placeId) {
-        setKeywords([]);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      try {
-        const url = `${API_BASE_URL}/user-keywords?userId=${userId}&placeId=${placeId}`;
-        console.log(`키워드 요청 URL: ${url}`);
-        
-        // 인증 토큰 가져오기
-        const token = localStorage.getItem('auth_token') || '';
-        
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
-          } else if (response.status === 403) {
-            throw new Error('권한이 없습니다.');
-          } else {
-            throw new Error(`사용자 키워드 가져오기 실패: ${response.status} - ${response.statusText}`);
-          }
-        }
-        
-        const data = await response.json();
-        console.log(`가져온 키워드 수: ${data.length}`);
-        setKeywords(data);
-      } catch (err: any) {
-        setError(err);
-        console.error("사용자 키워드 조회 중 오류:", err);
-        console.error("User ID:", userId, "Place ID:", placeId);
-      } finally {
-        setLoading(false);
-      }
+/**
+ * 사용자와 장소에 연결된 키워드 목록을 가져오는 훅 (React Query 사용)
+ */
+export function useUserKeywords(userId?: number, placeId?: number | string) {
+  const queryKey = ['userKeywords', userId, placeId];
+  
+  const fetchKeywords = async () => {
+    if (!userId || !placeId) {
+      return [];
     }
+    
+    try {
+      const response = await apiClient.get<ApiKeywordResponse[]>(`/api/user-keywords?userId=${userId}&placeId=${placeId}`);
+      logger.debug('키워드 데이터 로드 성공', response.data);
+      
+      // 백엔드 응답을 컴포넌트에서 사용하기 쉬운 형태로 변환
+      const transformedKeywords: UserKeyword[] = response.data
+        .filter(item => item.keyword !== null)
+        .map(item => {
+          return {
+            id: item.id,
+            keyword: item.keyword,
+            keywordId: item.keyword_id,
+          };
+        });
+      
+      return transformedKeywords;
+    } catch (err) {
+      logger.error('키워드 데이터 로딩 중 오류 발생:', err);
+      throw err instanceof Error ? err : new Error(String(err));
+    }
+  };
 
-    fetchKeywords();
-  }, [userId, placeId]);
+  const { data = [], isLoading, error } = useQuery<UserKeyword[], Error>({
+    queryKey,
+    queryFn: fetchKeywords,
+    enabled: !!userId && !!placeId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  return { keywords, loading, error };
+  return { keywords: data, loading: isLoading, error };
 }

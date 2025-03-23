@@ -1,7 +1,5 @@
 // types/index.ts
 
-
-
 /**
  * API 에러 응답 형식
  */
@@ -32,6 +30,25 @@ export interface Business {
   place_id?: string
   isNewlyOpened?: boolean
 }
+export interface UserKeyword {
+  id: number;
+  keywordId: number;
+  // Optional fields from the other definition that might be needed
+  user_id?: number;
+  place_id?: number | string;
+  keyword?: string;
+  created_at?: string;
+}
+export interface ApiKeywordResponse {
+  id: number;
+  user_id: number;
+  place_id: number | string;
+  keyword_id: number;
+  keyword: string;
+  created_at: string;
+  updated_at: string;
+}
+
 
 /**
  * URL 정규화 API 응답
@@ -133,11 +150,53 @@ export interface PlaceInfoWithUser {
   x?: number;
   y?: number;
   placeId?: string;
-  keywordList?: string[];
   blogReviewTitles?: string[];
   shopIntro?: string;
   isNewlyOpened?: boolean;
   
   // 그외 추가 필드를 위한 인덱스 시그니처
   [key: string]: unknown;
+}
+
+// 키워드 관련 타입
+export interface KeywordRankData {
+  id: number;
+  place_id: number;
+  keyword_id: number;
+  ranking: number;
+  place_name: string;
+  category?: string;
+  receipt_review_count: number;
+  blog_review_count: number;
+  savedCount?: number;
+  crawled_at: string;
+}
+
+export interface KeywordHistoricalData {
+  date: string;
+  ranking: number;
+  uv: number; // For chart representation
+}
+
+export interface FinalKeyword {
+  combinedKeyword: string;
+  details?: Array<{
+    keyword: string;
+    monthlySearchVolume?: number;
+  }>;
+}
+
+export interface Platform {
+  id: string;
+  name: string;
+  platform: string;
+  // 기타 속성
+}
+
+export interface ApiError extends Error {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
 }
