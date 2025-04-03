@@ -4,7 +4,6 @@ import { useTheme } from "next-themes"
 import { Toaster as Sonner, toast as sonnerToast } from "sonner"
 import { ProgressBar } from "@/components/ui/progress-bar"
 import { useEffect } from "react"
-import { cn } from "@/lib/utils"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 

@@ -40,12 +40,19 @@ export function useUserKeywords(userId?: number, placeId?: number | string) {
     }
   };
 
-  const { data = [], isLoading, error } = useQuery<UserKeyword[], Error>({
+  // useQuery 결과를 바로 획득
+  const result = useQuery<UserKeyword[], Error>({
     queryKey,
     queryFn: fetchKeywords,
     enabled: !!userId && !!placeId,
     staleTime: 5 * 60 * 1000,
   });
 
-  return { keywords: data, loading: isLoading, error };
+  // refetch 함수 포함하여 반환
+  return { 
+    keywords: result.data || [], 
+    loading: result.isLoading, 
+    error: result.error,
+    refetch: result.refetch  // refetch 함수 노출
+  };
 }

@@ -16,11 +16,6 @@ export interface ApiError {
 }
 
 /**
- * 플랫폼 타입
- */
-export type Platform = 'naver' | 'kakao' | 'google' | string;
-
-/**
  * 업체(비즈니스) 기본 정보
  */
 export interface Business {
@@ -176,6 +171,8 @@ export interface KeywordHistoricalData {
   date: string;
   ranking: number;
   uv: number; // For chart representation
+  place_id: string;
+  date_key: string;
 }
 
 export interface FinalKeyword {
@@ -199,4 +196,31 @@ export interface ApiError extends Error {
       message?: string;
     };
   };
+}
+
+export interface KeywordRankingDetail {
+  date_key: string;
+  ranking: number;
+  place_id: string;
+  place_name?: string;
+  category?: string;
+  blog_review_count?: number | null;
+  receipt_review_count?: number | null;
+  savedCount?: number | null;
+  keywordList?: string[] | null;
+}
+
+export interface KeywordRankingChartProps {
+  chartData: KeywordHistoricalData[];
+  activeBusiness: any; // 더 구체적인 타입 (Business 등)이 있다면 그것을 사용
+}
+
+export interface KeywordRankingTableProps {
+  isLoading: boolean;
+  selectedKeyword: string;
+  activeBusiness: any;
+  isError: boolean;
+  keywordData: any;
+  historicalData: any;
+  rangeValue: number;
 }

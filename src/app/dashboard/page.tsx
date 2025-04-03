@@ -7,7 +7,7 @@ import { useUser } from "@/hooks/useUser" // useUser 훅 import
 // 아래는 원래 home/page.tsx에서 불러오던 컴포넌트들
 import { AnimatedNumber } from "@/components/animations/AnimatedNumber"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import RankReviewChart from "@/components/dashboard/charts"
+import DashboardChart from "@/components/dashboard/DashboardChart"
 
 /**
  * /dashboard로 접근했을 때:
@@ -119,33 +119,37 @@ export default function DashboardPage() {
       {/* 아래쪽: 그래프 + 키워드 테이블 영역 */}
       <div className="grid gap-4 md:grid-cols-2 mt-4">
         {/* 그래프 */}
-        <RankReviewChart />
+        <DashboardChart />
 
         {/* 키워드 순위 테이블 */}
         <Card className="rounded-xl p-4">
-          <h2 className="mb-2 text-lg font-semibold">내 키워드 현재 순위</h2>
-          <div className="rounded bg-white p-2 shadow">
+          {/* 제목 중앙정렬 */}
+          <h2 className="mb-2 text-lg font-semibold text-center">내 키워드 현재 순위</h2>
+          
+          {/* 테이블 컨테이너 - 테두리 제거 및 중앙 정렬 */}
+          <div className="w-full max-w-3xl mx-auto px-4 py-2">
             <table className="w-full table-auto text-left text-sm">
               <thead>
-                <tr className="border-b">
-                  <th className="p-2">키워드</th>
-                  <th className="p-2">현재순위</th>
+                <tr className="border-b border-gray-200">
+                  <th className="p-2 font-medium text-gray-600">키워드</th>
+                  <th className="p-2 font-medium text-gray-600">현재순위</th>
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b">
+                {/* 행 테두리 제거하고 구분을 위해 배경색 추가 */}
+                <tr className="hover:bg-gray-50">
                   <td className="p-2">A키워드</td>
                   <td className="p-2">3위</td>
                 </tr>
-                <tr className="border-b">
+                <tr className="hover:bg-gray-50">
                   <td className="p-2">B키워드</td>
                   <td className="p-2">5위</td>
                 </tr>
-                <tr className="border-b">
+                <tr className="hover:bg-gray-50">
                   <td className="p-2">C키워드</td>
                   <td className="p-2">10위</td>
                 </tr>
-                <tr>
+                <tr className="hover:bg-gray-50">
                   <td className="p-2">D키워드</td>
                   <td className="p-2">12위</td>
                 </tr>

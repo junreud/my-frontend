@@ -25,6 +25,12 @@ export interface ComboboxProps {
   placeholder?: string;
   renderOption?: (option: string) => React.ReactElement;
   className?: string;
+  renderActions?: () => React.ReactNode;
+  // Add controlled open state
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  // Add option to disable outside click closing
+  disableOutsideClick?: boolean;
 }
 
 export function Combobox({
@@ -34,11 +40,27 @@ export function Combobox({
   placeholder = "선택하기...",
   renderOption,
   className,
+  renderActions,
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  disableOutsideClick = false,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false);
+  // Use internal state if not controlled externally
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  
+  // Determine if we're using controlled or uncontrolled mode
+  const isControlled = controlledOpen !== undefined && setControlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? setControlledOpen : setInternalOpen;
+
+  // No need for special handling - we want outside clicks to close the popover
+  // Let the parent decide what to do when the popover closes
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover 
+      open={open} 
+      onOpenChange={setOpen}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -60,10 +82,17 @@ export function Combobox({
                 <CommandItem
                   key={option}
                   value={option}
-                  onSelect={() => {
-                    onChange(option);
-                    setOpen(false);
+                  onSelect={(currentValue) => {
+                    // Always call onChange
+                    onChange(currentValue);
+                    
+                    // Only close if not using custom renderer
+                    if (!renderOption) {
+                      setOpen(false);
+                    }
+                    // When using custom renderer, let parent component decide
                   }}
+                  className="w-full"
                 >
                   {renderOption ? (
                     renderOption(option)
@@ -82,6 +111,21 @@ export function Combobox({
               ))}
             </CommandGroup>
           </CommandList>
+          
+          {renderActions && (
+            <div 
+              className="border-t" 
+              onMouseDown={(e) => {
+                // Don't prevent default here - we want outside clicks to close
+                e.stopPropagation();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              {renderActions()}
+            </div>
+          )}
         </Command>
       </PopoverContent>
     </Popover>

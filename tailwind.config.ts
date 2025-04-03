@@ -97,5 +97,8 @@ module.exports = {
   		}
   	}
   },
-  plugins: [require("daisyui"), require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), require("daisyui")],
+  daisyui: {
+    themes: ["light"],
+  },
 };

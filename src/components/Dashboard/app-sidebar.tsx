@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation"
 import { Skeleton } from "@mui/material"
 import Link from "next/link"
 
-import { Home } from "lucide-react"
+import { Home, AlertCircle, RefreshCw } from "lucide-react"
 import apiClient from "@/lib/apiClient"
 
 import {
@@ -63,7 +63,7 @@ const ADMIN_SIDEBAR_SECTIONS = [
     label: "관리자 대시보드",
     items: [
       { title: "전체 통계", url: "/dashboard/admin_stats", icon: "BarChart" },
-      { title: "사용자 관리", url: "/dashboard/admin_users", icon: "UserCheck" },
+      { title: "유저 작업관리", url: "/dashboard/admin_users", icon: "UserCheck" },
     ],
   },
   {
@@ -152,7 +152,32 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   // (4) 에러 or sections가 없으면
   if (isError || !sections) {
-    return <Sidebar>에러 발생</Sidebar>
+    return (
+      <Sidebar variant="inset" {...props}>
+        <SidebarHeader>
+          <BusinessSwitcher />
+        </SidebarHeader>
+        <SidebarContent className="flex flex-col items-center justify-center p-4">
+          <div className="text-center p-6 bg-red-50 rounded-lg border border-red-100 w-[90%] shadow-sm">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
+            <h3 className="font-medium text-lg mb-2">사이드바를 불러올 수 없습니다</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              서버 연결에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="flex items-center gap-2 mx-auto px-4 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
+            >
+              <RefreshCw className="h-2 w-" />
+              <span>새로고침</span>
+            </button>
+          </div>
+        </SidebarContent>
+        <SidebarFooter>
+          <NavUser />
+        </SidebarFooter>
+      </Sidebar>
+    )
   }
 
   // (5) 정상 케이스: 사이드바 렌더

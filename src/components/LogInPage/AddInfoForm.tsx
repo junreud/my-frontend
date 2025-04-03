@@ -451,126 +451,126 @@ export default function AddInfoForm() {
         </div>
 
         {/* (5) 약관들 */}
-        <div className="mb-4 border rounded p-3 bg-white">
-      {/* 모든 약관 전체 동의 */}
-      <div className="flex items-center justify-between mb-2">
-        <label className="flex items-center font-bold text-black">
-          <Checkbox
-            className="mr-2"
-            checked={agreeAll}
-            onCheckedChange={(checked) => handleAgreeAll(Boolean(checked))}
-          />
-          모든 약관에 전체 동의
-        </label>
-      </div>
+        <div className="mb-6 border rounded p-3 bg-white">
+          {/* 모든 약관 전체 동의 */}
+          <div className="flex items-center justify-between mb-2">
+            <label className="flex items-center font-bold text-black">
+              <Checkbox
+                className="mr-2"
+                checked={agreeAll}
+                onCheckedChange={(checked) => handleAgreeAll(Boolean(checked))}
+              />
+              모든 약관에 전체 동의
+            </label>
+          </div>
 
-      {/* 서비스 이용약관 (필수) */}
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <Checkbox
-            className="mr-2"
-            checked={agreeServiceTerm}
-            onCheckedChange={(checked) => setAgreeServiceTerm(Boolean(checked))}
-          />
-          <span className="text-sm font-medium">
-            서비스 이용약관 <span className="font-bold">(필수)</span>
-          </span>
+          {/* 서비스 이용약관 (필수) */}
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <Checkbox
+                className="mr-2"
+                checked={agreeServiceTerm}
+                onCheckedChange={(checked) => setAgreeServiceTerm(Boolean(checked))}
+              />
+              <span className="text-sm font-medium">
+                서비스 이용약관 <span className="font-bold">(필수)</span>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => openTermModal(SERVICE_TERM_TEXT)}
+              className="text-gray-700 font-bold text-lg px-2"
+            >
+              ▶
+            </button>
+          </div>
+
+          {/* 개인정보 처리방침 (필수) */}
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <Checkbox
+                className="mr-2"
+                checked={agreePrivacyTerm}
+                onCheckedChange={(checked) => setAgreePrivacyTerm(Boolean(checked))}
+              />
+              <span className="text-sm font-medium">
+                개인정보 처리방침 <span className="font-bold">(필수)</span>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => openTermModal(PRIVACY_TERM_TEXT)}
+              className="text-gray-700 font-bold text-lg px-2"
+            >
+              ▶
+            </button>
+          </div>
+
+          {/* 마케팅 및 광고성 정보 수신 (선택) */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Checkbox
+                className="mr-2"
+                checked={agreeMarketingTerm}
+                onCheckedChange={(checked) => setAgreeMarketingTerm(Boolean(checked))}
+              />
+              <span className="text-sm font-medium">
+                마케팅 및 광고성 정보 수신 동의 (선택)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => openTermModal(MARKETING_TERM_TEXT)}
+              className="text-gray-700 font-bold text-lg px-2"
+            >
+              ▶
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => openTermModal(SERVICE_TERM_TEXT)}
-          className="text-gray-700 font-bold text-lg px-2"
-        >
-          ▶
-        </button>
-      </div>
 
-      {/* 개인정보 처리방침 (필수) */}
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <Checkbox
-            className="mr-2"
-            checked={agreePrivacyTerm}
-            onCheckedChange={(checked) => setAgreePrivacyTerm(Boolean(checked))}
-          />
-          <span className="text-sm font-medium">
-            개인정보 처리방침 <span className="font-bold">(필수)</span>
-          </span>
-        </div>
+        {/* 가입하기 버튼 - 약관 컨테이너 바깥으로 이동 */}
         <button
-          type="button"
-          onClick={() => openTermModal(PRIVACY_TERM_TEXT)}
-          className="text-gray-700 font-bold text-lg px-2"
-        >
-          ▶
-        </button>
-      </div>
-
-      {/* 마케팅 및 광고성 정보 수신 (선택) */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Checkbox
-            className="mr-2"
-            checked={agreeMarketingTerm}
-            onCheckedChange={(checked) => setAgreeMarketingTerm(Boolean(checked))}
-          />
-          <span className="text-sm font-medium">
-            마케팅 및 광고성 정보 수신 동의 (선택)
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => openTermModal(MARKETING_TERM_TEXT)}
-          className="text-gray-700 font-bold text-lg px-2"
-        >
-          ▶
-        </button>
-
-        {/* 가입하기 버튼 */}
-        <button
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded"
+          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded mt-4"
           onClick={onSubmit}
         >
           가입하기
         </button>
-      </div>
 
-      {/* 모달 */}
-      <AnimatePresence>
-        {showTermModal && (
-          <motion.div
-            key="termModal"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                closeTermModal();
-              }
-            }}
-          >
+        {/* 모달 */}
+        <AnimatePresence>
+          {showTermModal && (
             <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              transition={{ duration: 0.2 }}
-              className="bg-white max-w-md w-[90%] max-h-[80%] p-4 rounded shadow-lg overflow-auto relative"
+              key="termModal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  closeTermModal();
+                }
+              }}
             >
-              <button
-                onClick={closeTermModal}
-                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 font-semibold"
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white max-w-md w-[90%] max-h-[80%] p-4 rounded shadow-lg overflow-auto relative"
               >
-                닫기
-              </button>
-              <div className="whitespace-pre-wrap text-sm mt-6">
-                {termContent}
-              </div>
+                <button
+                  onClick={closeTermModal}
+                  className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 font-semibold"
+                >
+                  닫기
+                </button>
+                <div className="whitespace-pre-wrap text-sm mt-6">
+                  {termContent}
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

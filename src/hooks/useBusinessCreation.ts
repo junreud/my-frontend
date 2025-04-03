@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/components/ui/sonner"
-import { useProgressToast } from "@/hooks/useProgressToast"
 import { createLogger } from "@/lib/logger"
 import {
   normalizeUrl,
@@ -26,12 +25,6 @@ const logger = createLogger('BusinessCreation');
 export function useBusinessCreation(userId?: string) {
   const queryClient = useQueryClient()
   
-  // 프로그레스 토스트 훅 사용
-  const progressToast = useProgressToast({
-    autoCloseDelay: 3000,
-    position: "bottom-right"
-  })
-
   // 진행 상태
   const [currentStep, setCurrentStep] = useState<ProgressStep>("idle")
   const [progressPercent, setProgressPercent] = useState(0)
@@ -45,6 +38,9 @@ export function useBusinessCreation(userId?: string) {
 
   // 키워드 다이얼로그 상태
   const [keywordDialogOpen, setKeywordDialogOpen] = useState(false)
+
+  // 추가: 선택된 키워드 상태 관리
+  const [selectedKeywordIds, setSelectedKeywordIds] = useState<string[]>([])
 
   // 진행 상태 업데이트
   const updateProgress = (step: ProgressStep, percent: number) => {
@@ -64,13 +60,23 @@ export function useBusinessCreation(userId?: string) {
         if (parsed.userId === userId) {
           logger.info("저장된 상태 복구 성공", { 
             step: parsed.currentStep, 
-            progress: parsed.progressPercent 
+            progress: parsed.progressPercent,
+            finalKeywordCount: parsed.finalKeywords?.length || 0,
+            selectedKeywordCount: parsed.selectedKeywordIds?.length || 0,
+            lastUpdated: parsed.lastUpdated
           });
           
           updateProgress(parsed.currentStep, parsed.progressPercent)
           if (parsed.normalizedData) setNormalizedData(parsed.normalizedData)
           if (parsed.finalKeywords) setFinalKeywords(parsed.finalKeywords)
           if (parsed.savedPlaceId) setSavedPlaceId(parsed.savedPlaceId)
+          if (parsed.selectedKeywordIds) setSelectedKeywordIds(parsed.selectedKeywordIds)
+          
+          // 완료 상태에서 키워드 다이얼로그 자동 열기
+          if (parsed.currentStep === "complete" && parsed.finalKeywords?.length > 0) {
+            logger.info("완료 상태에서 키워드 다이얼로그 자동 열기");
+            setKeywordDialogOpen(true);
+          }
         } else {
           logger.debug("저장된 상태의, 사용자 ID가 다름", {
             savedId: parsed.userId,
@@ -88,8 +94,13 @@ export function useBusinessCreation(userId?: string) {
   // 상태 저장 함수
   const saveState = () => {
     try {
-      if (currentStep !== "idle") {
-        logger.debug("현재 상태 저장", { currentStep, progressPercent });
+      if (currentStep !== "idle" || finalKeywords.length > 0) {
+        logger.debug("현재 상태 저장", { 
+          currentStep, 
+          progressPercent,
+          finalKeywordCount: finalKeywords.length,
+          selectedKeywordCount: selectedKeywordIds.length
+        });
         
         const stateToSave = {
           userId,
@@ -97,7 +108,9 @@ export function useBusinessCreation(userId?: string) {
           progressPercent,
           normalizedData,
           finalKeywords,
-          savedPlaceId
+          savedPlaceId,
+          selectedKeywordIds, // 선택된 키워드 ID 저장
+          lastUpdated: new Date().toISOString() // 마지막 업데이트 시간 추가
         }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
       }
@@ -113,8 +126,8 @@ export function useBusinessCreation(userId?: string) {
     setNormalizedData(null)
     setFinalKeywords([])
     setSavedPlaceId(null)
+    setSelectedKeywordIds([]) // 선택된 키워드 ID 초기화
     localStorage.removeItem(STORAGE_KEY)
-    progressToast.resetProgress()
   }
 
   // 초기 마운트 시 저장된 상태 복구
@@ -128,14 +141,13 @@ export function useBusinessCreation(userId?: string) {
   // 상태 변경 시 저장
   useEffect(() => {
     saveState()
-  }, [currentStep, progressPercent, normalizedData, finalKeywords, savedPlaceId])
+  }, [currentStep, progressPercent, normalizedData, finalKeywords, savedPlaceId, selectedKeywordIds])
 
   // 1) URL 정규화
   const normalizeMutation = useMutation({
     mutationFn: async ({ platform, placeUrl }: { platform: Platform; placeUrl: string }) => {
       logger.info("URL 정규화 시작", { platform, placeUrl });
       
-      progressToast.showNormalizing()
       updateProgress("normalizing", 10)
       
       try {
@@ -241,7 +253,6 @@ export function useBusinessCreation(userId?: string) {
       try {
         // ---- (2) 업체 저장 ----
         logger.group("업체 저장 단계", () => {
-          progressToast.showStoring();
           updateProgress("storing", 20);
           
           logger.debug("저장할 업체 정보", {
@@ -271,7 +282,6 @@ export function useBusinessCreation(userId?: string) {
         
         // ---- (3) 키워드 생성 ----
         logger.info("키워드 생성 단계 시작");
-        progressToast.showChatgpt();
         updateProgress("chatgpt", 40);
         
         // logTiming 사용하여 키워드 생성 시간 측정
@@ -294,7 +304,6 @@ export function useBusinessCreation(userId?: string) {
         
         // ---- (4) 키워드 조합 ----
         logger.info("키워드 조합 단계 시작");
-        progressToast.showCombining();
         updateProgress("combining", 55);
         
         // logTiming 사용하여 키워드 조합 시간 측정
@@ -350,7 +359,6 @@ export function useBusinessCreation(userId?: string) {
 
         // ---- (5) 검색량 확인 ----
         logger.info("검색량 확인 단계 시작");
-        progressToast.showChecking();
         updateProgress("checking", 70);
 
         // 정규화된 URL 확인 (TypeScript 오류 방지)
@@ -375,7 +383,6 @@ export function useBusinessCreation(userId?: string) {
         
         // ---- (6) 키워드 그룹화 ----
         logger.info("키워드 그룹화 단계 시작");
-        progressToast.showGrouping();
         updateProgress("grouping", 85);
         
         // logTiming 사용하여 키워드 그룹화 시간 측정
@@ -398,7 +405,6 @@ export function useBusinessCreation(userId?: string) {
           finalKeywordCount: groupRes.finalKeywords.length
         });
         
-        progressToast.showComplete();
         updateProgress("complete", 100);
         
         // 이제 키워드 선택 대화상자를 열 상태로 만들기
@@ -467,12 +473,43 @@ export function useBusinessCreation(userId?: string) {
       queryClient.invalidateQueries({ queryKey: ["userBusinesses", userId] });
     },
     onSuccess: () => {
-      logger.info("키워드 저장 완료 후 상태 정리");
+      logger.info("키워드 저장 완료");
       toast.success("키워드가 저장되었습니다.");
       
-      // 업체 생성 완료 후 초기화 (place_id 유지)
+      // 진행 상태 초기화
       updateProgress("idle", 0);
+      
+      // 데이터 상태 초기화
       setNormalizedData(null);
+      setFinalKeywords([]); // 최종 키워드 데이터 초기화
+      setSavedPlaceId(null); // savedPlaceId도 초기화
+      
+      // 키워드 다이얼로그 닫기
+      setKeywordDialogOpen(false);
+      
+      // localStorage에서 비즈니스 생성 상태 완전히 삭제
+      localStorage.removeItem(STORAGE_KEY);
+      
+      // 임시 저장 데이터도 삭제
+      sessionStorage.removeItem('temp_place_id');
+      localStorage.removeItem('current_place_id');
+      
+      // 관련 임시 데이터도 삭제
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.startsWith(STORAGE_KEY) || 
+          key.includes('place_id') || 
+          key === 'dialogOpen'
+        )) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      
+      logger.info("localStorage 상태 데이터 삭제 완료");
     },
     onError: (error: unknown) => {
       logger.error("키워드 저장 실패", error);
@@ -483,6 +520,7 @@ export function useBusinessCreation(userId?: string) {
 
   // URL 입력으로 업체 정보 확인
   const handleCheckPlace = (platform: Platform, placeUrl: string) => {
+    resetState(); // 기존 상태 초기화
     logger.info("업체 정보 확인 요청", { platform, placeUrl });
     return normalizeMutation.mutateAsync({ platform, placeUrl });
   }
@@ -507,6 +545,23 @@ export function useBusinessCreation(userId?: string) {
     return saveKeywordsMutation.mutateAsync(params);
   }
 
+  // 키워드 선택 핸들러 추가
+  const handleKeywordSelection = (keywordId: string, isSelected: boolean) => {
+    logger.debug("키워드 선택 상태 변경", { keywordId, isSelected });
+    
+    if (isSelected) {
+      setSelectedKeywordIds(prev => [...prev, keywordId]);
+    } else {
+      setSelectedKeywordIds(prev => prev.filter(id => id !== keywordId));
+    }
+  }
+
+  // 다이얼로그 닫기 핸들러 추가
+  const handleKeywordDialogClose = () => {
+    logger.info("키워드 다이얼로그 닫기 - 상태 유지");
+    setKeywordDialogOpen(false);
+  }
+
   return {
     // 진행 상태
     currentStep,
@@ -520,6 +575,11 @@ export function useBusinessCreation(userId?: string) {
     // 키워드 대화상자 상태
     keywordDialogOpen,
     setKeywordDialogOpen,
+    
+    // 키워드 선택 관리
+    selectedKeywordIds,
+    handleKeywordSelection,
+    handleKeywordDialogClose,
     
     // mutations
     normalizeMutation,

@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { useUser } from "./useUser"
 import { useUserBusinesses } from "./useUserBusinesses"
 import { useBusinessCreation } from "./useBusinessCreation"
@@ -59,6 +59,17 @@ export function useBusinessSwitcher() {
     category?: string;
     platform?: string;
   } | null>(null);
+
+  // 새로운 초기화 함수 추가
+  const resetBusinessCreation = useCallback(() => {
+    // localStorage 초기화
+    localStorage.removeItem('business_creation_state');
+    
+    // 관련 상태 초기화 - resetState 함수 사용
+    resetState();
+    
+    logger.info("비즈니스 생성 상태 초기화 완료");
+  }, [resetState]);
 
   // 편의 함수
   const isDisabled = !selectedPlatform || !placeUrl
@@ -170,7 +181,7 @@ export function useBusinessSwitcher() {
     // Normalization Data
     normalizedData,
 
-    // Final Keywords
+    // Final Keywords - 이미 useBusinessCreation에서 가져온 것을 사용
     finalKeywords,
 
     // Business creation flow
@@ -178,9 +189,9 @@ export function useBusinessSwitcher() {
     handleConfirmCreate,
     handleSaveSelectedKeywords,
 
-
     // 업체 생성 진행 상태 관리
     restoreState,
     resetState,
+    resetBusinessCreation, // 초기화 함수 추가
   }
 }

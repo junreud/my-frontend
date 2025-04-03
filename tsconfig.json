@@ -49,6 +49,11 @@
     "types": [
       "react",
       "node"
+    ],
+    // 타입 경로 추가
+    "typeRoots": [
+      "node_modules/@types",
+      "src/types"
     ]
   },
   "include": [
@@ -61,7 +66,8 @@
     "**/*.jsx",
     // .next 내부 타입 정의
     ".next/types/**/*.ts",
-    "src/context/authContext.ts"
+    "src/context/authContext.ts",
+    "src/types/**/*.d.ts"  // 타입 정의 파일 포함
   ],
   "exclude": [
     // node_modules 폴더는 기본적으로 제외
