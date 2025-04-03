@@ -108,7 +108,7 @@ export default function Page() {
 
       <div className="flex items-start gap-4 flex-wrap">
         <div className="w-64">
-          <label className="text-sm font-medium mb-1 block">작업 종류 필터</label>
+          <label className="text-xs font-medium mb-1 block">작업 종류 필터</label>
           <MultiSelectCombobox
             options={workTypeOptions.map(type => ({
               label: type,
@@ -121,7 +121,7 @@ export default function Page() {
         </div>
 
         <div className="w-64">
-          <label className="text-sm font-medium mb-1 block">실행사 필터</label>
+          <label className="text-xs font-medium mb-1 block">실행사 필터</label>
           <MultiSelectCombobox
             options={(executorOptions || []).map(exec => ({
               label: exec || '',
