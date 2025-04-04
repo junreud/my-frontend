@@ -224,12 +224,12 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                 const isEmpty = typeof item.place_id === 'string' && item.place_id.startsWith('empty-');
 
                 // 과거 데이터에서 해당 업체 찾기
-                const pastData = !isEmpty && historicalData
-                  ? keywordData.rankingDetails.find((d: KeywordRankingDetail) => 
-                      d.place_id === item.place_id && 
-                      d.date_key === historicalData?.date_key
-                    )
-                  : null;
+                const pastData = !isEmpty && historicalData && keywordData
+                ? keywordData.rankingDetails.find((d: KeywordRankingDetail) => 
+                    d.place_id === item.place_id && 
+                    d.date_key === historicalData[0]?.date_key // 배열의 첫 번째 요소 사용
+                  )
+                : null;
 
                 const normalizedUrl = `https://m.place.naver.com/place/${item.place_id}/home`;
                   

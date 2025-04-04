@@ -3,7 +3,7 @@
 /**
  * API 에러 응답 형식
  */
-export interface ApiError {
+export interface ApiError extends Error {
   message: string;
   status?: number;
   response?: {
@@ -14,26 +14,44 @@ export interface ApiError {
     status?: number;
   };
 }
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  // 필요한 다른 속성들
+}
+/**
+ * 플랫폼 타입 정의
+ */
+export interface Platform {
+  id: string;
+  name: string;
+  platform: string;
+  [key: string]: unknown;
+  
+}
 
 /**
  * 업체(비즈니스) 기본 정보
  */
 export interface Business {
-  place_name: string
-  platform: Platform
-  category?: string
-  place_id?: string
-  isNewlyOpened?: boolean
+  place_name: string;
+  platform: Platform;
+  category?: string;
+  place_id?: string;
+  isNewlyOpened?: boolean;
+  main_keyword?: string;
 }
+
 export interface UserKeyword {
   id: number;
   keywordId: number;
-  // Optional fields from the other definition that might be needed
   user_id?: number;
   place_id?: number | string;
   keyword?: string;
   created_at?: string;
 }
+
 export interface ApiKeywordResponse {
   id: number;
   user_id: number;
@@ -44,21 +62,20 @@ export interface ApiKeywordResponse {
   updated_at: string;
 }
 
-
 /**
  * URL 정규화 API 응답
  */
 export interface NormalizeResponse {
-  success: boolean
-  normalizedUrl: string
-  alreadyRegistered: boolean
+  success: boolean;
+  normalizedUrl: string;
+  alreadyRegistered: boolean;
   placeInfo: {
-    place_id: string
-    place_name: string
-    category?: string
-    platform: Platform
-    userid: string
-    [key: string]: unknown
+    place_id: string;
+    place_name: string;
+    category?: string;
+    platform: Platform;
+    userid: string;
+    [key: string]: unknown;
   }
 }
 
@@ -66,9 +83,9 @@ export interface NormalizeResponse {
  * ChatGPT 키워드 생성 API 응답
  */
 export interface ChatGptKeywords {
-  success: boolean
-  locationKeywords: string[]
-  featureKeywords: string[]
+  success: boolean;
+  locationKeywords: string[];
+  featureKeywords: string[];
 }
 
 /**
@@ -85,35 +102,36 @@ export interface CombinedKeywordsResponse {
  * 검색량 조회 API에서 개별 키워드 데이터
  */
 export interface ExternalData {
-  keyword: string
-  monthlySearchVolume: number
+  keyword: string;
+  monthlySearchVolume: number;
 }
 
 /**
  * 검색량 조회 API 응답
  */
 export interface SearchVolumeResponse {
-  success: boolean
-  externalDataList: ExternalData[]
+  success: boolean;
+  externalDataList: ExternalData[];
 }
 
 /**
  * 키워드 그룹화 API 응답
  */
 export interface GroupedKeywordsResponse {
-  success: boolean
-  finalKeywords: FinalKeyword[]
+  success: boolean;
+  finalKeywords: FinalKeyword[];
 }
 
 /**
  * 최종 키워드 구조
  */
 export interface FinalKeyword {
-  combinedKeyword: string
+  combinedKeyword: string;
   details?: Array<{
-    monthlySearchVolume?: number
-    rank?: number
-  }>
+    keyword?: string;
+    monthlySearchVolume?: number;
+    rank?: number;
+  }>;
 }
 
 /**
@@ -127,7 +145,7 @@ export type ProgressStep =
   | "combining" 
   | "checking" 
   | "grouping" 
-  | "complete"
+  | "complete";
 
 /**
  * 키워드 생성에 필요한 정보
@@ -173,54 +191,47 @@ export interface KeywordHistoricalData {
   uv: number; // For chart representation
   place_id: string;
   date_key: string;
-}
-
-export interface FinalKeyword {
-  combinedKeyword: string;
-  details?: Array<{
-    keyword: string;
-    monthlySearchVolume?: number;
-  }>;
-}
-
-export interface Platform {
-  id: string;
-  name: string;
-  platform: string;
-  // 기타 속성
-}
-
-export interface ApiError extends Error {
-  response?: {
-    data?: {
-      message?: string;
-    };
-  };
+  blog_review_count?: number;
+  receipt_review_count?: number;
 }
 
 export interface KeywordRankingDetail {
-  date_key: string;
   ranking: number;
   place_id: string;
-  place_name?: string;
-  category?: string;
-  blog_review_count?: number | null;
-  receipt_review_count?: number | null;
-  savedCount?: number | null;
-  keywordList?: string[] | null;
+  date_key: string;
+  place_name: string;
+  category: string;
+  blog_review_count: number | null;
+  receipt_review_count: number | null;
+  savedCount: number | null;
+  keywordList: string[] | null;
 }
 
 export interface KeywordRankingChartProps {
   chartData: KeywordHistoricalData[];
-  activeBusiness: any; // 더 구체적인 타입 (Business 등)이 있다면 그것을 사용
+  activeBusiness: Business | null; 
+}
+
+/**
+ * 키워드 순위 데이터 API 응답 타입
+ */
+export interface KeywordRankingData {
+  rankingDetails: KeywordRankingDetail[];
+  rankingList: KeywordRankData[];
+  chartData?: KeywordHistoricalData[];
+  metadata?: {
+    totalCount?: number;
+    currentPage?: number;
+    lastUpdated?: string;
+  };
 }
 
 export interface KeywordRankingTableProps {
   isLoading: boolean;
   selectedKeyword: string;
-  activeBusiness: any;
+  activeBusiness: Business | null;
   isError: boolean;
-  keywordData: any;
-  historicalData: any;
+  keywordData: KeywordRankingData | null;
+  historicalData: KeywordHistoricalData[] | null;
   rangeValue: number;
 }

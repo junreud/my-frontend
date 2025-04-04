@@ -43,6 +43,7 @@ export function Combobox({
   renderActions,
   open: controlledOpen,
   onOpenChange: setControlledOpen,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   disableOutsideClick = false,
 }: ComboboxProps) {
   // Use internal state if not controlled externally

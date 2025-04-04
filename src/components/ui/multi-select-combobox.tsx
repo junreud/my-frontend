@@ -12,27 +12,27 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-interface ComboboxOption {
+interface ComboboxOption<T = unknown> {
   value: string;
   label: string;
-  userData?: any;
+  userData?: T;
 }
 
-interface MultiSelectComboboxProps {
-  options: ComboboxOption[];
+interface MultiSelectComboboxProps<T = unknown> {
+  options: ComboboxOption<T>[];
   selected: string[];
   onChange: (selected: string[]) => void;
   placeholder?: string;
   position?: "bottom" | "right"; // Add position prop
 }
 
-export function MultiSelectCombobox({
+export function MultiSelectCombobox<T = unknown>({
   options,
   selected,
   onChange,
   placeholder = "항목 선택...",
   position = "bottom", // Default to bottom
-}: MultiSelectComboboxProps) {
+}: MultiSelectComboboxProps<T>) {
   // 모든 상태와 props에 기본값 지정
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
@@ -42,7 +42,8 @@ export function MultiSelectCombobox({
     if (!options || !Array.isArray(options)) return [];
     return options.map(opt => ({
       value: opt?.value || "",
-      label: opt?.label || ""
+      label: opt?.label || "",
+      userData: opt?.userData
     }));
   }, [options]);
 

@@ -39,7 +39,6 @@ export function useBusinessSwitcher() {
     normalizeMutation,
     createBusinessMutation,
     saveKeywordsMutation,
-    savedPlaceId,
     restoreState,
     resetState,
   } = useBusinessCreation(user?.id ? String(user.id) : undefined)

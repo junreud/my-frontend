@@ -151,7 +151,9 @@ export default function Page() {
           workHistories={workHistories || []}
           isLoading={isLoading}
           isError={isError}
-          refreshData={refreshWorkHistories}
+          refreshData={async () => {
+            await refreshWorkHistories(); // 반환값을 무시
+          }}        
         />
       </Card>
     </div>

@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "node server.js",
     "build": "next build",
-    "start": "node server.js",
-    "lint": "next lint"
+    "start": "npm run build && NODE_ENV=production node server.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -81,3 +80,4 @@
     "typescript": "^5.8.2"
   }
 }
+

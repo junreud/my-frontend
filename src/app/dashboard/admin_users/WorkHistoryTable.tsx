@@ -51,6 +51,19 @@ interface WorkTableProps {
   refreshData?: () => Promise<void>;
 }
 
+interface Place {
+  id: number;
+  name: string;
+}
+
+interface UserWithPlaces {
+  user_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  place_names: string[];
+  places: Place[];
+}
 // Fix the formatDate function to use the renamed import
 const formatDateString = (dateStr: string | null) => {
   if (!dateStr) return '-';

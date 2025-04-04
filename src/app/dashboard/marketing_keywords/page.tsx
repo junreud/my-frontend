@@ -72,11 +72,6 @@ interface KeywordRankingsMap {
   [keyword: string]: KeywordDataGroup;
 }
 
-interface Business {
-  place_id: string | number;
-  place_name: string;
-  // 필요한 다른 비즈니스 속성 추가
-}
 
 // Update this interface to match the actual data structure
 interface UserKeyword {
@@ -92,7 +87,6 @@ export default function Page(): JSX.Element {
   const [maxRangeValue, setMaxRangeValue] = useState<number>(59); // Default to 59 (60 days)
   const [isRangePressed, setIsRangePressed] = useState<boolean>(false);
   const [selectedKeyword, setSelectedKeyword] = useState<string>("");
-  const [selectedAccordionKeyword, setSelectedAccordionKeyword] = useState<string>("");
   const [historicalData, setHistoricalData] = useState<ChartDataPoint | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isChangeDialogOpen, setIsChangeDialogOpen] = useState(false);
@@ -102,10 +96,7 @@ export default function Page(): JSX.Element {
   const [isLoading, setIsLoading] = useState(false);
   const [isChangeMode, setIsChangeMode] = useState(false);
   const [isComboboxOpen, setIsComboboxOpen] = useState(false);
-  const [isKeywordsUpdating, setIsKeywordsUpdating] = useState(false);
   const [pollingKeyword, setPollingKeyword] = useState<string | null>(null);
-  const [crawlingStatus, setCrawlingStatus] = useState<string | null>(null);
-  const [crawlingTimeAgo, setCrawlingTimeAgo] = useState<string | null>(null);
   const [pollCount, setPollCount] = useState(0);
   const [updatingKeywords, setUpdatingKeywords] = useState<string[]>([]);
   const [changingKeywords, setChangingKeywords] = useState<Record<string, string>>({});
@@ -113,6 +104,15 @@ export default function Page(): JSX.Element {
   const { activeBusiness, user } = useBusinessSwitcher();
   const { data: userData } = useUser();
   const queryClient = useQueryClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isKeywordsUpdating, setIsKeywordsUpdating] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [selectedAccordionKeyword, setSelectedAccordionKeyword] = useState<string>("");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [crawlingStatus, setCrawlingStatus] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [crawlingTimeAgo, setCrawlingTimeAgo] = useState<string | null>(null);
 
   // 유저 키워드 가져오기
   const { 
@@ -150,8 +150,6 @@ export default function Page(): JSX.Element {
 
   const keywordLimit = getKeywordLimit(userData?.role);
   const canAddKeywords = userKeywords.length < keywordLimit;
-
-  // Function to check keyword crawling status
   const checkKeywordStatus = useCallback(async (keyword: string) => {
     try {
       const response = await apiClient.get(`/keyword/status?keyword=${encodeURIComponent(keyword)}`);
@@ -168,22 +166,18 @@ export default function Page(): JSX.Element {
         setCrawlingStatus(status);
         setCrawlingTimeAgo(timeAgo);
         
-        // If crawling is complete, refresh data
         if (status === "completed") {
           console.log(`Keyword "${keyword}" crawling completed!`);
-          await refreshKeywordData();
+          await refreshKeywordData(); // refreshKeywordData 호출
           
-          // Find any old keywords that were changing to this keyword
           const oldKeywords = Object.entries(changingKeywords)
-            .filter(([_, newKw]) => newKw === keyword)
-            .map(([oldKw, _]) => oldKw);
+            .filter(([, newKw]) => newKw === keyword)
+            .map(([oldKw]) => oldKw);
           
-          // Remove both old and new keywords from updating lists
           setUpdatingKeywords(prev => 
             prev.filter(k => k !== keyword && !oldKeywords.includes(k))
           );
           
-          // Clear the changing keywords entries
           setChangingKeywords(prev => {
             const newState = {...prev};
             oldKeywords.forEach(oldKw => {
@@ -197,7 +191,6 @@ export default function Page(): JSX.Element {
           setCrawlingTimeAgo(null);
           setPollCount(0);
           
-          // Only reset global loading if no keywords are being updated
           if (updatingKeywords.length <= 1) {
             setIsKeywordsUpdating(false);
           }
@@ -211,20 +204,19 @@ export default function Page(): JSX.Element {
       console.error("Error checking keyword status:", error);
       return false;
     }
-  }, [pollCount, updatingKeywords, changingKeywords]);
-
+  }, [pollCount, updatingKeywords, changingKeywords, refreshKeywordData]); // refreshKeywordData 추가
   // Effect to poll keyword status
   useEffect(() => {
     if (!pollingKeyword) return;
-    
+  
     const pollInterval = setInterval(async () => {
-      setPollCount(prev => prev + 1);
-      
+      setPollCount((prev) => prev + 1);
+  
       const isComplete = await checkKeywordStatus(pollingKeyword);
       if (isComplete) {
         clearInterval(pollInterval);
       }
-      
+  
       // Stop polling after 30 attempts (5 minutes)
       if (pollCount >= 30) {
         clearInterval(pollInterval);
@@ -235,12 +227,12 @@ export default function Page(): JSX.Element {
         toast.error("키워드 데이터 수집이 완료되지 않았습니다. 나중에 다시 시도해주세요.");
       }
     }, 10000); // Poll every 10 seconds
-    
+  
     return () => clearInterval(pollInterval);
-  }, [pollingKeyword, pollCount, checkKeywordStatus]);
-
+  }, [pollingKeyword, pollCount, checkKeywordStatus]); // 누락된 checkKeywordStatus 추가
+  
   // Updated refreshKeywordData function with better UX
-  const refreshKeywordData = async () => {
+  const refreshKeywordData = useCallback(async () => {
     try {
       // Invalidate React Query caches for keyword data
       await queryClient.invalidateQueries({
@@ -264,7 +256,12 @@ export default function Page(): JSX.Element {
         setUpdatingKeywords([]);
       }
     }
-  };
+  }, [
+    queryClient,
+    activeBusiness?.place_id,
+    user?.id,
+    pollingKeyword,
+  ]);
 
   // Updated handleAddKeyword function
   const handleAddKeyword = async () => {
@@ -423,72 +420,86 @@ export default function Page(): JSX.Element {
   // 키워드별로 데이터 분류 (필터링)
   const keywordRankingsMap = useMemo<KeywordRankingsMap>(() => {
     if (!allKeywordRankingsData?.rankingDetails) return {};
-
+    
+    // Move formatChartData inside useMemo to avoid dependency issues
+    function formatChartData(details: KeywordDetail[]): ChartDataPoint[] {
+      if (!details || details.length === 0) return [];
+      
+      const dateGroups: Record<string, KeywordDetail[]> = {};
+      details.forEach(item => {
+        if (!dateGroups[item.date_key]) {
+          dateGroups[item.date_key] = [];
+        }
+        dateGroups[item.date_key].push(item);
+      });
+  
+      const result = Object.keys(dateGroups)
+        .sort()
+        .map(date => {
+          const items = dateGroups[date];
+          const activePlaceItem = activeBusiness?.place_id ? items.find(
+            item => String(item.place_id) === String(activeBusiness.place_id)
+          ) : null;
+          
+          return {
+            date,
+            place_id: activePlaceItem?.place_id || null,
+            ranking: activePlaceItem?.ranking || null,
+            savedCount: activePlaceItem?.savedCount || 0,
+            blog_review_count: activePlaceItem?.blog_review_count || 0,
+            receipt_review_count: activePlaceItem?.receipt_review_count || 0,
+            keywordItems: activePlaceItem?.keywordList || [],
+            saved: activePlaceItem?.savedCount || 0,
+            blogReviews: activePlaceItem?.blog_review_count || 0,
+            receiptReviews: activePlaceItem?.receipt_review_count || 0,
+          };
+        });
+      
+      console.log('[Debug] formatChartData 결과:', {
+        itemCount: result.length,
+        sampleItem: result.length > 0 ? result[0] : null
+      });
+      
+      return result;
+    }
+  
+    const allDetails: KeywordDetail[] = allKeywordRankingsData.rankingDetails.map(detail => ({
+      id: detail.id,
+      keyword_id: detail.keyword_id,
+      keyword: detail.keyword,
+      ranking: detail.ranking,
+      place_id: detail.place_id,
+      place_name: detail.place_name,
+      category: detail.category,
+      savedCount: detail.savedCount,
+      blog_review_count: detail.blog_review_count,
+      receipt_review_count: detail.receipt_review_count,
+      keywordList: detail.keywordList,
+      date_key: detail.date_key,
+    }));
+  
     const result: KeywordRankingsMap = {};
-    const allDetails: KeywordDetail[] = allKeywordRankingsData.rankingDetails;
-
     userKeywords.forEach(keyword => {
       const keywordDetails = allDetails.filter(detail => detail.keyword === keyword);
-
+  
       if (keywordDetails.length > 0) {
         const chartData = formatChartData(keywordDetails);
-        
+  
         result[keyword] = {
           rankingDetails: keywordDetails,
-          chartData
+          chartData,
         };
       }
     });
-
+  
     logger.info(`${Object.keys(result).length}개 키워드 데이터 매핑 완료`);
     return result;
-  }, [allKeywordRankingsData, userKeywords]);
+  }, [allKeywordRankingsData, userKeywords, activeBusiness?.place_id]); // Add activeBusiness?.place_id as dependency since it's used in formatChartData
 
   const selectedKeywordData = useMemo<KeywordDataGroup | null>(() => {
     if (!selectedKeyword) return null;
     return keywordRankingsMap[selectedKeyword] || null;
   }, [selectedKeyword, keywordRankingsMap]);
-
-  function formatChartData(details: KeywordDetail[]): ChartDataPoint[] {
-    if (!details || details.length === 0) return [];
-    
-    const dateGroups: Record<string, KeywordDetail[]> = {};
-    details.forEach(item => {
-      if (!dateGroups[item.date_key]) {
-        dateGroups[item.date_key] = [];
-      }
-      dateGroups[item.date_key].push(item);
-    });
-
-    const result = Object.keys(dateGroups)
-      .sort()
-      .map(date => {
-        const items = dateGroups[date];
-        const activePlaceItem = activeBusiness?.place_id ? items.find(
-          item => String(item.place_id) === String(activeBusiness.place_id)
-        ) : null;
-        
-        return {
-          date,
-          place_id: activePlaceItem?.place_id || null,
-          ranking: activePlaceItem?.ranking || null,
-          savedCount: activePlaceItem?.savedCount || 0,
-          blog_review_count: activePlaceItem?.blog_review_count || 0,
-          receipt_review_count: activePlaceItem?.receipt_review_count || 0,
-          keywordItems: activePlaceItem?.keywordList || [],
-          saved: activePlaceItem?.savedCount || 0,
-          blogReviews: activePlaceItem?.blog_review_count || 0,
-          receiptReviews: activePlaceItem?.receipt_review_count || 0,
-        };
-      });
-    
-    console.log('[Debug] formatChartData 결과:', {
-      itemCount: result.length,
-      sampleItem: result.length > 0 ? result[0] : null
-    });
-    
-    return result;
-  }
 
   const getKeywordCurrentRanking = (keyword: string): string | number => {
     if (!activeBusiness?.place_id || !keywordRankingsMap[keyword]) return '?';
@@ -518,50 +529,53 @@ export default function Page(): JSX.Element {
         setHistoricalData(null);
         return;
       }
-
+  
       const dataLength = selectedKeywordData.chartData.length;
       const targetIndex = dataLength - 1 - daysAgo;
-      const historicalDataPoint = targetIndex >= 0 
-        ? selectedKeywordData.chartData[targetIndex] 
-        : selectedKeywordData.chartData[0];
-
+      const historicalDataPoint =
+        targetIndex >= 0
+          ? selectedKeywordData.chartData[targetIndex]
+          : selectedKeywordData.chartData[0];
+  
       setHistoricalData(historicalDataPoint);
     }
-  }, [rangeValue, selectedKeywordData]);
-
+  }, [rangeValue, selectedKeywordData]); // 누락된 selectedKeywordData 추가
+  
   useEffect(() => {
     if (openAccordionItem) {
-      const index = parseInt(openAccordionItem.replace('item-', ''));
+      const index = parseInt(openAccordionItem.replace("item-", ""));
       if (!isNaN(index) && userKeywords[index]) {
         setSelectedAccordionKeyword(userKeywords[index]);
       }
     } else {
       setSelectedAccordionKeyword("");
     }
-  }, [openAccordionItem, userKeywords]);
-
+  }, [openAccordionItem, userKeywords]); // 누락된 userKeywords 추가
+  
+  // Effect to set default selectedKeyword
   useEffect(() => {
     if (userKeywords.length > 0 && !selectedKeyword) {
       setSelectedKeyword(userKeywords[0]);
     }
-  }, [userKeywords, selectedKeyword]);
-
+  }, [userKeywords, selectedKeyword]); // 누락된 selectedKeyword 추가
+  
+  // Effect to update document title based on activeBusiness
   useEffect(() => {
     if (activeBusiness?.place_name) {
       document.title = `${activeBusiness.place_name} - 키워드 순위`;
     } else {
       document.title = "키워드 순위";
     }
-  }, [activeBusiness]);
-
+  }, [activeBusiness]); // 누락된 activeBusiness 추가
+  
   useEffect(() => {
-    console.log('[Debug] MarketingKeywordsPage:', {
+    console.log("[Debug] MarketingKeywordsPage:", {
       keywordsLoading,
       keywordsError,
       allKeywordsLoading,
       allKeywordsError,
       userKeywordsCount: userKeywords.length,
-      selectedKeyword
+      selectedKeyword,
     });
   }, [
     keywordsLoading,
@@ -569,16 +583,16 @@ export default function Page(): JSX.Element {
     allKeywordsLoading,
     allKeywordsError,
     userKeywords,
-    selectedKeyword
-  ]);
-
-  // Calculate the maximum available days for the range slider based on available data
+    selectedKeyword,
+  ]); // 누락된 selectedKeyword 추가
+  
+  // Effect to calculate maxRangeValue based on selectedKeyword
   useEffect(() => {
     if (selectedKeyword && keywordRankingsMap[selectedKeyword]?.chartData?.length > 0) {
       const chartData = keywordRankingsMap[selectedKeyword].chartData;
       const availableDays = chartData.length - 1; // Days available in data
       const maxDays = Math.min(59, availableDays); // Cap at 59 (60 days including today)
-      
+
       if (maxDays !== maxRangeValue) {
         setMaxRangeValue(maxDays);
         // If current range value is greater than the new max, reset it
@@ -589,24 +603,24 @@ export default function Page(): JSX.Element {
     } else {
       setMaxRangeValue(59); // Default to 59 if no data
     }
-  }, [selectedKeyword, keywordRankingsMap]);
+  }, [selectedKeyword, keywordRankingsMap, maxRangeValue, rangeValue]); // 누락된 maxRangeValue, rangeValue 추가
 
-  // Add auto-refresh logic
+  // Effect to auto-refresh data
   useEffect(() => {
     const autoRefreshInterval = setInterval(() => {
       if (activeBusiness?.place_id && user?.id) {
         queryClient.invalidateQueries({
-          queryKey: ['keywordRankingDetails', activeBusiness.place_id, user.id],
+          queryKey: ["keywordRankingDetails", activeBusiness.place_id, user.id],
         });
         queryClient.invalidateQueries({
-          queryKey: ['userKeywords', user.id, activeBusiness.place_id],
+          queryKey: ["userKeywords", user.id, activeBusiness.place_id],
         });
-        console.log('Auto-refresh executed');
+        console.log("Auto-refresh executed");
       }
     }, 5 * 60 * 1000); // Refresh every 5 minutes
 
     return () => clearInterval(autoRefreshInterval);
-  }, [activeBusiness?.place_id, user?.id, queryClient]);
+  }, [activeBusiness?.place_id, user?.id, queryClient]); // 누락된 queryClient 추가
 
   interface ComboboxWithPropsProps {
     options: string[];
@@ -621,8 +635,12 @@ export default function Page(): JSX.Element {
     disableOutsideClick?: boolean;
   }
 
+  // Replace interface with a type intersection
+  type ComboboxComponentType = React.ComponentType<ComboboxWithPropsProps> & 
+    ((props: ComboboxWithPropsProps) => React.ReactElement);
+
   const ComboboxWithProps: React.FC<ComboboxWithPropsProps> = ({ renderActions, open, onOpenChange, disableOutsideClick, ...props }) => {
-    const ComboboxComponent = Combobox as any;
+    const ComboboxComponent = Combobox as ComboboxComponentType;
     return <ComboboxComponent {...props} renderActions={renderActions} open={open} onOpenChange={onOpenChange} disableOutsideClick={disableOutsideClick} />;
   };
 

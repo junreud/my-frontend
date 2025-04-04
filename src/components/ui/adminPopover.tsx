@@ -15,7 +15,7 @@ interface PopoverProps extends React.ComponentPropsWithoutRef<typeof PopoverPrim
 const Popover = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Root>,
   PopoverProps
->(({ disableOutsideClick, ...props }, ref) => {
+>(({ ...props }) => {
   return <PopoverPrimitive.Root {...props} />;
 });
 Popover.displayName = "Popover";

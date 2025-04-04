@@ -1,7 +1,9 @@
 // lib/getUser.ts
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000';
+
 export async function fetchUserData() {
-    const res = await fetch("https://localhost:4000/auth/me", {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
       // SSR에서 쿠키가 필요하다면, 아래와 같이 설정 (Next.js 13의 request cookies는 별도 처리)
       // credentials: "include",
       // headers: {...}

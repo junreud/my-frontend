@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "@/components/ui/sonner"
 import { createLogger } from "@/lib/logger"
@@ -21,6 +21,18 @@ import type {
 // 로컬 스토리지 키 상수
 const STORAGE_KEY = 'business_creation_state'
 const logger = createLogger('BusinessCreation');
+
+// Define a more complete type for placeInfo properties
+interface PlaceInfoExtended {
+  place_id: number;
+  place_name: string;
+  category?: string;
+  platform: Platform;
+  userid?: string;
+  placeId?: string; // Some APIs use placeId instead of place_id
+  id?: string | number; // Some APIs might return an id field
+  [key: string]: unknown;
+}
 
 export function useBusinessCreation(userId?: string) {
   const queryClient = useQueryClient()
@@ -50,12 +62,21 @@ export function useBusinessCreation(userId?: string) {
   }
 
   // 상태 복구 함수
-  const restoreState = () => {
+  const restoreState = useCallback(() => {
     try {
       logger.debug("저장된 상태 복구 시도");
       const savedState = localStorage.getItem(STORAGE_KEY)
       if (savedState) {
-        const parsed = JSON.parse(savedState)
+        const parsed = JSON.parse(savedState) as {
+          userId?: string;
+          currentStep?: ProgressStep;
+          progressPercent?: number;
+          normalizedData?: NormalizeResponse;
+          finalKeywords?: FinalKeyword[];
+          savedPlaceId?: string | number;
+          selectedKeywordIds?: string[];
+          lastUpdated?: string;
+        };
         
         if (parsed.userId === userId) {
           logger.info("저장된 상태 복구 성공", { 
@@ -66,14 +87,14 @@ export function useBusinessCreation(userId?: string) {
             lastUpdated: parsed.lastUpdated
           });
           
-          updateProgress(parsed.currentStep, parsed.progressPercent)
+          if (parsed.currentStep) updateProgress(parsed.currentStep, parsed.progressPercent || 0)
           if (parsed.normalizedData) setNormalizedData(parsed.normalizedData)
           if (parsed.finalKeywords) setFinalKeywords(parsed.finalKeywords)
           if (parsed.savedPlaceId) setSavedPlaceId(parsed.savedPlaceId)
           if (parsed.selectedKeywordIds) setSelectedKeywordIds(parsed.selectedKeywordIds)
           
           // 완료 상태에서 키워드 다이얼로그 자동 열기
-          if (parsed.currentStep === "complete" && parsed.finalKeywords?.length > 0) {
+          if (parsed.currentStep === "complete" && (parsed.finalKeywords?.length || 0) > 0) {
             logger.info("완료 상태에서 키워드 다이얼로그 자동 열기");
             setKeywordDialogOpen(true);
           }
@@ -89,10 +110,10 @@ export function useBusinessCreation(userId?: string) {
     } catch (error) {
       logger.error("상태 복구 중 오류 발생", error);
     }
-  }
+  }, [userId]);
 
   // 상태 저장 함수
-  const saveState = () => {
+  const saveState =useCallback(() => {
     try {
       if (currentStep !== "idle" || finalKeywords.length > 0) {
         logger.debug("현재 상태 저장", { 
@@ -117,7 +138,15 @@ export function useBusinessCreation(userId?: string) {
     } catch (error) {
       logger.error("상태 저장 중 오류 발생", error);
     }
-  }
+  }, [
+    currentStep,
+    progressPercent,
+    normalizedData,
+    finalKeywords,
+    savedPlaceId,
+    selectedKeywordIds,
+    userId,
+  ]);
 
   // 상태 초기화 함수
   const resetState = () => {
@@ -134,15 +163,15 @@ export function useBusinessCreation(userId?: string) {
   useEffect(() => {
     if (userId) {
       logger.debug("컴포넌트 마운트 - 상태 복구 시도", { userId });
-      restoreState()
+      restoreState();
     }
-  }, [userId])
+  }, [userId, restoreState]);
 
   // 상태 변경 시 저장
   useEffect(() => {
-    saveState()
-  }, [currentStep, progressPercent, normalizedData, finalKeywords, savedPlaceId, selectedKeywordIds])
-
+    saveState();
+  }, [currentStep, progressPercent, normalizedData, finalKeywords, savedPlaceId, selectedKeywordIds, saveState]);
+  
   // 1) URL 정규화
   const normalizeMutation = useMutation({
     mutationFn: async ({ platform, placeUrl }: { platform: Platform; placeUrl: string }) => {
@@ -161,7 +190,7 @@ export function useBusinessCreation(userId?: string) {
           });
           
           if (res && typeof res === 'object') {
-            return res
+            return res as NormalizeResponse;
           } else {
             logger.warn("유효하지 않은 응답 형식", { response: res });
             throw new Error('유효하지 않은 응답 형식입니다.');
@@ -226,9 +255,10 @@ export function useBusinessCreation(userId?: string) {
       }
       
       // place_id 확인 및 저장 - 여러 가능한 위치에서 확인
-      const placeId = normalizedData.placeInfo.place_id || 
-                     (normalizedData.placeInfo as any).placeId ||
-                     normalizedData.placeInfo.id;
+      const normalizedPlaceInfo = normalizedData.placeInfo as PlaceInfoExtended;
+      const placeId = normalizedPlaceInfo.place_id || 
+                     normalizedPlaceInfo.placeId ||
+                     normalizedPlaceInfo.id;
       
       if (!placeId) {
         logger.error("place_id를 찾을 수 없습니다", normalizedData.placeInfo);
@@ -266,10 +296,10 @@ export function useBusinessCreation(userId?: string) {
         // logTiming 사용하여 업체 저장 시간 측정
         const storeRes = await logger.logTiming("업체 저장 API 호출", async () => {
           return await storePlace(userId, {
-            place_id: placeId,
+            place_id: placeId.toString(), // 숫자를 문자열로 변환
             place_name: normalizedData.placeInfo.place_name,
             category: normalizedData.placeInfo.category,
-            platform: normalizedData.placeInfo.platform as Platform, 
+            platform: normalizedData.placeInfo.platform,
           });
         });
         
@@ -375,10 +405,13 @@ export function useBusinessCreation(userId?: string) {
         
         // logTiming 사용하여 검색량 확인 시간 측정 (combinedKeywords 변수 사용)
         const checkRes = await logger.logTiming("검색량 확인 API 호출", async () => {
-            return await checkSearchVolume(
+          if (!Array.isArray(combinedKeywords)) {
+            throw new Error("키워드 목록이 유효하지 않습니다.");
+          }
+          return await checkSearchVolume(
             normalizedUrl,
-            combinedKeywords // combineRes.combinedKeywords 대신 combinedKeywords 사용
-            );
+            combinedKeywords
+          );
         });
         
         // ---- (6) 키워드 그룹화 ----

@@ -12,6 +12,11 @@ import { Card } from "../ui/card";
 import { useKeywordRankingDetails } from "@/hooks/useKeywordRankingDetails";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { Box, Skeleton } from '@mui/material';
+import { KeywordHistoricalData } from '@/types';
+
+// Define types for the tooltip formatter
+type FormatterValue = string | number | readonly (string | number)[];
+type FormatterName = string;
 
 export default function DashboardChart() {
   const { activeBusiness } = useBusinessSwitcher();
@@ -20,7 +25,7 @@ export default function DashboardChart() {
     keyword: activeBusiness?.main_keyword
   });
 
-  const processedData = useMemo(() => {
+  const processedData: KeywordHistoricalData[] = useMemo(() => {
     console.log("원본 차트 데이터:", keywordData?.chartData);
     console.log("활성 업체 ID:", activeBusiness?.place_id);
 
@@ -56,7 +61,7 @@ export default function DashboardChart() {
         try {
           const itemDate = new Date(item.date);
           return !isNaN(itemDate.getTime()) && itemDate >= twoWeeksAgo;
-        } catch (e) {
+        } catch  {
           console.error("날짜 변환 오류:", item.date);
           return false;
         }
@@ -116,7 +121,7 @@ if (!processedData.length) {
               <XAxis dataKey="date" tickFormatter={formatDate} />
               <YAxis domain={[1, Math.max(...processedData.map(d => d.ranking), 10)]} reversed />
               <Tooltip 
-                formatter={(value: any) => [`${value}위`, '순위']}
+                formatter={(value: FormatterValue) => [`${value}위`, '순위']}
                 labelFormatter={(label: string) => {
                   const date = new Date(label);
                   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -145,7 +150,7 @@ if (!processedData.length) {
                 <XAxis dataKey="date" tickFormatter={formatDate} />
                 <YAxis domain={[0, 'auto']} />
                 <Tooltip 
-                    formatter={(value: any, name: any) => [
+                    formatter={(value: FormatterValue, name: FormatterName) => [
                     value, 
                     name === 'blog_review_count' ? '블로그 리뷰' : '영수증 리뷰'
                     ]}

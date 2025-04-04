@@ -23,13 +23,46 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ProgressBar } from "@/components/ui/progress-bar"
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher"
-import { AlertCircle, Clock } from "lucide-react"
+import { Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { FinalKeyword, ApiError, ProgressStep } from "@/types"
+import type { FinalKeyword, ApiError, ProgressStep, NormalizeResponse, Platform } from "@/types"
 
 const logger = createLogger('BusinessSheet');
+
+// Define types for data from useBusinessSwitcher
+interface PlaceData {
+  place_name: string;
+  category?: string;
+  place_id?: string | number;
+  platform?: Platform;
+  [key: string]: unknown;
+}
+
+interface BusinessSwitcherState {
+  selectedPlatform: string;
+  setSelectedPlatform: (platform: string) => void;
+  placeUrl: string;
+  setPlaceUrl: (url: string) => void;
+  dialogOpen: boolean;
+  setDialogOpen: (open: boolean) => void;
+  placeData: PlaceData | null;
+  normalizedData: NormalizeResponse | null;
+  setPlaceData: React.Dispatch<React.SetStateAction<PlaceData | null>>;
+  handleConfirmCreate: () => Promise<unknown>;
+  handleCheckPlace: () => Promise<unknown>;
+  isDisabled: boolean;
+  user: { role?: string } | null;
+  finalKeywords: FinalKeyword[];
+  setFinalKeywords: React.Dispatch<React.SetStateAction<FinalKeyword[]>>;
+  keywordDialogOpen: boolean;
+  setKeywordDialogOpen: (open: boolean) => void;
+  handleSaveSelectedKeywords: (params: { keywords: FinalKeyword[], placeId: string | number }) => Promise<void>;
+  savedPlaceId: string | number | null;
+  currentStep: ProgressStep;
+  progressPercent: number;
+  resetBusinessCreation: () => void;
+}
 
 // 진행 단계별 표시 텍스트 및 아이콘
 const stepInfo: Record<ProgressStep, { label: string, icon: React.ReactNode, color: string }> = {
@@ -98,9 +131,6 @@ export function BusinessSheet({
 
     user,
     finalKeywords,
-    setFinalKeywords,
-    keywordDialogOpen,
-    setKeywordDialogOpen,
     handleSaveSelectedKeywords,
     savedPlaceId,
     
@@ -108,7 +138,7 @@ export function BusinessSheet({
     currentStep,
     progressPercent,
     resetBusinessCreation, // 초기화 함수 추가
-  } = useBusinessSwitcher()
+  } = useBusinessSwitcher() as BusinessSwitcherState;
 
   // 통합 다이얼로그를 위한 상태
   const [dialogStep, setDialogStep] = React.useState<'confirm' | 'processing' | 'selection'>('confirm')
@@ -262,7 +292,7 @@ export function BusinessSheet({
       sessionStorage.getItem('temp_place_id') ||
       localStorage.getItem('current_place_id') ||
       (normalizedData?.placeInfo?.place_id) ||
-      (placeData as any)?.place_id;
+      (placeData?.place_id);
 
     if (!placeIdToUse) {
       toast.error("업체 정보를 찾을 수 없습니다.")
@@ -387,8 +417,8 @@ export function BusinessSheet({
             <SheetClose asChild>
               <Button variant="ghost">닫기</Button>
             </SheetClose>
-          </SheetFooter>
-        </SheetContent>
+            </SheetFooter>
+          </SheetContent>
       </Sheet>
 
       {/* 통합 다이얼로그 */}

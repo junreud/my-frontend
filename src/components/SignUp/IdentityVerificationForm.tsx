@@ -6,6 +6,9 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { checkEmailAvailability as apiCheckEmailAvailability } from "@/services/api";
 
+// API 기본 URL 환경 변수에서 가져오기
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000';
+
 export default function IdentityVerificationForm() {
   // -------------------------------------------------
   // [A] 이메일 관련 상태
@@ -141,7 +144,7 @@ export default function IdentityVerificationForm() {
 
     try {
       // (2) 서버에 signup 요청 -> 인증 메일 발송 & Redis 저장
-      const response = await fetch("https://localhost:4000/auth/signup", {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -164,7 +167,7 @@ export default function IdentityVerificationForm() {
   // (C-2) '인증번호 확인' 버튼 클릭 => /auth/verify 호출
   const handleVerifyCode = async () => {
     try {
-      const response = await fetch("https://localhost:4000/auth/verify", {
+      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code: verificationCode, password }),
@@ -195,7 +198,7 @@ export default function IdentityVerificationForm() {
    // [C-3] '재발송' 버튼 로직
    const handleResendCode = async () => {
      try {
-       const response = await fetch("https://localhost:4000/auth/signup", {
+       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
          method: "POST",
          headers: { "Content-Type": "application/json" },
          body: JSON.stringify({ email, password }),
@@ -214,10 +217,10 @@ export default function IdentityVerificationForm() {
   // [D] 소셜 로그인
   // -------------------------------------------------
   const handleGoogleLogin = () => {
-    window.location.href = "https://localhost:4000/auth/google";
+    window.location.href = `${API_BASE_URL}/auth/google`;
   };
   const handleKakaoLogin = () => {
-    window.location.href = "https://localhost:4000/auth/kakao";
+    window.location.href = `${API_BASE_URL}/auth/kakao`;
   };
 
   // -------------------------------------------------

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useBusinessSwitcher } from '@/hooks/useBusinessSwitcher'; 
+import { Business, User } from '@/types';
 import './TableComponent.css';
 
 // API base URL should be defined here
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000/api';
 
 // Define interfaces for the data structures
 interface KeywordDataParams {
@@ -158,19 +159,22 @@ export const fetchUserKeywords = async (userId: string | number, placeId: string
   }
 };
 
-const TableComponent: React.FC<TableComponentProps> = ({ title, selectedKeyword }) => {
+const TableComponent: React.FC<TableComponentProps> = ({ selectedKeyword }) => {
   const [data, setData] = useState<KeywordResultItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [visibleItems, setVisibleItems] = useState<number>(100);
   const [hasMore, setHasMore] = useState<boolean>(true);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [historicalData, setHistoricalData] = useState<KeywordResultItem[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [userKeywords, setUserKeywords] = useState<UserKeyword[]>([]);
   
   // 비즈니스 스위처에서 선택된 업체 정보 가져오기
-  let activeBusiness: any = null;
-  let user: any = null;
+  let activeBusiness: Business | null = null;
+  let user: User | null | undefined = null;
+  const { activeBusiness: business, user: currentUser } = useBusinessSwitcher();
+
   try {
-    const { activeBusiness: business, user: currentUser } = useBusinessSwitcher();
     activeBusiness = business;
     user = currentUser;
   } catch (error) {
@@ -193,11 +197,7 @@ const TableComponent: React.FC<TableComponentProps> = ({ title, selectedKeyword 
     loadUserKeywords();
   }, [user?.id, activeBusiness?.place_id]);
 
-  useEffect(() => {
-    loadData();
-  }, [selectedKeyword, activeBusiness]);
-
-  const loadData = async (): Promise<void> => {
+  const loadData = useCallback(async (): Promise<void> => {
     if (!selectedKeyword || !activeBusiness?.place_id) {
       setData([]);
       setHistoricalData([]);
@@ -229,7 +229,11 @@ const TableComponent: React.FC<TableComponentProps> = ({ title, selectedKeyword 
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedKeyword, activeBusiness?.place_id, visibleItems]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const loadMore = (): void => {
     setVisibleItems(prev => prev + 100);
@@ -238,8 +242,6 @@ const TableComponent: React.FC<TableComponentProps> = ({ title, selectedKeyword 
     }
   };
 
-  // Historical data for charts
-  const chartData = getChartData(historicalData);
 
   return (
     <div className="table-component">
@@ -309,12 +311,4 @@ const TableComponent: React.FC<TableComponentProps> = ({ title, selectedKeyword 
               >
                 더 보기 (+100)
               </button>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-};
-
-export default TableComponent;
+            </div>          )}        </>      )}    </div>  );};export default TableComponent;

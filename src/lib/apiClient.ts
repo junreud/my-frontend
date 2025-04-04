@@ -1,8 +1,9 @@
 // lib/apiClient.ts
 import axios from "axios";
+import { API_BASE_URL } from "./config";
 
 const apiClient = axios.create({
-  baseURL: "https://localhost:4000",
+  baseURL: API_BASE_URL,
   withCredentials: true, // HttpOnly 쿠키 전송을 위해 필요
 });
 
