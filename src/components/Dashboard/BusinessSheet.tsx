@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher"
 import { Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { FinalKeyword, ApiError, ProgressStep, NormalizeResponse, Platform } from "@/types"
+import type { FinalKeyword, ApiError, ProgressStep, NormalizeResponse, Platform, User, Business } from "@/types"
 
 const logger = createLogger('BusinessSheet');
 
@@ -39,30 +39,42 @@ interface PlaceData {
   [key: string]: unknown;
 }
 
+// Define the interface to match what's actually returned by useBusinessSwitcher
 interface BusinessSwitcherState {
+  // User and business state
+  user: User | undefined;
+  businesses: Business[];
+  activeBusiness: Business | null;
+  setActiveBusiness: React.Dispatch<React.SetStateAction<Business | null>>;
+  
+  // Place and platform state
   selectedPlatform: string;
   setSelectedPlatform: (platform: string) => void;
   placeUrl: string;
   setPlaceUrl: (url: string) => void;
+  placeData: PlaceData | null;
+  setPlaceData: React.Dispatch<React.SetStateAction<PlaceData | null>>;
+  normalizedData: NormalizeResponse | null;
+  
+  // Dialog control
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
-  placeData: PlaceData | null;
-  normalizedData: NormalizeResponse | null;
-  setPlaceData: React.Dispatch<React.SetStateAction<PlaceData | null>>;
-  handleConfirmCreate: () => Promise<unknown>;
-  handleCheckPlace: () => Promise<unknown>;
-  isDisabled: boolean;
-  user: { role?: string } | null;
-  finalKeywords: FinalKeyword[];
-  setFinalKeywords: React.Dispatch<React.SetStateAction<FinalKeyword[]>>;
   keywordDialogOpen: boolean;
   setKeywordDialogOpen: (open: boolean) => void;
+  
+  // Actions
+  handleConfirmCreate: () => Promise<unknown>;
+  handleCheckPlace: () => Promise<unknown>;
   handleSaveSelectedKeywords: (params: { keywords: FinalKeyword[], placeId: string | number }) => Promise<void>;
+  // Status
+  isDisabled: boolean;
+  finalKeywords: FinalKeyword[];
   savedPlaceId: string | number | null;
   currentStep: ProgressStep;
   progressPercent: number;
   resetBusinessCreation: () => void;
 }
+
 
 // 진행 단계별 표시 텍스트 및 아이콘
 const stepInfo: Record<ProgressStep, { label: string, icon: React.ReactNode, color: string }> = {
@@ -115,6 +127,9 @@ export function BusinessSheet({
   open: boolean
   onOpenChange: (val: boolean) => void
 }) {
+  // First convert to unknown, then to our expected type to avoid TypeScript errors
+  const businessSwitcher = useBusinessSwitcher() as unknown as BusinessSwitcherState;
+  
   const {
     selectedPlatform,
     setSelectedPlatform,
@@ -128,7 +143,6 @@ export function BusinessSheet({
     handleConfirmCreate,
     handleCheckPlace,
     isDisabled,
-
     user,
     finalKeywords,
     handleSaveSelectedKeywords,
@@ -137,8 +151,8 @@ export function BusinessSheet({
     // 진행 상태 정보
     currentStep,
     progressPercent,
-    resetBusinessCreation, // 초기화 함수 추가
-  } = useBusinessSwitcher() as BusinessSwitcherState;
+    resetBusinessCreation,
+  } = businessSwitcher;
 
   // 통합 다이얼로그를 위한 상태
   const [dialogStep, setDialogStep] = React.useState<'confirm' | 'processing' | 'selection'>('confirm')
@@ -417,8 +431,8 @@ export function BusinessSheet({
             <SheetClose asChild>
               <Button variant="ghost">닫기</Button>
             </SheetClose>
-            </SheetFooter>
-          </SheetContent>
+          </SheetFooter>
+        </SheetContent>
       </Sheet>
 
       {/* 통합 다이얼로그 */}
@@ -502,20 +516,16 @@ export function BusinessSheet({
               )}
               
               <DialogFooter className="mt-6">
-                {dialogStep === 'confirm' && (
-                  <>
-                    <DialogClose asChild>
-                      <Button variant="outline">취소</Button>
-                    </DialogClose>
-                    <Button onClick={onConfirmCreate} disabled={isConfirming}>
-                      {isConfirming ? (
-                        <span className="loading loading-dots loading-md"></span>
-                      ) : (
-                        "생성하기"
-                      )}
-                    </Button>
-                  </>
-                )}
+                <DialogClose asChild>
+                  <Button variant="outline">취소</Button>
+                </DialogClose>
+                <Button onClick={onConfirmCreate} disabled={isConfirming}>
+                  {isConfirming ? (
+                    <span className="loading loading-dots loading-md"></span>
+                  ) : (
+                    "생성하기"
+                  )}
+                </Button>
               </DialogFooter>
             </>
           )}
@@ -659,7 +669,7 @@ export function BusinessSheet({
               </div>
 
               <DialogFooter className="mt-4">
-                <Button 
+              <Button 
                   onClick={onSubmitKeywords}
                   disabled={selectedKeywords.length === 0}
                 >

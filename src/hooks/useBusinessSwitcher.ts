@@ -49,7 +49,7 @@ export function useBusinessSwitcher() {
   // keywordDialogOpen과 setKeywordDialogOpen은 useBusinessCreation에서 가져온 것을 사용
 
   // Form
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("")
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform | null>(null)
   const [placeUrl, setPlaceUrl] = useState("")
 
   // BusinessSheet.tsx에서 필요한 상태 추가
@@ -90,7 +90,7 @@ export function useBusinessSwitcher() {
         setPlaceData({
           place_name: res.placeInfo.place_name,
           category: res.placeInfo.category,
-          platform: res.placeInfo.platform,
+          platform: res.placeInfo.platform.platform || String(res.placeInfo.platform),
         });
         
         setDialogOpen(true);

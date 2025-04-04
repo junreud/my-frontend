@@ -20,10 +20,10 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
 
-import { NavCommon } from "@/components/dashboard/nav-common"
-import { NavSecondary } from "@/components/dashboard/nav-secondary"
-import { NavUser } from "@/components/dashboard/nav-user"
-import { BusinessSwitcher } from "@/components/dashboard/business-switcher"
+import { NavCommon } from "@/components/Dashboard/nav-common"
+import { NavSecondary } from "@/components/Dashboard/nav-secondary"
+import { NavUser } from "@/components/Dashboard/nav-user"
+import { BusinessSwitcher } from "@/components/Dashboard/business-switcher"
 
 /** (A) 일반/관리자용 사이드바 섹션 구분 */
 const STATIC_SIDEBAR_SECTIONS = [

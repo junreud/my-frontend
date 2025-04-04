@@ -15,9 +15,10 @@ export interface ApiError extends Error {
   };
 }
 export interface User {
-  id: number;
+  id: string | number;
   name: string;
   email: string;
+  role?: string;
   // 필요한 다른 속성들
 }
 /**
@@ -205,6 +206,7 @@ export interface KeywordRankingDetail {
   receipt_review_count: number | null;
   savedCount: number | null;
   keywordList: string[] | null;
+  keyword?: string;
 }
 
 export interface KeywordRankingChartProps {

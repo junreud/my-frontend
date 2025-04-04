@@ -24,11 +24,14 @@ type FilteredIcons = {
 }
 const iconsMap = Icons as FilteredIcons
 
+// 기본 아이콘 이름을 타입 안전하게 정의
+const DEFAULT_ICON_NAME = "HelpCircle" as ValidIconKeys
+
 function getIconByName(iconName: string): MyLucideIcon {
   if (iconName in iconsMap) {
     return iconsMap[iconName as ValidIconKeys]
   }
-  return iconsMap["HelpCircle"]
+  return iconsMap[DEFAULT_ICON_NAME]
 }
 
 // NavSecondary 아이템 타입

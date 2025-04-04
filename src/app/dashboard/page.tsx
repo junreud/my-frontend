@@ -7,7 +7,7 @@ import { useUser } from "@/hooks/useUser" // useUser 훅 import
 // 아래는 원래 home/page.tsx에서 불러오던 컴포넌트들
 import { AnimatedNumber } from "@/components/animations/AnimatedNumber"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import DashboardChart from "@/components/dashboard/DashboardChart"
+import DashboardChart from "@/components/Dashboard/DashboardChart"
 
 /**
  * /dashboard로 접근했을 때:

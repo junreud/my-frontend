@@ -69,7 +69,6 @@ export function useProgressToast(options?: {
           message: stepInfo.label,
           initialProgress: progressValue,
           color: stepInfo.color,
-          loading: true, // 자동 진행하지 않음
           position: position
         })
       }

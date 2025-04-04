@@ -12,11 +12,12 @@ interface User {
 }
 
 // NavbarProps: user가 null이면 미로그인, 아니면 User 타입
+// user를 선택적 prop으로 변경
 interface NavbarProps {
-  user: User | null;
+  user?: User | null;
 }
 
-export default function Navbar({ user }: NavbarProps) {
+export default function Navbar({ user = null }: NavbarProps) {
   const scrollDirection = useScrollDirection();
 
   // 로그인 상태 & role

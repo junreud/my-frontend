@@ -1,5 +1,3 @@
-// /componenets/ui/popover.tsx
-
 "use client"
 
 import * as React from "react"
@@ -7,24 +5,17 @@ import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
 
-// This is now a custom component that can accept configuration
-interface PopoverProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Root> {
-  disableOutsideClick?: boolean;
-}
-
-const Popover = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Root>,
-  PopoverProps
->(({ ...props }) => {
-  return <PopoverPrimitive.Root {...props} />;
-});
+// PopoverRoot 컴포넌트만 사용하고 하위 컴포넌트에 disableOutsideClick을 전달
+const Popover = PopoverPrimitive.Root;
 Popover.displayName = "Popover";
 
-const PopoverTrigger = PopoverPrimitive.Trigger
+const PopoverTrigger = PopoverPrimitive.Trigger;
+PopoverTrigger.displayName = "PopoverTrigger";
 
-const PopoverAnchor = PopoverPrimitive.Anchor
+const PopoverAnchor = PopoverPrimitive.Anchor;
+PopoverAnchor.displayName = "PopoverAnchor";
 
-// Extended to support customizing the outside click behavior
+// Content 컴포넌트에서만 disableOutsideClick 기능 구현
 interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> {
   disableOutsideClick?: boolean;
 }
@@ -34,23 +25,20 @@ const PopoverContent = React.forwardRef<
   PopoverContentProps
 >(({ 
   className, 
-  align = "start", // Changed default from "center" to "start"
+  align = "start",
   sideOffset = 4,
-  side = "bottom", // Changed default side to "bottom"
+  side = "bottom",
   disableOutsideClick,
-  style,  // Add style prop to support custom width
+  style,
   ...props 
 }, ref) => {
-  // Use this approach to completely block outside interactions when disabled
-  const handleInteractOutside = (event: Event) => {
+  // disableOutsideClick이 true일 경우에만 이벤트 처리
+  const handleInteractOutside = React.useCallback((event: Event) => {
     if (disableOutsideClick) {
-      // This completely prevents the event from proceeding
       event.preventDefault();
       event.stopPropagation();
-      // Return false to ensure Radix knows we're preventing the close
-      return false;
     }
-  };
+  }, [disableOutsideClick]);
 
   return (
     <PopoverPrimitive.Portal>
@@ -58,8 +46,8 @@ const PopoverContent = React.forwardRef<
         ref={ref}
         align={align}
         sideOffset={sideOffset}
-        side={side} // Added side prop
-        style={style}  // Pass style prop through
+        side={side}
+        style={style}
         onInteractOutside={handleInteractOutside}
         className={cn(
           "z-50 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
@@ -69,7 +57,7 @@ const PopoverContent = React.forwardRef<
       />
     </PopoverPrimitive.Portal>
   );
-})
-PopoverContent.displayName = PopoverPrimitive.Content.displayName
+});
+PopoverContent.displayName = "PopoverContent";
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }

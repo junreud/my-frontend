@@ -4,7 +4,7 @@
 
 import { AnimatedNumber } from "@/components/animations/AnimatedNumber"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import RankReviewChart from '@/components/dashboard/charts'
+import RankReviewChart from '@/components/Dashboard/charts'
 export default function DashboardHome() {
 
 

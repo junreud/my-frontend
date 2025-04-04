@@ -55,12 +55,12 @@ function LogoPart({ isLoading, isError, activeBusiness }: LogoPartProps) {
       </div>
     )
   }
-  const logoPath = getPlatformLogo(activeBusiness.platform)
+  const logoPath = getPlatformLogo(activeBusiness.platform.platform)
   return (
     <div className="flex aspect-square size-8 items-center justify-center rounded-md overflow-hidden">
       <Image
         src={logoPath}
-        alt={activeBusiness.platform}
+        alt={activeBusiness.platform.platform}
         width={32}
         height={32}
         className="object-contain"
@@ -204,8 +204,8 @@ function DropdownInner({
           <div className="flex items-center gap-2">
             <div className="size-4">
               <Image
-                src={getPlatformLogo(biz.platform)}
-                alt={biz.platform}
+                src={getPlatformLogo(biz.platform.platform)}
+                alt={biz.platform.platform}
                 width={16}
                 height={16}
               />

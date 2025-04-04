@@ -14,8 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/adminPopover";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
-// Updated date-fns imports to fix module errors
-import { format as formatDate } from "date-fns";
 import { DateRange } from "react-day-picker";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
@@ -51,24 +49,32 @@ interface WorkTableProps {
   refreshData?: () => Promise<void>;
 }
 
-interface Place {
-  id: number;
-  name: string;
-}
-
 interface UserWithPlaces {
   user_id: number;
   name: string;
   email: string;
   phone: string;
   place_names: string[];
-  places: Place[];
+  place_count: number;
 }
-// Fix the formatDate function to use the renamed import
+
+// Native JS date formatter
 const formatDateString = (dateStr: string | null) => {
   if (!dateStr) return '-';
   const date = new Date(dateStr);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+// 날짜 범위를 문자열로 포맷팅 (without date-fns)
+const formatDateRange = (range: DateRange | undefined) => {
+  if (!range?.from) return "기간 선택";
+  
+  const formatDate = (date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+  
+  if (!range.to) return formatDate(range.from);
+  return `${formatDate(range.from)} ~ ${formatDate(range.to)}`;
 };
 
 // 빈 데이터 생성 함수 - 100개의 빈 행 생성
@@ -146,6 +152,12 @@ const WorkTable: React.FC<WorkTableProps> = ({
     setSaveSuccess(false);
 
     try {
+      // Format dates using native JS
+      const formatDate = (date: Date | undefined) => {
+        if (!date) return null;
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      };
+
       const payload = {
         user_id: parseInt(userId[0]),
         place_id: selectedUserDetails?.place_names[0] || "",
@@ -154,51 +166,43 @@ const WorkTable: React.FC<WorkTableProps> = ({
         contract_keyword: contractKeyword || null,
         work_keyword: workKeyword || null,
         char_count: charCount || null,
-        actual_start_date: actualDateRange?.from
-          ? formatDate(actualDateRange.from, "yyyy-MM-dd")
-          : null,
-        actual_end_date: actualDateRange?.to
-          ? formatDate(actualDateRange.to, "yyyy-MM-dd")
-          : null,
-        user_start_date: userDateRange?.from
-          ? formatDate(userDateRange.from, "yyyy-MM-dd")
-          : null,
-        user_end_date: userDateRange?.to
-          ? formatDate(userDateRange.to, "yyyy-MM-dd")
-          : null,
+        actual_start_date: actualDateRange?.from ? formatDate(actualDateRange.from) : null,
+        actual_end_date: actualDateRange?.to ? formatDate(actualDateRange.to) : null,
+        user_start_date: userDateRange?.from ? formatDate(userDateRange.from) : null,
+        user_end_date: userDateRange?.to ? formatDate(userDateRange.to) : null,
         company_characteristics: null,
       };
 
       // Log the payload to verify data format
-      console.log('Submitting work history data:', payload);
+      logger.info('Submitting work history data:', payload);
 
       const response = await apiClient.post("/api/admin/work-histories", payload);
 
       if (response.data.success) {
-        console.log('Work history added successfully:', response.data);
+        logger.info('Work history added successfully:', response.data);
         setSaveSuccess(true);
 
         // Ensure refreshData is called and awaited
         if (refreshData) {
           try {
             await refreshData();
-            console.log('Data refresh completed after adding work history');
+            logger.info('Data refresh completed after adding work history');
           } catch (refreshError) {
-            console.error('Error during data refresh:', refreshError);
+            logger.error('Error during data refresh:', refreshError);
           }
         } else {
-          console.warn('refreshData function not available');
+          logger.warn('refreshData function not available');
         }
 
         setTimeout(() => {
           setSaveSuccess(false);
         }, 2000);
       } else {
-        console.error('API returned failure:', response.data);
+        logger.error('API returned failure:', response.data);
         alert(response.data.message || "작업 이력 저장에 실패했습니다.");
       }
     } catch (error) {
-      console.error("작업 이력 저장 오류:", error);
+      logger.error("작업 이력 저장 오류:", error);
       alert("작업 이력 저장 중 오류가 발생했습니다.");
     } finally {
       setIsSaving(false);
@@ -227,13 +231,6 @@ const WorkTable: React.FC<WorkTableProps> = ({
 
   const handleReset = () => {
     resetForm();
-  };
-
-  // 날짜 범위를 문자열로 포맷팅
-  const formatDateRange = (range: DateRange | undefined) => {
-    if (!range?.from) return "기간 선택";
-    if (!range.to) return formatDate(range.from, 'yyyy-MM-dd');
-    return `${formatDate(range.from, 'yyyy-MM-dd')} ~ ${formatDate(range.to, 'yyyy-MM-dd')}`;
   };
 
   const { 
@@ -479,7 +476,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
           csvContent += `${h.id},${h.user_id},"${h.place_id}","${h.work_type}","${h.executor}","${h.contract_keyword || ''}","${h.work_keyword || ''}",${h.char_count || 0},"${h.actual_start_date || ''}","${h.actual_end_date || ''}","${h.user_start_date || ''}","${h.user_end_date || ''}","${h.company_characteristics || ''}"\n`;
         });
 
-        // Create current date string for filename without using format
+        // Create current date string for filename using native JS
         const now = new Date();
         const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
@@ -506,6 +503,38 @@ const WorkTable: React.FC<WorkTableProps> = ({
       setIsExporting(false);
     }
   };
+
+  const renderDateRangeCalendar = (
+    tempRange: DateRange | undefined,
+    setTempRange: React.Dispatch<React.SetStateAction<DateRange | undefined>>,
+    handleConfirm: () => void
+  ) => (
+    <div>
+      <div className="rdp-range">
+        <DayPicker
+          mode="range"
+          selected={tempRange}
+          onSelect={setTempRange}
+          numberOfMonths={1}
+          className="rdp-range-calendar"
+        />
+      </div>
+      <div className="p-3 border-t border-border flex items-center justify-between">
+        <span className="text-sm text-gray-600">
+          {!tempRange?.from ? "시작일 선택" : 
+           !tempRange?.to ? "종료일 선택" :
+           formatDateRange(tempRange)}
+        </span>
+        <Button 
+          size="sm" 
+          onClick={handleConfirm}
+          disabled={!tempRange?.from}
+        >
+          설정
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="overflow-x-auto relative">
@@ -691,29 +720,11 @@ const WorkTable: React.FC<WorkTableProps> = ({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <div className="rdp-range">
-                            <DayPicker
-                              mode="range"
-                              selected={tempActualDateRange}
-                              onSelect={setTempActualDateRange}
-                              numberOfMonths={1}
-                              className="rdp-range-calendar"
-                            />
-                          </div>
-                          <div className="p-3 border-t border-border flex items-center justify-between">
-                            <span className="text-sm text-gray-600">
-                              {!tempActualDateRange?.from ? "시작일 선택" : 
-                              !tempActualDateRange?.to ? "종료일 선택" :
-                              `${formatDate(tempActualDateRange.from, 'yyyy-MM-dd')} ~ ${formatDate(tempActualDateRange.to, 'yyyy-MM-dd')}`}
-                            </span>
-                            <Button 
-                              size="sm" 
-                              onClick={handleActualDateConfirm}
-                              disabled={!tempActualDateRange?.from}
-                            >
-                              설정
-                            </Button>
-                          </div>
+                          {renderDateRangeCalendar(
+                            tempActualDateRange,
+                            setTempActualDateRange,
+                            handleActualDateConfirm
+                          )}
                         </PopoverContent>
                       </Popover>
                     </div>
@@ -735,29 +746,11 @@ const WorkTable: React.FC<WorkTableProps> = ({
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <div className="rdp-range">
-                            <DayPicker
-                              mode="range"
-                              selected={tempUserDateRange}
-                              onSelect={setTempUserDateRange}
-                              numberOfMonths={1}
-                              className="rdp-range-calendar"
-                            />
-                          </div>
-                          <div className="p-3 border-t border-border flex items-center justify-between">
-                            <span className="text-sm text-gray-600">
-                              {!tempUserDateRange?.from ? "시작일 선택" : 
-                              !tempUserDateRange?.to ? "종료일 선택" :
-                              `${formatDate(tempUserDateRange.from, 'yyyy-MM-dd')} ~ ${formatDate(tempUserDateRange.to, 'yyyy-MM-dd')}`}
-                            </span>
-                            <Button 
-                              size="sm" 
-                              onClick={handleUserDateConfirm}
-                              disabled={!tempUserDateRange?.from}
-                            >
-                              설정
-                            </Button>
-                          </div>
+                          {renderDateRangeCalendar(
+                            tempUserDateRange,
+                            setTempUserDateRange,
+                            handleUserDateConfirm
+                          )}
                         </PopoverContent>
                       </Popover>
                     </div>

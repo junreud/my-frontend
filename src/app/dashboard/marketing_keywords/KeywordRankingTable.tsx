@@ -21,7 +21,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
     }
     
     // 날짜별로 그룹화
-    const dateGroups: Record<string, KeywordRankingDetail[]> = keywordData.rankingDetails?.reduce(
+    const dateGroups: Record<string, KeywordRankingDetail[]> = keywordData.rankingDetails.reduce(
       (acc: Record<string, KeywordRankingDetail[]>, item: KeywordRankingDetail) => {
         const date = item.date_key;
         if (!acc[date]) {
@@ -31,7 +31,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
         return acc;
       },
       {} as Record<string, KeywordRankingDetail[]>
-    ) || {};
+    );
     
     // 최신 날짜 찾기 (날짜 정렬 수정)
     const latestDate = Object.keys(dateGroups).sort((a: string, b: string) => {
@@ -44,7 +44,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
 
     // 최신 날짜의 데이터
     const latestDateData = dateGroups[latestDate]?.sort(
-      (a: KeywordRankingDetail, b: KeywordRankingDetail) => a.ranking - b.ranking
+      (a: KeywordRankingDetail, b: KeywordRankingDetail) => (a.ranking || 0) - (b.ranking || 0)
     ) || [];
     
     // 실제 데이터에 있는 최대 랭킹 찾기 (300위 고정이 아니라 실제 데이터 기반)
@@ -87,7 +87,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
           receipt_review_count: null,
           savedCount: null,
           keywordList: null
-        };
+        } as KeywordRankingDetail;
       }
 
       // 같은 place_id를 가진 과거 데이터 모두 찾기

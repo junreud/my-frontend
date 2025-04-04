@@ -66,11 +66,18 @@ export default function DashboardChart() {
           return false;
         }
       })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(item => ({
+        ...item,
+        date_key: item.date // Add the required date_key property
+      }));
 
     console.log(`날짜 필터링 후: ${filteredData.length}건`);
 
-    return filteredData.length > 0 ? filteredData : myBusinessData;
+    return filteredData.length > 0 ? filteredData : myBusinessData.map(item => ({
+      ...item,
+      date_key: item.date // Also add date_key for the fallback data
+    }));
   }, [keywordData?.chartData, activeBusiness?.place_id]);
 
   const formatDate = (dateStr: string) => {

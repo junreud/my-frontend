@@ -29,15 +29,16 @@ import { Button } from "@/components/ui/button";
 import KeywordRankingChart from "./KeywordRankingChart";
 import KeywordRankingTable from "./KeywordRankingTable";
 import apiClient from "@/lib/apiClient";
+import { UserKeyword, KeywordHistoricalData, KeywordRankData } from "@/types"; // Import types from types file
 const logger = createLogger("MarketingKeywordsPage");
 
 // 키워드 세부 정보 인터페이스
 interface KeywordDetail {
-  id: string;
-  keyword_id: number;
+  id: string | number;
+  keyword_id: string | number;
   keyword: string;
   ranking: number | null;
-  place_id: number;
+  place_id: string; // number에서 string으로 변경
   place_name: string;
   category: string;
   savedCount: number | null;
@@ -46,11 +47,29 @@ interface KeywordDetail {
   keywordList: string[] | null;
   date_key: string;
 }
-
+interface KeywordRankingDetail {
+  id?: string | number;
+  keyword_id?: string | number;
+  keyword?: string;
+  ranking: number;
+  place_id: string;
+  place_name: string;
+  category: string;
+  savedCount: number;
+  blog_review_count: number;
+  receipt_review_count: number;
+  keywordList: string[];
+  date_key: string;
+}
+interface KeywordRankingData {
+  rankingDetails: KeywordRankingDetail[];
+  chartData: KeywordHistoricalData[];
+  rankingList: KeywordRankData[];
+}
 // 차트 데이터 포인트 인터페이스
 interface ChartDataPoint {
   date: string;
-  place_id: number | null;
+  place_id: string | number | null;  // number 타입과 string 타입 모두 허용
   ranking: number | null;
   savedCount: number;
   blog_review_count: number;
@@ -59,26 +78,21 @@ interface ChartDataPoint {
   saved: number;
   blogReviews: number;
   receiptReviews: number;
+  // Add these properties to make it compatible with KeywordHistoricalData
+  uv: number;
+  date_key: string;
 }
 
 // 키워드 데이터 그룹 인터페이스
 interface KeywordDataGroup {
   rankingDetails: KeywordDetail[];
   chartData: ChartDataPoint[];
+  rankingList: KeywordRankData[];
 }
 
 // 키워드 맵 인터페이스
 interface KeywordRankingsMap {
   [keyword: string]: KeywordDataGroup;
-}
-
-
-// Update this interface to match the actual data structure
-interface UserKeyword {
-  id: string | number;
-  keyword: string | undefined;
-  keywordId: number;
-  // 필요한 다른 속성 추가
 }
 
 export default function Page(): JSX.Element {
@@ -87,7 +101,7 @@ export default function Page(): JSX.Element {
   const [maxRangeValue, setMaxRangeValue] = useState<number>(59); // Default to 59 (60 days)
   const [isRangePressed, setIsRangePressed] = useState<boolean>(false);
   const [selectedKeyword, setSelectedKeyword] = useState<string>("");
-  const [historicalData, setHistoricalData] = useState<ChartDataPoint | null>(null);
+  const [historicalData, setHistoricalData] = useState<KeywordHistoricalData | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isChangeDialogOpen, setIsChangeDialogOpen] = useState(false);
   const [newKeyword, setNewKeyword] = useState("");
@@ -122,7 +136,9 @@ export default function Page(): JSX.Element {
   } = useUserKeywords(user?.id, activeBusiness?.place_id);
 
   const userKeywords = useMemo<string[]>(() => 
-    (userKeywordObjects || []).map((k: UserKeyword) => k.keyword), 
+    (userKeywordObjects || [])
+      .filter((k) => k !== null && k !== undefined && k.keyword !== undefined)
+      .map((k) => k.keyword as string), 
     [userKeywordObjects]
   );
 
@@ -150,86 +166,6 @@ export default function Page(): JSX.Element {
 
   const keywordLimit = getKeywordLimit(userData?.role);
   const canAddKeywords = userKeywords.length < keywordLimit;
-  const checkKeywordStatus = useCallback(async (keyword: string) => {
-    try {
-      const response = await apiClient.get(`/keyword/status?keyword=${encodeURIComponent(keyword)}`);
-      
-      if (response.data && response.data.success) {
-        const { status, timeAgo } = response.data.data;
-        
-        console.log(`Keyword status check (${pollCount}):`, {
-          keyword,
-          status,
-          timeAgo,
-        });
-        
-        setCrawlingStatus(status);
-        setCrawlingTimeAgo(timeAgo);
-        
-        if (status === "completed") {
-          console.log(`Keyword "${keyword}" crawling completed!`);
-          await refreshKeywordData(); // refreshKeywordData 호출
-          
-          const oldKeywords = Object.entries(changingKeywords)
-            .filter(([, newKw]) => newKw === keyword)
-            .map(([oldKw]) => oldKw);
-          
-          setUpdatingKeywords(prev => 
-            prev.filter(k => k !== keyword && !oldKeywords.includes(k))
-          );
-          
-          setChangingKeywords(prev => {
-            const newState = {...prev};
-            oldKeywords.forEach(oldKw => {
-              delete newState[oldKw];
-            });
-            return newState;
-          });
-          
-          setPollingKeyword(null);
-          setCrawlingStatus(null);
-          setCrawlingTimeAgo(null);
-          setPollCount(0);
-          
-          if (updatingKeywords.length <= 1) {
-            setIsKeywordsUpdating(false);
-          }
-          
-          toast.success(`"${keyword}" 키워드 데이터 수집이 완료되었습니다.`);
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error("Error checking keyword status:", error);
-      return false;
-    }
-  }, [pollCount, updatingKeywords, changingKeywords, refreshKeywordData]); // refreshKeywordData 추가
-  // Effect to poll keyword status
-  useEffect(() => {
-    if (!pollingKeyword) return;
-  
-    const pollInterval = setInterval(async () => {
-      setPollCount((prev) => prev + 1);
-  
-      const isComplete = await checkKeywordStatus(pollingKeyword);
-      if (isComplete) {
-        clearInterval(pollInterval);
-      }
-  
-      // Stop polling after 30 attempts (5 minutes)
-      if (pollCount >= 30) {
-        clearInterval(pollInterval);
-        setPollingKeyword(null);
-        setCrawlingStatus(null);
-        setCrawlingTimeAgo(null);
-        setPollCount(0);
-        toast.error("키워드 데이터 수집이 완료되지 않았습니다. 나중에 다시 시도해주세요.");
-      }
-    }, 10000); // Poll every 10 seconds
-  
-    return () => clearInterval(pollInterval);
-  }, [pollingKeyword, pollCount, checkKeywordStatus]); // 누락된 checkKeywordStatus 추가
   
   // Updated refreshKeywordData function with better UX
   const refreshKeywordData = useCallback(async () => {
@@ -241,7 +177,7 @@ export default function Page(): JSX.Element {
       await queryClient.invalidateQueries({
         queryKey: ['userKeywords', user?.id, activeBusiness?.place_id],
       });
-
+  
       console.log('Keyword data refreshed successfully');
     } catch (error) {
       console.error("Error refreshing data:", error);
@@ -310,6 +246,87 @@ export default function Page(): JSX.Element {
     }
   };
 
+  const checkKeywordStatus = useCallback(async (keyword: string) => {
+    try {
+      const response = await apiClient.get(`/keyword/status?keyword=${encodeURIComponent(keyword)}`);
+      
+      if (response.data && response.data.success) {
+        const { status, timeAgo } = response.data.data;
+        
+        console.log(`Keyword status check (${pollCount}):`, {
+          keyword,
+          status,
+          timeAgo,
+        });
+        
+        setCrawlingStatus(status);
+        setCrawlingTimeAgo(timeAgo);
+        
+        if (status === "completed") {
+          console.log(`Keyword "${keyword}" crawling completed!`);
+          await refreshKeywordData(); // refreshKeywordData 호출
+          
+          const oldKeywords = Object.entries(changingKeywords)
+            .filter(([, newKw]) => newKw === keyword)
+            .map(([oldKw]) => oldKw);
+          
+          setUpdatingKeywords(prev => 
+            prev.filter(k => k !== keyword && !oldKeywords.includes(k))
+          );
+          
+          setChangingKeywords(prev => {
+            const newState = {...prev};
+            oldKeywords.forEach(oldKw => {
+              delete newState[oldKw];
+            });
+            return newState;
+          });
+          
+          setPollingKeyword(null);
+          setCrawlingStatus(null);
+          setCrawlingTimeAgo(null);
+          setPollCount(0);
+          
+          if (updatingKeywords.length <= 1) {
+            setIsKeywordsUpdating(false);
+          }
+          
+          toast.success(`"${keyword}" 키워드 데이터 수집이 완료되었습니다.`);
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking keyword status:", error);
+      return false;
+    }
+  }, [pollCount, updatingKeywords, changingKeywords, refreshKeywordData]);
+    // Effect to poll keyword status
+  useEffect(() => {
+    if (!pollingKeyword) return;
+  
+    const pollInterval = setInterval(async () => {
+      setPollCount((prev) => prev + 1);
+  
+      const isComplete = await checkKeywordStatus(pollingKeyword);
+      if (isComplete) {
+        clearInterval(pollInterval);
+      }
+  
+      // Stop polling after 30 attempts (5 minutes)
+      if (pollCount >= 30) {
+        clearInterval(pollInterval);
+        setPollingKeyword(null);
+        setCrawlingStatus(null);
+        setCrawlingTimeAgo(null);
+        setPollCount(0);
+        toast.error("키워드 데이터 수집이 완료되지 않았습니다. 나중에 다시 시도해주세요.");
+      }
+    }, 10000); // Poll every 10 seconds
+  
+    return () => clearInterval(pollInterval);
+  }, [pollingKeyword, pollCount, checkKeywordStatus]); // 누락된 checkKeywordStatus 추가
+  
   // Updated handleChangeKeyword function
   const handleChangeKeyword = async () => {
     if (!editKeyword.trim() || editKeywordId === null) {
@@ -443,6 +460,8 @@ export default function Page(): JSX.Element {
           
           return {
             date,
+            date_key: date, // Add date_key for KeywordHistoricalData compatibility
+            uv: activePlaceItem?.ranking ?? 0, // Add uv for KeywordHistoricalData compatibility
             place_id: activePlaceItem?.place_id || null,
             ranking: activePlaceItem?.ranking || null,
             savedCount: activePlaceItem?.savedCount || 0,
@@ -463,20 +482,38 @@ export default function Page(): JSX.Element {
       return result;
     }
   
-    const allDetails: KeywordDetail[] = allKeywordRankingsData.rankingDetails.map(detail => ({
-      id: detail.id,
-      keyword_id: detail.keyword_id,
-      keyword: detail.keyword,
-      ranking: detail.ranking,
-      place_id: detail.place_id,
-      place_name: detail.place_name,
-      category: detail.category,
-      savedCount: detail.savedCount,
-      blog_review_count: detail.blog_review_count,
-      receipt_review_count: detail.receipt_review_count,
-      keywordList: detail.keywordList,
-      date_key: detail.date_key,
-    }));
+    const allDetails: KeywordDetail[] = allKeywordRankingsData.rankingDetails.map(detail => {
+      // 타입 호환성을 위해 디테일 객체를 잠시 타입 변환
+      const detailAny = detail as unknown as { 
+        id?: string | number; 
+        keyword_id?: string | number; 
+        keyword?: string;
+        ranking: number;
+        place_id: string;
+        place_name?: string;
+        category?: string;
+        savedCount?: number | null;
+        blog_review_count?: number | null;
+        receipt_review_count?: number | null;
+        keywordList?: string[];
+        date_key?: string;
+      };
+      
+      return {
+        id: detailAny.id || '',  
+        keyword_id: detailAny.keyword_id || '',
+        keyword: detailAny.keyword || '',
+        ranking: detail.ranking,
+        place_id: detail.place_id,
+        place_name: detailAny.place_name || '',
+        category: detailAny.category || '',
+        savedCount: detailAny.savedCount ?? null,
+        blog_review_count: detailAny.blog_review_count ?? null,
+        receipt_review_count: detailAny.receipt_review_count ?? null,
+        keywordList: detailAny.keywordList || [],
+        date_key: detailAny.date_key || '',
+      };
+    });
   
     const result: KeywordRankingsMap = {};
     userKeywords.forEach(keyword => {
@@ -488,6 +525,8 @@ export default function Page(): JSX.Element {
         result[keyword] = {
           rankingDetails: keywordDetails,
           chartData,
+          // Add empty rankingList to satisfy KeywordRankingData compatibility
+          rankingList: allKeywordRankingsData.rankingList || []
         };
       }
     });
@@ -532,12 +571,34 @@ export default function Page(): JSX.Element {
   
       const dataLength = selectedKeywordData.chartData.length;
       const targetIndex = dataLength - 1 - daysAgo;
-      const historicalDataPoint =
-        targetIndex >= 0
-          ? selectedKeywordData.chartData[targetIndex]
-          : selectedKeywordData.chartData[0];
-  
-      setHistoricalData(historicalDataPoint);
+      
+      if (targetIndex >= 0) {
+        // Convert ChartDataPoint to KeywordHistoricalData
+        const dataPoint = selectedKeywordData.chartData[targetIndex];
+        const historicalDataPoint: KeywordHistoricalData = {
+          date: dataPoint.date,
+          ranking: dataPoint.ranking || 0,
+          uv: dataPoint.uv,
+          place_id: String(dataPoint.place_id || ''),
+          date_key: dataPoint.date_key,
+          blog_review_count: dataPoint.blog_review_count,
+          receipt_review_count: dataPoint.receipt_review_count
+        };
+        setHistoricalData(historicalDataPoint);
+      } else if (selectedKeywordData.chartData.length > 0) {
+        // Use the first data point as fallback
+        const dataPoint = selectedKeywordData.chartData[0];
+        const historicalDataPoint: KeywordHistoricalData = {
+          date: dataPoint.date,
+          ranking: dataPoint.ranking || 0,
+          uv: dataPoint.uv,
+          place_id: String(dataPoint.place_id || ''),
+          date_key: dataPoint.date_key,
+          blog_review_count: dataPoint.blog_review_count,
+          receipt_review_count: dataPoint.receipt_review_count
+        };
+        setHistoricalData(historicalDataPoint);
+      }
     }
   }, [rangeValue, selectedKeywordData]); // 누락된 selectedKeywordData 추가
   
@@ -677,8 +738,13 @@ export default function Page(): JSX.Element {
 
   // Change the function to use the correct type
   const findKeywordObject = (keywordText: string): UserKeyword | undefined => {
-    const foundKeyword = (userKeywordObjects || []).find((k: UserKeyword) => k.keyword === keywordText);
-    return foundKeyword;
+    if (!userKeywordObjects) return undefined;
+    
+    // Type-safe check for compatibility
+    return userKeywordObjects.find((k) => {
+      // Make sure k is a UserKeyword and has a keyword property
+      return k && 'keyword' in k && k.keyword === keywordText;
+    });
   };
 
   // Helper function to check if a keyword is being updated (accounting for changes)
@@ -688,6 +754,58 @@ export default function Page(): JSX.Element {
     
     // Check if any changing keyword matches this one
     return Object.keys(changingKeywords).includes(keyword);
+  };
+  const formatKeywordDataForTable = (data: KeywordDataGroup | null): KeywordRankingData | null => {
+    if (!data) return null;
+    
+    // null이 없는 rankingDetails 생성
+    const safeRankingDetails = data.rankingDetails.map(detail => ({
+      ...detail,
+      ranking: detail.ranking ?? 0, // null을 0으로 변환
+      blog_review_count: detail.blog_review_count ?? 0,
+      receipt_review_count: detail.receipt_review_count ?? 0,
+      savedCount: detail.savedCount ?? 0,
+      keywordList: detail.keywordList ?? []
+    })) as unknown as KeywordRankingDetail[]; // 타입 단언
+  
+    return {
+      rankingDetails: safeRankingDetails,
+      rankingList: data.rankingList,
+      chartData: data.chartData.map(chart => ({
+        ...chart,
+        ranking: chart.ranking ?? 0 // null을 0으로 변환
+      })) as unknown as KeywordHistoricalData[] // 타입 단언
+    };
+  };
+  
+  // historicalData 변환
+  const formatHistoricalData = (data: KeywordHistoricalData | null): KeywordHistoricalData[] => {
+    if (!data) return [];
+    
+    // null 가능성 제거
+    const safeData: KeywordHistoricalData = {
+      ...data,
+      ranking: data.ranking ?? 0, // null이면 0으로 변환
+      blog_review_count: data.blog_review_count ?? 0,
+      receipt_review_count: data.receipt_review_count ?? 0
+    };
+    
+    return [safeData];
+  };
+  
+  // KeywordRankingChart를 위한 데이터 변환
+  const formatChartData = (data: ChartDataPoint[] | undefined): KeywordHistoricalData[] => {
+    if (!data || data.length === 0) return [];
+    
+    return data.map(point => ({
+      date: point.date,
+      ranking: point.ranking ?? 0, // null을 0으로 변환
+      uv: point.uv,
+      place_id: String(point.place_id || ''),
+      date_key: point.date_key,
+      blog_review_count: point.blog_review_count,
+      receipt_review_count: point.receipt_review_count
+    }));
   };
 
   return (
@@ -749,7 +867,8 @@ export default function Page(): JSX.Element {
 
               <AccordionContent>
                 <KeywordRankingChart 
-                  chartData={keywordRankingsMap[keyword]?.chartData}
+                  chartData={keywordRankingsMap[keyword]?.chartData ? 
+                    formatChartData(keywordRankingsMap[keyword]?.chartData) : []}
                   activeBusiness={activeBusiness} 
                 />
               </AccordionContent>
@@ -924,8 +1043,8 @@ export default function Page(): JSX.Element {
           selectedKeyword={selectedKeyword}
           activeBusiness={activeBusiness}
           isError={allKeywordsError}
-          keywordData={selectedKeywordData}
-          historicalData={historicalData}
+          keywordData={formatKeywordDataForTable(selectedKeywordData)}
+          historicalData={formatHistoricalData(historicalData)}
           rangeValue={rangeValue}
         />
       </div>

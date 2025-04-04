@@ -24,13 +24,13 @@ const logger = createLogger('BusinessCreation');
 
 // Define a more complete type for placeInfo properties
 interface PlaceInfoExtended {
-  place_id: number;
+  place_id: number | string;  // string 타입도 허용하도록 수정
   place_name: string;
   category?: string;
   platform: Platform;
   userid?: string;
-  placeId?: string; // Some APIs use placeId instead of place_id
-  id?: string | number; // Some APIs might return an id field
+  placeId?: string;
+  id?: string | number;
   [key: string]: unknown;
 }
 

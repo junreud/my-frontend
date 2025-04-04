@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { KeywordRankingDetail } from '@/types';
+import { KeywordRankingDetail, KeywordRankData } from '@/types';
 import apiClient from '@/lib/apiClient';
 import { createLogger } from '@/lib/logger';
 import { transformToChartData, getCurrentRanking } from '@/utils/dataTransformers';
@@ -18,6 +18,7 @@ interface TransformedKeywordData {
   rankingDetails: KeywordRankingDetail[];
   chartData: ReturnType<typeof transformToChartData>;
   currentRanking: number | null;
+  rankingList: KeywordRankData[] | null; // keywordRankData를 KeywordRankData로 수정
 }
 
 export function useKeywordRankingDetails({ 
@@ -71,7 +72,8 @@ export function useKeywordRankingDetails({
         return {
           rankingDetails: [],
           chartData: [],
-          currentRanking: null
+          currentRanking: null,
+          rankingList: [] as KeywordRankData[] // 명시적 타입 캐스팅
         };
       }
       
@@ -85,15 +87,29 @@ export function useKeywordRankingDetails({
         return {
           rankingDetails: filteredData,
           chartData: [],
-          currentRanking: null
+          currentRanking: null,
+          rankingList: [] as KeywordRankData[] // 명시적 타입 캐스팅
         };
       }
+      
+      // KeywordRankData 타입에 맞는 데이터 생성
+      const rankingList = filteredData.map(item => ({
+        keyword: item.keyword || '',
+        ranking: item.ranking,
+        place_id: item.place_id,
+        category: item.category || '',
+        place_name: item.place_name || '',
+        date_key: item.date_key || '',
+        // 이 필드들은 KeywordRankData 타입에 필요한 모든 필드입니다
+        // 필드가 부족하면 추가하세요
+      })) as unknown as KeywordRankData[]; // 타입 단언
       
       return {
         rankingDetails: filteredData,
         chartData: transformToChartData(filteredData),
-        currentRanking: getCurrentRanking(filteredData)
-      };
+        currentRanking: getCurrentRanking(filteredData),
+        rankingList // 필드 이름과 변수 이름이 같으므로 단축 구문 사용
+      } as TransformedKeywordData;
     },
     enabled: !!placeId && !!userId, // Removed keyword from enabled condition
     staleTime: 1000 * 60 * 5, // 5분 캐싱

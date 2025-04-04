@@ -65,6 +65,7 @@ type ProgressToastOptions = {
   position?: ToastPosition;
   duration?: number;
   initialProgress?: number;
+  color?: string;
 };
 
 // Custom toast interface definition - extend from the original toast type
@@ -75,7 +76,7 @@ interface CustomToast {
   success: (message: React.ReactNode, data?: ToastT) => string;
   warning: (message: React.ReactNode, data?: ToastT) => string;
   info: (message: React.ReactNode, data?: ToastT) => string;
-  custom: (content: React.ReactNode, data?: ToastT) => string;
+  custom: (content: (id: string | number) => React.ReactElement, data?: ToastT) => string;
   dismiss: (toastId?: string) => void;
   promise: typeof sonnerToast.promise;
   // Add our custom methods
@@ -93,7 +94,8 @@ const toast = Object.assign(
     success: (message: React.ReactNode, data?: ToastT) => sonnerToast.success(message, data),
     warning: (message: React.ReactNode, data?: ToastT) => sonnerToast.warning(message, data),
     info: (message: React.ReactNode, data?: ToastT) => sonnerToast.info(message, data),
-    custom: (content: React.ReactNode, data?: ToastT) => sonnerToast.custom(content, data),
+    custom: (content: (id: string | number) => React.ReactElement, data?: ToastT) => 
+      sonnerToast.custom(content, data),
     dismiss: (toastId?: string) => sonnerToast.dismiss(toastId),
     promise: sonnerToast.promise,
     
@@ -122,7 +124,7 @@ const toast = Object.assign(
               진행 상태 알림: {config.message}
             </span>
             <ProgressContent 
-              id={id} 
+              id={id.toString()} 
               message={config.message} 
               progress={initialProgress} 
             />
@@ -226,7 +228,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
-        descriptionAs: "div",
+        // Remove descriptionAs property as it doesn't exist in ToastOptions
         closeButtonAriaLabel: "닫기",
       }}
       {...props}
