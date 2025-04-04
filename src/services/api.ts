@@ -4,7 +4,7 @@
  * 공통 베이스 URL
  * 실제 프로덕션/개발 환경에 맞춰 바꿔야 합니다.
  */
-const BASE_URL = "https://localhost:4000";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
 
 /**
  * (1) 이메일 중복 체크
