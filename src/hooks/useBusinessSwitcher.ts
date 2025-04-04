@@ -90,7 +90,7 @@ export function useBusinessSwitcher() {
         setPlaceData({
           place_name: res.placeInfo.place_name,
           category: res.placeInfo.category,
-          platform: res.placeInfo.platform.platform || String(res.placeInfo.platform),
+          platform: res.placeInfo.platform?.platform || String(res.placeInfo.platform || "unknown"),
         });
         
         setDialogOpen(true);

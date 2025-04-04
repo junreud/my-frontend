@@ -13,6 +13,6 @@ const PLATFORM_LOGOS: Record<string, string> = {
     if (platform in PLATFORM_LOGOS) {
       return PLATFORM_LOGOS[platform]
     }
-    return "/images/platform/default.png"
+    return "/images/platform/naver24.svg"
   }
   

@@ -17,12 +17,12 @@ export const getApiBaseUrl = () => {
     
     return isLocalhost 
       ? 'https://localhost:4000' 
-      : process.env.NEXT_PUBLIC_API_URL || 'https://api.yourdomain.com';
+      : process.env.NEXT_PUBLIC_API_URL || 'https://api.lakabes.com';
   }
   
   // 서버 사이드 렌더링 중
   return process.env.NODE_ENV === 'production'
-    ? process.env.NEXT_PUBLIC_API_URL || 'https://api.yourdomain.com'
+    ? process.env.NEXT_PUBLIC_API_URL || 'https://api.lakabe.com'
     : 'https://localhost:4000';
 };
 

@@ -46,23 +46,24 @@ apiClient.interceptors.response.use(
       try {
         // (3) /auth/refresh로 POST
         const res = await axios.post(
-          "https://localhost:4000/auth/refresh",
+          `${API_BASE_URL}/auth/refresh`, // API_BASE_URL 사용
           {},
           { withCredentials: true }
         );
         const newAccessToken = res.data.accessToken;
-
+      
         // (4) localStorage에 토큰 갱신
         localStorage.setItem("accessToken", newAccessToken);
-
+      
         // (5) 대기 중이던 요청들 재시도
         pendingRequests.forEach((callback) => callback());
         pendingRequests = [];
+        isRefreshing = false;
+      
+        return apiClient(originalRequest); // 원래 요청 재시도
       } catch (err) {
-        // refresh 실패 -> 로그아웃 or 에러 처리
-        console.error("토큰 재발급 실패:", err);
-        localStorage.removeItem("accessToken");
-        // 필요 시 /login 리다이렉트
+        isRefreshing = false;
+        pendingRequests = [];
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

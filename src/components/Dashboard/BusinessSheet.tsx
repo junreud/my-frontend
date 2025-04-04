@@ -552,13 +552,11 @@ export function BusinessSheet({
                 
                 {/* 더 큰 프로그레스 바 */}
                 <div className="relative w-full h-5 bg-gray-100 rounded-full overflow-hidden">
-                  {/* 프로그레스 바 채우기 */}
                   <div 
                     className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-300 ease-in-out"
                     style={{ width: `${progressPercent}%` }}
                   ></div>
                   
-                  {/* 반짝이는 효과 */}
                   <div 
                     className="absolute top-0 left-0 w-full h-full overflow-hidden"
                     style={{ 
@@ -570,29 +568,161 @@ export function BusinessSheet({
                 </div>
               </div>
               
-              {/* 처리 단계 간략 설명 */}
+              {/* 진행 단계별 프로그레스바로 대체 */}
               <div className="my-4 p-4 bg-blue-50 rounded-md text-sm">
                 <h4 className="font-medium mb-3 text-blue-700">진행 중인 단계:</h4>
-                <ul className="space-y-2.5 text-blue-600">
-                  <li className={cn("flex items-center gap-2", currentStep === "storing" || currentStep === "chatgpt" || currentStep === "combining" || currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "text-green-600" : "")}>
-                    {currentStep === "storing" || currentStep === "chatgpt" || currentStep === "combining" || currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "✓" : "○"} 업체 정보 저장
-                  </li>
-                  <li className={cn("flex items-center gap-2", currentStep === "chatgpt" || currentStep === "combining" || currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "text-green-600" : "")}>
-                    {currentStep === "chatgpt" || currentStep === "combining" || currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "✓" : "○"} AI 키워드 생성
-                  </li>
-                  <li className={cn("flex items-center gap-2", currentStep === "combining" || currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "text-green-600" : "")}>
-                    {currentStep === "combining" || currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "✓" : "○"} 키워드 조합
-                  </li>
-                  <li className={cn("flex items-center gap-2", currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "text-green-600" : "")}>
-                    {currentStep === "checking" || currentStep === "grouping" || currentStep === "complete" ? "✓" : "○"} 검색량 확인
-                  </li>
-                  <li className={cn("flex items-center gap-2", currentStep === "grouping" || currentStep === "complete" ? "text-green-600" : "")}>
-                    {currentStep === "grouping" || currentStep === "complete" ? "✓" : "○"} 키워드 그룹화
-                  </li>
-                  <li className={cn("flex items-center gap-2", currentStep === "complete" ? "text-green-600" : "")}>
-                    {currentStep === "complete" ? "✓" : "○"} 완료
-                  </li>
-                </ul>
+                <div className="space-y-4">
+                  {/* 업체 정보 저장 */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        currentStep === "storing" ? "text-blue-700" : 
+                          (currentStep === "normalizing" ? "text-gray-600" : "text-green-600")
+                      )}>
+                        업체 정보 저장
+                      </span>
+                      <span className="text-xs font-medium">
+                        {currentStep === "storing" ? `${progressPercent}%` : 
+                          (currentStep === "normalizing" ? "0%" : "100%")}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={cn(
+                        "h-2.5 rounded-full transition-all duration-300",
+                        currentStep === "storing" ? "bg-blue-600" : 
+                          (currentStep === "normalizing" ? "bg-gray-400 w-0" : "bg-green-500 w-full")
+                      )}
+                      style={{ width: currentStep === "storing" ? `${progressPercent}%` : undefined }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* AI 키워드 생성 */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        currentStep === "chatgpt" ? "text-blue-700" : 
+                          (["normalizing", "storing"].includes(currentStep) ? "text-gray-600" : "text-green-600")
+                      )}>
+                        AI 키워드 생성
+                      </span>
+                      <span className="text-xs font-medium">
+                        {currentStep === "chatgpt" ? `${progressPercent}%` : 
+                          (["normalizing", "storing"].includes(currentStep) ? "0%" : "100%")}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={cn(
+                        "h-2.5 rounded-full transition-all duration-300",
+                        currentStep === "chatgpt" ? "bg-blue-600" : 
+                          (["normalizing", "storing"].includes(currentStep) ? "bg-gray-400 w-0" : "bg-green-500 w-full")
+                      )}
+                      style={{ width: currentStep === "chatgpt" ? `${progressPercent}%` : undefined }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* 키워드 조합 */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        currentStep === "combining" ? "text-blue-700" : 
+                          (["normalizing", "storing", "chatgpt"].includes(currentStep) ? "text-gray-600" : "text-green-600")
+                      )}>
+                        키워드 조합
+                      </span>
+                      <span className="text-xs font-medium">
+                        {currentStep === "combining" ? `${progressPercent}%` : 
+                          (["normalizing", "storing", "chatgpt"].includes(currentStep) ? "0%" : "100%")}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={cn(
+                        "h-2.5 rounded-full transition-all duration-300",
+                        currentStep === "combining" ? "bg-blue-600" : 
+                          (["normalizing", "storing", "chatgpt"].includes(currentStep) ? "bg-gray-400 w-0" : "bg-green-500 w-full")
+                      )}
+                      style={{ width: currentStep === "combining" ? `${progressPercent}%` : undefined }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* 검색량 확인 */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        currentStep === "checking" ? "text-blue-700" : 
+                          (["normalizing", "storing", "chatgpt", "combining"].includes(currentStep) ? "text-gray-600" : "text-green-600")
+                      )}>
+                        검색량 확인
+                      </span>
+                      <span className="text-xs font-medium">
+                        {currentStep === "checking" ? `${progressPercent}%` : 
+                          (["normalizing", "storing", "chatgpt", "combining"].includes(currentStep) ? "0%" : "100%")}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={cn(
+                        "h-2.5 rounded-full transition-all duration-300",
+                        currentStep === "checking" ? "bg-blue-600" : 
+                          (["normalizing", "storing", "chatgpt", "combining"].includes(currentStep) ? "bg-gray-400 w-0" : "bg-green-500 w-full")
+                      )}
+                      style={{ width: currentStep === "checking" ? `${progressPercent}%` : undefined }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* 키워드 그룹화 */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        currentStep === "grouping" ? "text-blue-700" : 
+                          (["normalizing", "storing", "chatgpt", "combining", "checking"].includes(currentStep) ? "text-gray-600" : "text-green-600")
+                      )}>
+                        키워드 그룹화
+                      </span>
+                      <span className="text-xs font-medium">
+                        {currentStep === "grouping" ? `${progressPercent}%` : 
+                          (["normalizing", "storing", "chatgpt", "combining", "checking"].includes(currentStep) ? "0%" : "100%")}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={cn(
+                        "h-2.5 rounded-full transition-all duration-300",
+                        currentStep === "grouping" ? "bg-blue-600" : 
+                          (["normalizing", "storing", "chatgpt", "combining", "checking"].includes(currentStep) ? "bg-gray-400 w-0" : "bg-green-500 w-full")
+                      )}
+                      style={{ width: currentStep === "grouping" ? `${progressPercent}%` : undefined }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* 완료 */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className={cn(
+                        "text-xs font-medium",
+                        currentStep === "complete" ? "text-green-600" : "text-gray-600"
+                      )}>
+                        완료
+                      </span>
+                      <span className="text-xs font-medium">
+                        {currentStep === "complete" ? "100%" : "0%"}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div className={cn(
+                        "h-2.5 rounded-full transition-all duration-300",
+                        currentStep === "complete" ? "bg-green-500 w-full" : "bg-gray-400 w-0"
+                      )}></div>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <p className="text-center text-sm text-gray-500 mt-4">
@@ -623,7 +753,7 @@ export function BusinessSheet({
               </DialogHeader>
 
               {/* 키워드 리스트 */}
-              <div className="mt-4 space-y-3 max-h-[50vh] overflow-auto px-1">
+              <div className="mt-4 space-y-3 max-h-[50vh] overflow-auto px-1"></div>
                 {finalKeywords && finalKeywords.length > 0 ? (
                   finalKeywords.map((item: FinalKeyword, idx: number) => {
                     const kw = item.combinedKeyword;
@@ -666,7 +796,7 @@ export function BusinessSheet({
                     생성된 키워드를 불러오는 중...
                   </p>
                 )}
-              </div>
+              
 
               <DialogFooter className="mt-4">
               <Button 

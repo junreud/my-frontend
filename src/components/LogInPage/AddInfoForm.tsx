@@ -215,7 +215,7 @@ export default function AddInfoForm() {
       alert("입력값에 오류가 있습니다. 다시 확인해주세요.");
       return;
     }
-
+  
     // (B) payload
     const payload: AddInfoPayload = {
       email,
@@ -225,32 +225,37 @@ export default function AddInfoForm() {
       provider: paramProvider, // "local" | "kakao" | "google"
       agreeMarketingTerm,
     };
-
+  
     console.log("제출 payload:", payload);
-
+  
     try {
-      // (C) /auth/addinfo 요청
-      const response = await fetch("https://localhost:4000/auth/addinfo", {
+      // (C) API URL 구분
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
+      const apiUrl = `${baseUrl}/auth/addinfo`;
+  
+      // (D) /auth/addinfo 요청
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
         credentials: "include", // 쿠키(RefreshToken) 전달/수신
       });
-
-      // (D) 에러 처리
+  
+      // (E) 에러 처리
       if (!response.ok) {
         const errData = await response.json();
         alert("추가정보 등록 실패: " + errData.message);
         return;
       }
-
-      // (E) 정상 응답
+  
+      // (F) 정상 응답
       const data = await response.json();
       alert(`추가정보 등록 완료! => ${data.message}`);
-
-      // (F) accessToken or redirectUrl 처리
+  
+      // (G) accessToken or redirectUrl 처리
       if (data.accessToken) {
-        window.location.href = `https://localhost:3000/oauth-redirect?accessToken=${data.accessToken}`;
+        const redirectBaseUrl = process.env.NEXT_PUBLIC_REDIRECT_URL || "https://localhost:3000";
+        window.location.href = `${redirectBaseUrl}/oauth-redirect?accessToken=${data.accessToken}`;
       } else if (data.redirectUrl) {
         window.location.href = data.redirectUrl;
       } else {
