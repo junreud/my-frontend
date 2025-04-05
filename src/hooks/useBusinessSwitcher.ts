@@ -84,44 +84,17 @@ export function useBusinessSwitcher() {
         placeUrl,
       })
       
-// handleCheckPlace 함수 내부 수정
-if (res && res.success && res.placeInfo) {
-  logger.info("URL 정규화 성공", { placeName: res.placeInfo.place_name });
-  
-  // platform 값을 안전하게 추출
-  let platformValue = "";
-  
-  try {
-    if (typeof res.placeInfo.platform === 'object' && res.placeInfo.platform !== null) {
-      // platform 객체에서 platform 속성 추출 시도
-      if (res.placeInfo.platform.platform) {
-        platformValue = String(res.placeInfo.platform.platform);
-      } else if (res.placeInfo.platform.name) {
-        // 대안으로 name 속성 사용
-        platformValue = String(res.placeInfo.platform.name);
+      if (res && res.success && res.placeInfo) {
+        logger.info("URL 정규화 성공", { placeName: res.placeInfo.place_name });
+        
+        setPlaceData({
+          place_name: res.placeInfo.place_name,
+          category: res.placeInfo.category,
+          platform: res.placeInfo.platform?.platform || String(res.placeInfo.platform || "unknown"),
+        });
+        
+        setDialogOpen(true);
       } else {
-        // 그 외의 경우, 우선순위에 따라 id나 다른 속성 사용 가능
-        platformValue = String(res.placeInfo.platform.id || res.placeInfo.platform);
-      }
-    } else {
-      // platform이 객체가 아닌 경우 직접 사용
-      platformValue = String(res.placeInfo.platform || "");
-    }
-  } catch (error) {
-    logger.error("Platform 정보 처리 중 오류 발생", error);
-    platformValue = "unknown"; // 기본값 설정
-  }
-  
-  logger.info("최종 추출된 platform 값:", platformValue);
-  
-  setPlaceData({
-    place_name: res.placeInfo.place_name,
-    category: res.placeInfo.category,
-    platform: platformValue,
-  });
-  
-  setDialogOpen(true);
-} else {
         logger.warn("URL 정규화 응답 유효성 검증 실패", res);
         toast.error("업체 정보를 불러올 수 없습니다. 다시 시도해주세요.");
       }

@@ -35,10 +35,13 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
 
   // 소셜 로그인
   const handleGoogleLogin = () => {
-    window.location.href = "https://localhost:4000/auth/google";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
+    window.location.href = `${baseUrl}/auth/google`;
   };
+  
   const handleKakaoLogin = () => {
-    window.location.href = "https://localhost:4000/auth/kakao";
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
+    window.location.href = `${baseUrl}/auth/kakao`;
   };
 
   // blur 시, 값이 없으면 라벨 내리기
