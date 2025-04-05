@@ -1,6 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
 import { ReactNode } from "react";
+import { ReactQueryProvider } from "@/lib/reactQueryProvider";
 // import CustomCursor from "@/components/animations/CustomCursor";
 
 export const metadata = {
@@ -41,7 +42,9 @@ export default function RootLayout({
       </head>
       <body>
         {/* <CustomCursor /> */}
-        <main>{children}</main>
+        <ReactQueryProvider>
+          <main>{children}</main>
+        </ReactQueryProvider>
       </body>
     </html>
   );

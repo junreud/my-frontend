@@ -14,7 +14,7 @@ const HomePage = () => {
     <>
       <Container>
         {/* Pass a placeholder user prop */}
-        <Navbar user={null} />
+        <Navbar />
       </Container>
       <HomepageHero />
       <HomepageSection />

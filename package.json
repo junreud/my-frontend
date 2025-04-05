@@ -50,12 +50,13 @@
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
     "prop-types": "^15.8.1",
-    "react": "^19.0.0",
+    "react": "^18.2.0",
     "react-apexcharts": "^1.7.0",
     "react-day-picker": "^8.8.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^18.2.0",
     "react-google-recaptcha": "^3.1.0",
-    "react-is": "^19.0.0",
+    "react-icons": "^5.5.0",
+    "react-is": "^18.2.0",
     "react-router-dom": "^7.3.0",
     "recharts": "^2.15.1",
     "sonner": "^2.0.1",
@@ -67,8 +68,8 @@
     "@eslint/eslintrc": "^3",
     "@types/jsonwebtoken": "^9.0.9",
     "@types/node": "^20.17.23",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
     "@types/react-google-recaptcha": "^2.1.9",
     "autoprefixer": "^10.4.20",
     "daisyui": "^4.12.23",
@@ -80,4 +81,3 @@
     "typescript": "^5.8.2"
   }
 }
-

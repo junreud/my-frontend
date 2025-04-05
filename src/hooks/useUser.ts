@@ -15,9 +15,9 @@ export interface User {
   name: string
   email: string
   avatar_url?: string
-  // ...
   businesses?: Business[]
   role?: string;
+  
   url_registration?: number; // 추가: 사용자 가입 상태 확인용
 }
 

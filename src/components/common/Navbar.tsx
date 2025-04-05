@@ -1,14 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import useScrollDirection from "../../hooks/useScrollDirection";
 import { Container } from "@/components/common/Container";
+import { useUser } from "@/hooks/useUser"; // 추가: useUser 훅 import
 
-// 예: Navbar에 넘겨줄 유저 정보 타입 (role은 "admin" | "user" | "pending" | undefined)
 interface User {
-  role?: "admin" | "user" | "pending";
-  // 필요하면 여기에 더 추가 (id, name, etc.)
+  role?: "admin" | "user" | "plus" | "pending"; // 추가: 'plus'와 'pending' 역할
 }
 
 // NavbarProps: user가 null이면 미로그인, 아니면 User 타입
@@ -17,8 +16,25 @@ interface NavbarProps {
   user?: User | null;
 }
 
-export default function Navbar({ user = null }: NavbarProps) {
+export default function Navbar({ user: propUser = null }: NavbarProps) {
   const scrollDirection = useScrollDirection();
+  
+  // 클라이언트 사이드 렌더링 여부 확인
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  
+  // useUser 훅은 항상 호출하되, 결과는 클라이언트 사이드에서만 사용
+  const userQuery = useUser();
+  
+  // 클라이언트 사이드에서만 fetch된 데이터 사용
+  const fetchedUser = isClient ? userQuery.data : null;
+  const isLoading = isClient ? userQuery.isLoading : false;
+  
+  // prop으로 전달된 user와 fetch된 user 중 유효한 것 사용
+  const user = propUser || fetchedUser || null;
 
   // 로그인 상태 & role
   const isLoggedIn = !!user;
@@ -36,8 +52,14 @@ export default function Navbar({ user = null }: NavbarProps) {
     } else if (userRole === "user") {
       linkUrl = "/dashboard";
       linkText = "내업체";
+    } else if (userRole === "plus") {
+      linkUrl = "/dashboard";
+      linkText = "플러스 계정";
+    } else if (userRole === "pending") {
+      linkUrl = "/pending";
+      linkText = "심사중";
     } else {
-      // 로그인은 했는데 admin/user가 아닌 경우 => "심사중" 처리
+      // 역할이 지정되지 않은 경우
       linkUrl = "/pending";
       linkText = "심사중";
     }
@@ -48,6 +70,12 @@ export default function Navbar({ user = null }: NavbarProps) {
     { text: "네이버플레이스", href: "/service/place" },
     { text: "블로그", href: "/service/blog" },
   ];
+
+  // 로딩 중 상태 표시 (선택적)
+  if (isLoading) {
+    // 로딩 중일 때는 간소화된 UI 또는 스켈레톤 UI 표시
+    // 여기서는 그냥 기본 UI로 진행 (별도 처리 없음)
+  }
 
   return (
     <nav
@@ -189,12 +217,14 @@ export default function Navbar({ user = null }: NavbarProps) {
                 {linkText}
               </button>
             </Link>
-            {/* 견적받기 */}
-            <Link href="/estimate">
-              <button className="btn btn-neutral rounded-full text-white">
-                견적받기
-              </button>
-            </Link>
+            {/* 견적받기 버튼 (로그인 상태에 따라 표시) */}
+            {(!isLoggedIn || userRole === "user" || userRole === "plus") && (
+              <Link href="/estimate">
+                <button className="btn btn-neutral rounded-full text-white">
+                  견적받기
+                </button>
+              </Link>
+            )}
           </div>
           {/* /navbar-end */}
         </div>

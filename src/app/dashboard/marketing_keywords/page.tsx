@@ -1033,7 +1033,7 @@ export default function Page(): JSX.Element {
 
             <div className="flex justify-between px-1 mt-0.5 text-xs">
               <span>오늘</span>
-              <span>{maxRangeValue + 1}일</span>
+              <span>{maxRangeValue}일 전</span>
             </div>
           </div>      
         </div>

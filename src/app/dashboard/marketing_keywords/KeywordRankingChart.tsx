@@ -10,7 +10,11 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
   console.log('[Debug] KeywordRankingChart 입력 데이터:', {
     chartDataLength: chartData?.length || 0,
     sampleItem: chartData && chartData.length > 0 ? chartData[0] : null,
-    activeBusiness
+    activeBusiness,
+    availableSavedFields: chartData && chartData.length > 0 ? 
+      Object.keys(chartData[0]).filter(key => 
+        key.toLowerCase().includes('save') || key.toLowerCase().includes('count')
+      ) : []
   });
 
   // 날짜별로 데이터 처리 (중복 제거)
@@ -65,10 +69,24 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
   const rankingYAxisDomain = useMemo(() => {
     if (!processedData || processedData.length === 0) return [1, 10];
   
-    const ranks = processedData.map((d) => d.ranking);
-    const maxRank = Math.max(...ranks, 10);
-    // 상단 1등 고정, domain은 [1, 최고 순위]
-    return [1, maxRank];
+    const ranks = processedData.map(d => Number(d.ranking) || 0);
+    const minRank = Math.min(...ranks);
+    const maxRank = Math.max(...ranks);
+    
+    // 범위 계산
+    const range = maxRank - minRank;
+    
+    // 여백 계산 (범위의 30% 또는 최소 3등급)
+    const buffer = Math.max(Math.ceil(range * 0.3), 3);
+    
+    // 상단 여백 (1등 미만으로 내려가지 않게)
+    const topLimit = Math.max(1, minRank - buffer);
+    
+    // 하단 여백 (그래프가 바닥에 붙지 않게)
+    const bottomLimit = maxRank + buffer;
+    
+    // 최소 10개 간격 확보
+    return [topLimit, Math.max(bottomLimit, topLimit + 10)];
   }, [processedData]);
   
   // 차트용 날짜 포맷팅
@@ -111,11 +129,22 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
     return calculateOptimalYAxisDomain([...blogReviews, ...receiptReviews]);
   }, [processedData]);
 
-  // Saved count graph Y-axis domain - 필드명 수정 (saved -> savedCount)
+  // Saved count graph Y-axis domain - 데이터 처리 로직 개선
   const savedYAxisDomain = useMemo(() => {
     if (!processedData || processedData.length === 0) return [0, 10];
-
-    const savedCounts = processedData.map(item => item.saved || item.savedCount || 0);
+    
+    // 선택적 매핑 옵션 개선
+    const savedCounts = processedData.map(item => {
+      // 각 필드 값 확인 후 숫자로 변환
+      if (item.savedCount !== undefined && item.savedCount !== null) {
+        return Number(item.savedCount);
+      }
+      if (item.saved !== undefined && item.saved !== null) {
+        return Number(item.saved);
+      }
+      return 0;
+    });
+    
     return calculateOptimalYAxisDomain(savedCounts);
   }, [processedData]);
 
@@ -261,7 +290,20 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
               <Legend />
               <Line
                 type="monotone"
-                dataKey={(d) => d.saved || d.savedCount || 0}
+                dataKey={(d) => {
+                  // 가능한 모든 필드명 검사
+                  if (d.savedCount !== undefined && d.savedCount !== null) {
+                    return Number(d.savedCount);
+                  } 
+                  if (d.saved !== undefined && d.saved !== null) {
+                    return Number(d.saved);
+                  }
+                  if (d.saved_count !== undefined && d.saved_count !== null) {
+                    return Number(d.saved_count);
+                  }
+                  // 백엔드에서 전달되는 다른 가능한 필드명도 확인
+                  return 0;
+                }}
                 name="저장 수"
                 stroke="#ff9800"
                 strokeWidth={2}

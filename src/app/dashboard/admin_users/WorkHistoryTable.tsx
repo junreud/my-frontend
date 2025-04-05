@@ -55,6 +55,7 @@ interface UserWithPlaces {
   email: string;
   phone: string;
   place_names: string[];
+  place_ids: string[]; // Added place_ids to store actual place IDs
   place_count: number;
 }
 
@@ -102,15 +103,17 @@ const WorkTable: React.FC<WorkTableProps> = ({
   isError,
   refreshData
 }) => {
-  const [visibleItems, setVisibleItems] = useState(100);
+  const [visibleItems, setVisibleItems] = useState(50);
   const loaderRef = useRef<HTMLDivElement>(null);
-  const emptyRows = createEmptyRows(100);
+  const emptyRows = createEmptyRows(50);
 
   // 작업 추가 다이얼로그 상태
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Keep userId as array since we may need multiple selection for users
   const [userId, setUserId] = useState<string[]>([]);
-  const [workType, setWorkType] = useState<string[]>([]);
-  const [executor, setExecutor] = useState<string[]>([]);
+  // Change these to string for single selection
+  const [workType, setWorkType] = useState<string>("");
+  const [executor, setExecutor] = useState<string>("");
   const [contractKeyword, setContractKeyword] = useState("");
   const [workKeyword, setWorkKeyword] = useState("");
   const [charCount, setCharCount] = useState<number | undefined>();
@@ -143,7 +146,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
 
   // 작업 추가 제출 핸들러
   const handleSubmit = async () => {
-    if (userId.length === 0 || workType.length === 0 || executor.length === 0) {
+    if (userId.length === 0 || !workType || !executor) {
       alert("유저, 작업 종류, 실행사는 필수 입력 항목입니다.");
       return;
     }
@@ -158,11 +161,14 @@ const WorkTable: React.FC<WorkTableProps> = ({
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       };
 
+      // Use the actual place_id instead of the place name
+      const selectedPlaceId = selectedUserDetails?.place_ids?.[0] || "";
+
       const payload = {
         user_id: parseInt(userId[0]),
-        place_id: selectedUserDetails?.place_names[0] || "",
-        work_type: workType.join(", "),
-        executor: executor.join(", "),
+        place_id: selectedPlaceId, // Updated to use place_id
+        work_type: workType, // Changed from array join to single string
+        executor: executor, // Changed from array join to single string
         contract_keyword: contractKeyword || null,
         work_keyword: workKeyword || null,
         char_count: charCount || null,
@@ -212,8 +218,8 @@ const WorkTable: React.FC<WorkTableProps> = ({
   // 폼 초기화 함수 수정
   const resetForm = () => {
     setUserId([]);
-    setWorkType([]);
-    setExecutor([]);
+    setWorkType(""); // Changed to empty string
+    setExecutor(""); // Changed to empty string
     setContractKeyword("");
     setWorkKeyword("");
     setCharCount(undefined);
@@ -288,17 +294,10 @@ const WorkTable: React.FC<WorkTableProps> = ({
             <MultiSelectCombobox
               options={userOptions}
               selected={userId}
-              onChange={(selected) => {
-                setUserId(selected);
-                if (selected.length === 1) {
-                  const selectedUser = users?.find(u => u.user_id.toString() === selected[0]) || null;
-                  setSelectedUserDetails(selectedUser);
-                } else {
-                  setSelectedUserDetails(null);
-                }
-              }}
+              onChange={setUserId}
               placeholder="유저 선택"
-              position="right" // Add position prop to open to the right
+              position="right"
+              displayMode="text" // Use text display mode to match placeholder style
             />
             {selectedUserDetails && (
               <div className="mt-2 p-1 bg-gray-50 rounded-md text-sm">
@@ -508,33 +507,48 @@ const WorkTable: React.FC<WorkTableProps> = ({
     tempRange: DateRange | undefined,
     setTempRange: React.Dispatch<React.SetStateAction<DateRange | undefined>>,
     handleConfirm: () => void
-  ) => (
-    <div>
-      <div className="rdp-range">
-        <DayPicker
-          mode="range"
-          selected={tempRange}
-          onSelect={setTempRange}
-          numberOfMonths={1}
-          className="rdp-range-calendar"
-        />
+  ) => {
+    // Get today's date for the modifier
+    const today = new Date();
+    
+    return (
+      <div>
+        <div className="rdp-range">
+          <DayPicker
+            mode="range"
+            selected={tempRange}
+            onSelect={setTempRange}
+            numberOfMonths={1}
+            className="rdp-range-calendar"
+            modifiers={{ today: today }}
+            modifiersStyles={{
+              today: {
+                backgroundColor: '#edf2f7', // Light blue background
+                color: '#2563eb', // Blue text color
+                fontWeight: 'bold',
+                borderRadius: '50%',
+                border: '2px solid #2563eb', // Blue border
+              }
+            }}
+          />
+        </div>
+        <div className="p-3 border-t border-border flex items-center justify-between">
+          <span className="text-sm text-gray-600">
+            {!tempRange?.from ? "시작일 선택" : 
+             !tempRange?.to ? "종료일 선택" :
+             formatDateRange(tempRange)}
+          </span>
+          <Button 
+            size="sm" 
+            onClick={handleConfirm}
+            disabled={!tempRange?.from}
+          >
+            설정
+          </Button>
+        </div>
       </div>
-      <div className="p-3 border-t border-border flex items-center justify-between">
-        <span className="text-sm text-gray-600">
-          {!tempRange?.from ? "시작일 선택" : 
-           !tempRange?.to ? "종료일 선택" :
-           formatDateRange(tempRange)}
-        </span>
-        <Button 
-          size="sm" 
-          onClick={handleConfirm}
-          disabled={!tempRange?.from}
-        >
-          설정
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="overflow-x-auto relative">
@@ -641,6 +655,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
                         onChange={setWorkType}
                         placeholder="작업 종류 선택"
                         position="right" // Add position prop to open to the right
+                        multiSelect={false} // Add this to make it single-select
                       />
                     </div>
                   </div>
@@ -660,6 +675,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
                         onChange={setExecutor}
                         placeholder="실행사 선택"
                         position="right" // Add position prop to open to the right
+                        multiSelect={false} // Add this to make it single-select
                       />
                     </div>
                   </div>
@@ -917,7 +933,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
                 <p className="mt-2 text-sm text-gray-500">잠시 후 다시 시도해주세요.</p>
               </div>
             ) : (
-              <div className="text-center p-6 bg-white rounded-lg shadow-sm">
+              <div className="text-center p-6 bg-white rounded-lg shadow-lg">
                 <span className="text-lg font-medium text-gray-700">작업 데이터가 없습니다</span>
                 <p className="mt-2 text-sm text-gray-500">관리자에게 문의하세요.</p>
               </div>

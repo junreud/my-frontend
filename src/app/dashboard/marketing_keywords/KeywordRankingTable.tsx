@@ -207,15 +207,15 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
               (총 {latestData.length}개 업체)
             </span>
           </div>
-          <table className="table table-xs">
+          <table className="table table-xs w-full table-fixed">
             <thead className="sticky top-0 bg-white z-10">
               <tr>
-                <th>순위</th>
-                <th>업체명</th>
-                <th>업종</th>
-                <th>블로그리뷰</th>
-                <th>영수증리뷰</th>
-                <th>저장수</th>
+                <th className="w-[8%]">순위</th>
+                <th className="w-[30%]">업체명</th>
+                <th className="w-[22%]">업종</th>
+                <th className="w-[14%]">블로그리뷰</th>
+                <th className="w-[14%]">영수증리뷰</th>
+                <th className="w-[12%]">저장수</th>
               </tr>
             </thead>
             <tbody>
@@ -244,8 +244,27 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                           : ""
                       }
                     `}>
-                    <th>{item.ranking}</th>
-                    <td>
+                    <td className="w-[8%] text-center">
+                      <div className="flex items-center">
+                        {/* 순위는 항상 왼쪽에 고정 배치하고, 변화량은 오른쪽에 배치 */}
+                        <div className="min-w-[24px] text-right pr-2">{item.ranking}</div>
+                        <div className="flex-grow">
+                          {rangeValue > 0 && !isEmpty && (
+                            <NumberChangeIndicator 
+                              current={item.ranking} 
+                              past={pastData?.ranking}
+                              invert={true}
+                              formatter={(val: number | null | undefined) => {
+                                if (val === null || val === undefined) return '';
+                                return val.toString();
+                              }}
+                              hideWhenNoChange={true}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="w-[30%]">
                       {isEmpty ? '-' : (
                         <>
                           <a 
@@ -262,41 +281,53 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                         </>
                       )}
                     </td>
-                    <td>{isEmpty ? '-' : item.category}</td>
-                    <td>
+                    <td className="w-[22%]">{isEmpty ? '-' : item.category}</td>
+                    <td className="w-[14%]">
                       {isEmpty ? '-' : (
-                        <NumberChangeIndicator 
-                          current={item.blog_review_count} 
-                          past={pastData?.blog_review_count}
-                          formatter={(val: number | null | undefined) => {
-                            if (val == null) return '-'; // null이면 '-' 표시
-                            return val.toString();
-                          }}
-                        />
+                        <div className="flex items-center">
+                          <span className="min-w-[24px] text-center">{item.blog_review_count ?? '-'}</span>
+                          <NumberChangeIndicator 
+                            current={item.blog_review_count} 
+                            past={pastData?.blog_review_count}
+                            formatter={(val: number | null | undefined) => {
+                              if (val === null || val === undefined) return '';
+                              return val.toString(); // 리뷰 변화량 숫자 표시
+                            }}
+                            hideWhenNoChange={true} // 변화 없을 때 표시 안함
+                          />
+                        </div>
                       )}
                     </td>
-                    <td>
+                    <td className="w-[14%]">
                       {isEmpty ? '-' : (
-                        <NumberChangeIndicator 
-                          current={item.receipt_review_count} 
-                          past={pastData?.receipt_review_count}
-                          formatter={(val: number | null | undefined) => {
-                            if (val == null) return '-'; // null이면 '-' 표시
-                            return val.toString();
-                          }}
-                        />
+                        <div className="flex items-center">
+                          <span className="min-w-[24px] text-center">{item.receipt_review_count ?? '-'}</span>
+                          <NumberChangeIndicator 
+                            current={item.receipt_review_count} 
+                            past={pastData?.receipt_review_count}
+                            formatter={(val: number | null | undefined) => {
+                              if (val === null || val === undefined) return '';
+                              return val.toString(); // 리뷰 변화량 숫자 표시
+                            }}
+                            hideWhenNoChange={true} // 변화 없을 때 표시 안함
+                          />
+                        </div>
                       )}
                     </td>
-                    <td>
+                    <td className="w-[12%]">
                       {isEmpty ? '-' : (
-                        <NumberChangeIndicator 
-                          current={item.savedCount} 
-                          past={pastData?.savedCount}
-                          formatter={(val: number | null | undefined) => {
-                            if (val == null) return '-'; // null이면 '-' 표시
-                            return val.toString();
-                          }}
-                        />
+                        <div className="flex items-center">
+                          <span className="min-w-[24px] text-center">{item.savedCount ?? '-'}</span>
+                          <NumberChangeIndicator 
+                            current={item.savedCount} 
+                            past={pastData?.savedCount}
+                            formatter={(val: number | null | undefined) => {
+                              if (val === null || val === undefined) return '';
+                              return val.toString(); // 저장수 변화량 숫자 표시
+                            }}
+                            hideWhenNoChange={true} // 변화 없을 때 표시 안함
+                          />
+                        </div>
                       )}
                     </td>
                   </tr>

@@ -1,45 +1,48 @@
 import React from 'react';
+import { FaArrowUp, FaArrowDown } from 'react-icons/fa';
 
 interface NumberChangeIndicatorProps {
   current: number | null | undefined;
-  past?: number | null | undefined;
-  reverse?: boolean;
-  formatter?: (val: number | null | undefined) => string;
-  showChange?: boolean; // 변화량 표시 여부 옵션
+  past: number | null | undefined;
+  formatter?: (value: number | null | undefined) => string;
+  invert?: boolean; // Added property for ranking (lower is better)
+  hideWhenNoChange?: boolean; // 변화가 없을 때 표시 여부
 }
 
 export const NumberChangeIndicator: React.FC<NumberChangeIndicatorProps> = ({ 
   current, 
   past, 
-  reverse = false,
-  formatter = (val: number | null | undefined) => val != null ? val.toString() : '-',
-  showChange = true
+  formatter = (val) => (val !== null && val !== undefined) ? val.toString() : '',
+  invert = false,
+  hideWhenNoChange = false
 }) => {
-  // null 및 undefined 값 처리
-  if (current == null) return <span>-</span>;
-  if (past == null) return <span>{formatter(current)}</span>;
-    
+  // 두 값이 없으면 변화 표시 안함
+  if (current === null || current === undefined || past === null || past === undefined) {
+    return null;
+  }
+
   const diff = current - past;
-  // 개선 여부 (순위는 낮을수록(reverse=true), 다른 지표는 높을수록 좋음)
-  const isImproved = reverse ? diff < 0 : diff > 0;
   
-  // 변화량 절대값
-  const absDiff = Math.abs(diff);
+  // 변화가 없으면 숨기거나 가로줄 표시
+  if (diff === 0) {
+    return hideWhenNoChange ? null : <span className="text-gray-400 ml-1 inline">-</span>;
+  }
+
+  // 순위의 경우 (invert=true): 낮아지는 것이 좋음 (음수가 좋음)
+  // 일반 수치 (invert=false): 높아지는 것이 좋음 (양수가 좋음)
+  const isPositive = invert ? diff < 0 : diff > 0;
   
+  // 색상 및 아이콘 결정
+  const iconClass = isPositive ? "text-green-500" : "text-red-500";
+  const Icon = isPositive ? FaArrowUp : FaArrowDown;
+  
+  // 순위의 경우 변화량의 절대값 표시
+  const displayValue = formatter(Math.abs(diff));
+
   return (
-    <div className="flex items-center gap-1">
-      <span className="font-medium">{formatter(current)}</span>
-      
-      {showChange && diff !== 0 && (
-        <span 
-          className={`text-xs font-medium ${isImproved 
-            ? 'text-green-600' // 개선됨
-            : 'text-red-600'   // 악화됨
-          }`}
-        >
-          ({isImproved ? '+' : '-'}{absDiff})
-        </span>
-      )}
-    </div>
+    <span className={`ml-1 flex items-center ${iconClass}`}>
+      <Icon className="inline mr-1" />
+      {displayValue && <span className="text-xs">{displayValue}</span>}
+    </span>
   );
 };

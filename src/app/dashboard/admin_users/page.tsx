@@ -16,8 +16,9 @@ const logger = createLogger("AdminWorkHistoryPage");
 
 export default function Page() {
   const { data: userData, isLoading: userLoading } = useUser();
-  const [workTypes, setWorkTypes] = useState<string[]>([]);
-  const [executors, setExecutors] = useState<string[]>([]);
+  // Changed from array to string for single selection
+  const [workType, setWorkType] = useState<string>("");
+  const [executor, setExecutor] = useState<string>("");
   const queryClient = useQueryClient();
 
   // 관리자 권한 확인
@@ -31,8 +32,8 @@ export default function Page() {
     refetch
   } = useWorkHistories({
     enabled: isAdmin,
-    workTypes: workTypes.length > 0 ? workTypes : undefined,
-    executors: executors.length > 0 ? executors : undefined,
+    workTypes: workType ? [workType] : undefined, // Convert single value to array if present
+    executors: executor ? [executor] : undefined, // Convert single value to array if present
     userId: userData?.id
   });
 
@@ -114,9 +115,10 @@ export default function Page() {
               label: type,
               value: type
             }))}
-            selected={workTypes}
-            onChange={setWorkTypes}
+            selected={workType}
+            onChange={setWorkType}
             placeholder="작업 종류 선택..."
+            multiSelect={false} // Set to single select mode
           />
         </div>
 
@@ -127,9 +129,10 @@ export default function Page() {
               label: exec || '',
               value: exec || ''
             }))}
-            selected={executors}
-            onChange={setExecutors}
+            selected={executor}
+            onChange={setExecutor}
             placeholder="실행사 선택..."
+            multiSelect={false} // Set to single select mode
           />
         </div>
 
@@ -137,8 +140,8 @@ export default function Page() {
           <Button
             variant="outline"
             onClick={() => {
-              setWorkTypes([]);
-              setExecutors([]);
+              setWorkType("");
+              setExecutor("");
             }}
           >
             필터 초기화

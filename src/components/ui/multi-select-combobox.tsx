@@ -18,22 +18,37 @@ interface ComboboxOption<T = unknown> {
   userData?: T;
 }
 
-interface MultiSelectComboboxProps<T = unknown> {
+// Define two separate interfaces for single and multi-select props
+interface BaseComboboxProps<T = unknown> {
   options: ComboboxOption<T>[];
-  selected: string[];
-  onChange: (selected: string[]) => void;
   placeholder?: string;
-  position?: "bottom" | "right"; // Add position prop
+  position?: "bottom" | "right";
+  displayMode?: "default" | "text"; // Add display mode option
 }
 
-export function MultiSelectCombobox<T = unknown>({
-  options,
-  selected,
-  onChange,
-  placeholder = "항목 선택...",
-  position = "bottom", // Default to bottom
-}: MultiSelectComboboxProps<T>) {
-  // 모든 상태와 props에 기본값 지정
+interface SingleSelectComboboxProps<T = unknown> extends BaseComboboxProps<T> {
+  multiSelect: false;
+  selected: string;
+  onChange: (selected: string) => void;
+}
+
+interface MultiSelectComboboxProps<T = unknown> extends BaseComboboxProps<T> {
+  multiSelect?: true;
+  selected: string[];
+  onChange: (selected: string[]) => void;
+}
+
+// Union type to represent either single or multi-select props
+type ComboboxProps<T = unknown> = SingleSelectComboboxProps<T> | MultiSelectComboboxProps<T>;
+
+export function MultiSelectCombobox<T = unknown>(props: ComboboxProps<T>) {
+  const {
+    options,
+    placeholder = "항목 선택...",
+    position = "bottom",
+    displayMode = "default", // Default to badges for multi-select
+  } = props;
+  
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
 
@@ -47,24 +62,41 @@ export function MultiSelectCombobox<T = unknown>({
     }));
   }, [options]);
 
+  // Handle both string and array types for selected value
   const safeSelected = React.useMemo(() => {
-    if (!selected || !Array.isArray(selected)) return [];
-    return [...selected]; 
-  }, [selected]);
+    if (props.multiSelect !== false) {
+      return [...props.selected];
+    } else {
+      // For single select, convert string to array for internal processing
+      return props.selected ? [props.selected] : [];
+    }
+  }, [props.selected, props.multiSelect]);
 
   const handleSelect = React.useCallback((value: string) => {
     if (!value) return;
     
-    if (safeSelected.includes(value)) {
-      onChange(safeSelected.filter((item) => item !== value));
+    if (props.multiSelect !== false) {
+      // Multi-select behavior
+      if (safeSelected.includes(value)) {
+        props.onChange(safeSelected.filter((item) => item !== value));
+      } else {
+        props.onChange([...safeSelected, value]);
+      }
     } else {
-      onChange([...safeSelected, value]);
+      // Single-select behavior - always replace with the new value
+      props.onChange(value);
+      setOpen(false); // Close dropdown after selection
     }
-  }, [safeSelected, onChange]);
+  }, [safeSelected, props, setOpen]);
 
   const handleRemove = React.useCallback((value: string) => {
-    onChange(safeSelected.filter((item) => item !== value));
-  }, [safeSelected, onChange]);
+    if (props.multiSelect !== false) {
+      props.onChange(safeSelected.filter((item) => item !== value));
+    } else {
+      // For single select, removing means clearing the selection
+      props.onChange("");
+    }
+  }, [safeSelected, props]);
 
   // 필터링된 옵션 계산
   const filteredOptions = React.useMemo(() => {
@@ -87,35 +119,61 @@ export function MultiSelectCombobox<T = unknown>({
           <div className="flex flex-wrap gap-1">
             {safeSelected.length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
-            ) : (
-              safeSelected.map((value) => (
-                <Badge
-                  variant="secondary"
-                  key={value}
-                  className="mr-1 mb-1"
+            ) : props.multiSelect === false || displayMode === "text" ? (
+              // Display as text for single-select or if displayMode is "text"
+              <div className="flex items-center justify-between w-full">
+                <span className="text-foreground">
+                  {safeOptions.find(opt => opt.value === safeSelected[0])?.label || safeSelected[0]}
+                </span>
+                {/* Add X button to clear selection */}
+                <span
+                  className="ml-2 cursor-pointer text-gray-500 hover:text-gray-700"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRemove(safeSelected[0]);
+                  }}
                 >
-                  {safeOptions.find(option => option.value === value)?.label || value}
-                  <span
-                    className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleRemove(value);
-                      }
-                    }}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleRemove(value);
-                    }}
+                  <X className="h-4 w-4" />
+                </span>
+              </div>
+            ) : (
+              // For multi-select with default display mode, use badges
+              safeSelected.map((value) => {
+                const option = safeOptions.find(opt => opt.value === value);
+                return (
+                  <Badge
+                    variant="secondary"
+                    key={value}
+                    className="mr-1 mb-1"
                   >
-                    <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                  </span>
-                </Badge>
-              ))
+                    {option?.label || value}
+                    <span
+                      className="ml-1 ring-offset-background rounded-full outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleRemove(value);
+                        }
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                      }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleRemove(value);
+                      }}
+                    >
+                      <X className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                    </span>
+                  </Badge>
+                );
+              })
             )}
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
