@@ -60,7 +60,7 @@ function LogoPart({ isLoading, isError, activeBusiness }: LogoPartProps) {
     <div className="flex aspect-square size-8 items-center justify-center rounded-md overflow-hidden">
       <Image
         src={logoPath}
-        alt={activeBusiness.platform.platform}
+        alt={`${activeBusiness.platform.platform} 로고`}
         width={32}
         height={32}
         className="object-contain"
@@ -204,10 +204,11 @@ function DropdownInner({
           <div className="flex items-center gap-2">
             <div className="size-4">
               <Image
-                src={getPlatformLogo(biz.platform.platform)}
-                alt={biz.platform.platform}
                 width={16}
                 height={16}
+                src={getPlatformLogo(biz.platform.platform)}
+                alt={`${biz.platform.platform} 로고`}
+                className="absolute left-3 h-4 w-4"
               />
             </div>
             <span>{biz.place_name}</span>
