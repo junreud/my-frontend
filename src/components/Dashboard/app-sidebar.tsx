@@ -1,13 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
 import { usePathname } from "next/navigation"
 import { Skeleton } from "@mui/material"
 import Link from "next/link"
 
 import { Home, AlertCircle, RefreshCw } from "lucide-react"
-import apiClient from "@/lib/apiClient"
+import { useUser } from "@/hooks/useUser"  // Import useUser hook
 
 import {
   Sidebar,
@@ -73,35 +72,27 @@ const ADMIN_SIDEBAR_SECTIONS = [
       { title: "작업 현황", url: "/dashboard/marketing_status", icon: "Activity" },
     ],
   },
+  {
+    label: "고객 영업 관리",
+    items: [
+      { title: "크롤링하기", url: "/dashboard/admin_customer", icon: "Computer" },
+      { title: "크롤링관리", url: "/dashboard/review_blog", icon: "FileText" },
+    ],
+  },
 ]
-
-/** (B) /api/user/me 응답 타입 */
-interface UserMeResponse {
-  id: number
-  email: string
-  role: string
-}
-
-// Remove the cn function - we'll use template literals directly
 
 /** (C) 메인 사이드바 컴포넌트 */
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   // (1) 현재 경로 가져오기
   const pathname = usePathname()
 
-  // (2) 유저 role 불러오기 → 관리자면 admin 섹션, 아니면 일반 섹션
-  const { data: sections, isLoading, isError } = useQuery({
-    queryKey: ["sidebarSections"],
-    queryFn: async () => {
-      const userRes = await apiClient.get<UserMeResponse>("/api/user/me")
-      const user = userRes.data
-      if (user.role === "admin") {
-        return ADMIN_SIDEBAR_SECTIONS
-      }
-      return STATIC_SIDEBAR_SECTIONS
-    },
-    staleTime: 24 * 60 * 60 * 1000,
-  })
+  // (2) useUser hook을 사용해 유저 정보 가져오기
+  const { data: user, isLoading, isError } = useUser()
+  
+  // 유저 역할에 따른 사이드바 섹션 선택
+  const sections = React.useMemo(() => {
+    return user?.role === "admin" ? ADMIN_SIDEBAR_SECTIONS : STATIC_SIDEBAR_SECTIONS;
+  }, [user?.role]);
 
   // (3) 로딩시 skeleton
   if (isLoading) {

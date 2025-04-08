@@ -46,7 +46,7 @@ apiClient.interceptors.response.use(
       try {
         // (3) /auth/refresh로 POST
         const res = await axios.post(
-          `${API_BASE_URL}/auth/refresh`, // API_BASE_URL 사용
+          `${API_BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
@@ -58,12 +58,15 @@ apiClient.interceptors.response.use(
         // (5) 대기 중이던 요청들 재시도
         pendingRequests.forEach((callback) => callback());
         pendingRequests = [];
-        isRefreshing = false;
       
-        return apiClient(originalRequest); // 원래 요청 재시도
+        // 원래 요청 재시도
+        return apiClient(originalRequest); 
       } catch (err) {
         isRefreshing = false;
         pendingRequests = [];
+        // 쿠키 문제일 경우 로그아웃으로 처리
+        localStorage.removeItem("accessToken");
+        // 로그인 페이지로 리디렉션 코드 추가 가능
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

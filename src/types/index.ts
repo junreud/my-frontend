@@ -180,9 +180,9 @@ export interface KeywordRankData {
   ranking: number;
   place_name: string;
   category?: string;
-  receipt_review_count: number;
-  blog_review_count: number;
-  savedCount?: number;
+  receipt_review_count: number | null;  // ✅ null 허용 추가
+  blog_review_count: number | null;     // ✅ null 허용 추가
+  savedCount?: number | null;           // 선택적으로 null 허용 추가 가능
   crawled_at: string;
 }
 
@@ -197,16 +197,19 @@ export interface KeywordHistoricalData {
 }
 
 export interface KeywordRankingDetail {
-  ranking: number;
+  id: string | number;
+  keyword_id: string | number;
+  keyword: string;
+  ranking: number | null;
   place_id: string;
-  date_key: string;
   place_name: string;
   category: string;
-  blog_review_count: number | null;
-  receipt_review_count: number | null;
-  savedCount: number | null;
-  keywordList: string[] | null;
-  keyword?: string;
+  savedCount?: number | null;
+  blog_review_count?: number | null;
+  receipt_review_count?: number | null;
+  keywordList?: string[] | null;
+  date_key: string;
+  crawled_at: string;
 }
 
 export interface KeywordRankingChartProps {

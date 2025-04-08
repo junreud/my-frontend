@@ -4,6 +4,9 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useKeywordRankingDetails } from "@/hooks/useKeywordRankingDetails";
 import { useUserKeywords } from "@/hooks/useUserKeywords";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
+import { useAddKeyword } from '@/hooks/useAddKeyword';
+import { useChangeKeyword } from '@/hooks/useChangeKeyword';
+import { useKeywordStatusPolling } from '@/hooks/useKeywordStatusPolling';
 import { createLogger } from "@/lib/logger";
 import { useUser } from "@/hooks/useUser";
 import { toast } from "sonner";
@@ -28,8 +31,8 @@ import { Button } from "@/components/ui/button";
 // Components
 import KeywordRankingChart from "./KeywordRankingChart";
 import KeywordRankingTable from "./KeywordRankingTable";
-import apiClient from "@/lib/apiClient";
-import { UserKeyword, KeywordHistoricalData, KeywordRankData } from "@/types"; // Import types from types file
+import { UserKeyword, KeywordHistoricalData, KeywordRankData, KeywordRankingDetail } from "@/types";
+
 const logger = createLogger("MarketingKeywordsPage");
 
 // 키워드 세부 정보 인터페이스
@@ -45,20 +48,6 @@ interface KeywordDetail {
   blog_review_count: number | null;
   receipt_review_count: number | null;
   keywordList: string[] | null;
-  date_key: string;
-}
-interface KeywordRankingDetail {
-  id?: string | number;
-  keyword_id?: string | number;
-  keyword?: string;
-  ranking: number;
-  place_id: string;
-  place_name: string;
-  category: string;
-  savedCount: number;
-  blog_review_count: number;
-  receipt_review_count: number;
-  keywordList: string[];
   date_key: string;
 }
 interface KeywordRankingData {
@@ -95,6 +84,51 @@ interface KeywordRankingsMap {
   [keyword: string]: KeywordDataGroup;
 }
 
+// Move formatChartData function outside of useMemo to prevent recreation on each render
+function formatChartDataForKeywordMap(details: KeywordDetail[], activePlaceId?: string | null): ChartDataPoint[] {
+  if (!details || details.length === 0) return [];
+  
+  const dateGroups: Record<string, KeywordDetail[]> = {};
+  details.forEach(item => {
+    if (!dateGroups[item.date_key]) {
+      dateGroups[item.date_key] = [];
+    }
+    dateGroups[item.date_key].push(item);
+  });
+
+  const result = Object.keys(dateGroups)
+    .sort()
+    .map(date => {
+      const items = dateGroups[date];
+      const activePlaceItem = activePlaceId ? items.find(
+        item => String(item.place_id) === String(activePlaceId)
+      ) : null;
+      
+      return {
+        date,
+        date_key: date,
+        uv: activePlaceItem?.ranking ?? 0,
+        place_id: activePlaceItem?.place_id || null,
+        ranking: activePlaceItem?.ranking || null,
+        savedCount: activePlaceItem?.savedCount || 0,
+        blog_review_count: activePlaceItem?.blog_review_count || 0,
+        receipt_review_count: activePlaceItem?.receipt_review_count || 0,
+        keywordItems: activePlaceItem?.keywordList || [],
+        saved: activePlaceItem?.savedCount || 0,
+        blogReviews: activePlaceItem?.blog_review_count || 0,
+        receiptReviews: activePlaceItem?.receipt_review_count || 0,
+      };
+    });
+  
+  // Remove debug log that may contribute to render loops
+  // console.log('[Debug] formatChartData 결과:', {
+  //  itemCount: result.length,
+  //  sampleItem: result.length > 0 ? result[0] : null
+  // });
+  
+  return result;
+}
+
 export default function Page(): JSX.Element {
   const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
   const [rangeValue, setRangeValue] = useState<number>(0);
@@ -111,11 +145,20 @@ export default function Page(): JSX.Element {
   const [isChangeMode, setIsChangeMode] = useState(false);
   const [isComboboxOpen, setIsComboboxOpen] = useState(false);
   const [pollingKeyword, setPollingKeyword] = useState<string | null>(null);
-  const [pollCount, setPollCount] = useState(0);
   const [updatingKeywords, setUpdatingKeywords] = useState<string[]>([]);
-  const [changingKeywords, setChangingKeywords] = useState<Record<string, string>>({});
 
   const { activeBusiness, user } = useBusinessSwitcher();
+
+  const { addKeyword, isAdding } = useAddKeyword(
+    user?.id ?? 0, 
+    Number(activeBusiness?.place_id ?? 0)
+  );
+  
+  const { changeKeyword, isChanging } = useChangeKeyword(
+    user?.id ?? 0, 
+    Number(activeBusiness?.place_id ?? 0)
+  );
+
   const { data: userData } = useUser();
   const queryClient = useQueryClient();
 
@@ -142,16 +185,14 @@ export default function Page(): JSX.Element {
     [userKeywordObjects]
   );
 
-  // 모든 키워드 순위 데이터를 한 번에 가져오기
   const { 
     data: allKeywordRankingsData,
     isLoading: allKeywordsLoading,
     isError: allKeywordsError
-  } = useKeywordRankingDetails({
-    placeId: activeBusiness?.place_id,
-    userId: user?.id
-  });
-
+} = useKeywordRankingDetails({
+    activeBusinessId: activeBusiness?.place_id,
+    userId: user?.id,
+});
   const getKeywordLimit = (role?: string): number => {
     switch (role) {
       case "admin":
@@ -170,7 +211,9 @@ export default function Page(): JSX.Element {
   // Updated refreshKeywordData function with better UX
   const refreshKeywordData = useCallback(async () => {
     try {
-      // Invalidate React Query caches for keyword data
+      setIsLoading(true);
+      
+      // 쿼리 무효화
       await queryClient.invalidateQueries({
         queryKey: ['keywordRankingDetails', activeBusiness?.place_id, user?.id],
       });
@@ -183,231 +226,40 @@ export default function Page(): JSX.Element {
       console.error("Error refreshing data:", error);
       toast.error("데이터 업데이트 중 오류가 발생했습니다");
     } finally {
-      // Remove loading states
       setIsLoading(false);
-      
-      // Keep the updating keywords state if polling is still happening
-      if (!pollingKeyword) {
-        setIsKeywordsUpdating(false);
-        setUpdatingKeywords([]);
-      }
     }
   }, [
     queryClient,
     activeBusiness?.place_id,
     user?.id,
-    pollingKeyword,
   ]);
-
-  // Updated handleAddKeyword function
-  const handleAddKeyword = async () => {
-    if (!newKeyword.trim()) {
-      toast.error("키워드를 입력해주세요");
-      return;
-    }
-
-    const addedKeyword = newKeyword.trim();
-    
-    // First close the dialog
-    setIsAddDialogOpen(false);
-    
-    // Add this keyword to updating list
-    setUpdatingKeywords(prev => [...prev, addedKeyword]);
-    setIsKeywordsUpdating(true);
-    
-    try {
-      await apiClient.post("/keyword/user-keywords", {
-        userId: user?.id,
-        placeId: activeBusiness?.place_id,
-        keyword: addedKeyword,
-      });
-
-      toast.success(`"${addedKeyword}" 키워드가 추가되었습니다. 데이터 수집 중...`);
-      
-      // Reset form state
-      setNewKeyword("");
-      
-      // Start polling for this keyword's status
-      setPollingKeyword(addedKeyword);
-      setCrawlingStatus("pending");
-      setPollCount(0);
-      
-      // Refresh data initially to show the new keyword in the list
-      await refreshKeywordData();
-    } catch (error) {
-      console.error("키워드 추가 중 오류 발생:", error);
-      toast.error("키워드 추가 중 오류가 발생했습니다");
-      
-      // Remove from updating list on error
-      setUpdatingKeywords(prev => prev.filter(k => k !== addedKeyword));
-      if (updatingKeywords.length <= 1) {
-        setIsKeywordsUpdating(false);
-      }
-    }
-  };
-
-  const checkKeywordStatus = useCallback(async (keyword: string) => {
-    try {
-      const response = await apiClient.get(`/keyword/status?keyword=${encodeURIComponent(keyword)}`);
-      
-      if (response.data && response.data.success) {
-        const { status, timeAgo } = response.data.data;
-        
-        console.log(`Keyword status check (${pollCount}):`, {
-          keyword,
-          status,
-          timeAgo,
-        });
-        
-        setCrawlingStatus(status);
-        setCrawlingTimeAgo(timeAgo);
-        
-        if (status === "completed") {
-          console.log(`Keyword "${keyword}" crawling completed!`);
-          await refreshKeywordData(); // refreshKeywordData 호출
-          
-          const oldKeywords = Object.entries(changingKeywords)
-            .filter(([, newKw]) => newKw === keyword)
-            .map(([oldKw]) => oldKw);
-          
-          setUpdatingKeywords(prev => 
-            prev.filter(k => k !== keyword && !oldKeywords.includes(k))
-          );
-          
-          setChangingKeywords(prev => {
-            const newState = {...prev};
-            oldKeywords.forEach(oldKw => {
-              delete newState[oldKw];
-            });
-            return newState;
-          });
-          
-          setPollingKeyword(null);
-          setCrawlingStatus(null);
-          setCrawlingTimeAgo(null);
-          setPollCount(0);
-          
-          if (updatingKeywords.length <= 1) {
-            setIsKeywordsUpdating(false);
-          }
-          
-          toast.success(`"${keyword}" 키워드 데이터 수집이 완료되었습니다.`);
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error("Error checking keyword status:", error);
-      return false;
-    }
-  }, [pollCount, updatingKeywords, changingKeywords, refreshKeywordData]);
-    // Effect to poll keyword status
+  
+  // 별도의 useEffect로 폴링 키워드 관리
   useEffect(() => {
-    if (!pollingKeyword) return;
+    if (!pollingKeyword && (isKeywordsUpdating || updatingKeywords.length > 0)) {
+      setIsKeywordsUpdating(false);
+      setUpdatingKeywords([]);
+    }
+  }, [pollingKeyword]);
   
-    const pollInterval = setInterval(async () => {
-      setPollCount((prev) => prev + 1);
-  
-      const isComplete = await checkKeywordStatus(pollingKeyword);
-      if (isComplete) {
-        clearInterval(pollInterval);
-      }
-  
-      // Stop polling after 30 attempts (5 minutes)
-      if (pollCount >= 30) {
-        clearInterval(pollInterval);
+  // handlePollingComplete를 리팩토링
+  const handlePollingComplete = useCallback(() => {
+    // 폴링 완료시 처리 수정
+    const doRefresh = async () => {
+      try {
+        await refreshKeywordData();
+      } finally {
+        // 데이터 갱신 완료 여부와 상관없이 폴링 상태 초기화
         setPollingKeyword(null);
-        setCrawlingStatus(null);
-        setCrawlingTimeAgo(null);
-        setPollCount(0);
-        toast.error("키워드 데이터 수집이 완료되지 않았습니다. 나중에 다시 시도해주세요.");
       }
-    }, 10000); // Poll every 10 seconds
+    };
+    
+    // 비동기 작업 실행
+    doRefresh();
+  }, [refreshKeywordData]);
   
-    return () => clearInterval(pollInterval);
-  }, [pollingKeyword, pollCount, checkKeywordStatus]); // 누락된 checkKeywordStatus 추가
-  
-  // Updated handleChangeKeyword function
-  const handleChangeKeyword = async () => {
-    if (!editKeyword.trim() || editKeywordId === null) {
-      toast.error("키워드를 입력해주세요");
-      return;
-    }
-
-    const oldKeyword = selectedKeyword;
-    const changedKeyword = editKeyword.trim();
-    
-    // First close the dialog
-    setIsChangeDialogOpen(false);
-    
-    // Reset other UI states immediately
-    setEditKeyword("");
-    setEditKeywordId(null);
-    setIsComboboxOpen(false);
-    setIsChangeMode(false);
-    
-    // Keep track of the keyword that's being changed and what it's changing to
-    if (oldKeyword) {
-      setChangingKeywords(prev => ({
-        ...prev,
-        [oldKeyword]: changedKeyword
-      }));
-      
-      // Add the old keyword to updating keywords (because it's the one visible in UI)
-      setUpdatingKeywords(prev => 
-        prev.includes(oldKeyword) ? prev : [...prev, oldKeyword]
-      );
-    }
-    
-    setIsKeywordsUpdating(true);
-    
-    try {
-      await apiClient.post("/keyword/change-user-keyword", {
-        userId: user?.id,
-        placeId: activeBusiness?.place_id,
-        oldKeywordId: editKeywordId,
-        newKeyword: changedKeyword,
-      });
-
-      toast.success(`"${changedKeyword}" 키워드로 변경되었습니다. 데이터 수집 중...`);
-      
-      // Start polling for this keyword's status
-      setPollingKeyword(changedKeyword);
-      setCrawlingStatus("pending");
-      setPollCount(0);
-      
-      // Refresh data initially to show the updated keyword in the list
-      await refreshKeywordData();
-      
-      // Select a different keyword if possible
-      if (oldKeyword && userKeywords.length > 1) {
-        const alternativeKeyword = userKeywords.find(k => 
-          k !== oldKeyword && !updatingKeywords.includes(k)
-        );
-        if (alternativeKeyword) {
-          setSelectedKeyword(alternativeKeyword);
-        }
-      }
-    } catch (error) {
-      console.error("키워드 변경 중 오류 발생:", error);
-      toast.error("키워드 변경 중 오류가 발생했습니다");
-      
-      // Remove from tracking on error
-      if (oldKeyword) {
-        setChangingKeywords(prev => {
-          const newState = {...prev};
-          delete newState[oldKeyword];
-          return newState;
-        });
-        
-        setUpdatingKeywords(prev => prev.filter(k => k !== oldKeyword));
-      }
-      
-      if (updatingKeywords.length <= 1) {
-        setIsKeywordsUpdating(false);
-      }
-    }
-  };
+  // 수정된 useKeywordStatusPolling 호출
+  const { status: keywordStatus } = useKeywordStatusPolling(pollingKeyword, handlePollingComplete);
 
   const prepareToChangeKeyword = (keywordText: string, keywordId: number) => {
     // Debug log to verify the keywordId being passed
@@ -438,50 +290,6 @@ export default function Page(): JSX.Element {
   const keywordRankingsMap = useMemo<KeywordRankingsMap>(() => {
     if (!allKeywordRankingsData?.rankingDetails) return {};
     
-    // Move formatChartData inside useMemo to avoid dependency issues
-    function formatChartData(details: KeywordDetail[]): ChartDataPoint[] {
-      if (!details || details.length === 0) return [];
-      
-      const dateGroups: Record<string, KeywordDetail[]> = {};
-      details.forEach(item => {
-        if (!dateGroups[item.date_key]) {
-          dateGroups[item.date_key] = [];
-        }
-        dateGroups[item.date_key].push(item);
-      });
-  
-      const result = Object.keys(dateGroups)
-        .sort()
-        .map(date => {
-          const items = dateGroups[date];
-          const activePlaceItem = activeBusiness?.place_id ? items.find(
-            item => String(item.place_id) === String(activeBusiness.place_id)
-          ) : null;
-          
-          return {
-            date,
-            date_key: date, // Add date_key for KeywordHistoricalData compatibility
-            uv: activePlaceItem?.ranking ?? 0, // Add uv for KeywordHistoricalData compatibility
-            place_id: activePlaceItem?.place_id || null,
-            ranking: activePlaceItem?.ranking || null,
-            savedCount: activePlaceItem?.savedCount || 0,
-            blog_review_count: activePlaceItem?.blog_review_count || 0,
-            receipt_review_count: activePlaceItem?.receipt_review_count || 0,
-            keywordItems: activePlaceItem?.keywordList || [],
-            saved: activePlaceItem?.savedCount || 0,
-            blogReviews: activePlaceItem?.blog_review_count || 0,
-            receiptReviews: activePlaceItem?.receipt_review_count || 0,
-          };
-        });
-      
-      console.log('[Debug] formatChartData 결과:', {
-        itemCount: result.length,
-        sampleItem: result.length > 0 ? result[0] : null
-      });
-      
-      return result;
-    }
-  
     const allDetails: KeywordDetail[] = allKeywordRankingsData.rankingDetails.map(detail => {
       // 타입 호환성을 위해 디테일 객체를 잠시 타입 변환
       const detailAny = detail as unknown as { 
@@ -514,23 +322,24 @@ export default function Page(): JSX.Element {
         date_key: detailAny.date_key || '',
       };
     });
-  
+
     const result: KeywordRankingsMap = {};
+    const placeId = activeBusiness?.place_id;
+    
     userKeywords.forEach(keyword => {
       const keywordDetails = allDetails.filter(detail => detail.keyword === keyword);
-  
+
       if (keywordDetails.length > 0) {
-        const chartData = formatChartData(keywordDetails);
-  
+        const chartData = formatChartDataForKeywordMap(keywordDetails, placeId);
+
         result[keyword] = {
           rankingDetails: keywordDetails,
           chartData,
-          // Add empty rankingList to satisfy KeywordRankingData compatibility
           rankingList: allKeywordRankingsData.rankingList || []
         };
       }
     });
-  
+
     logger.info(`${Object.keys(result).length}개 키워드 데이터 매핑 완료`);
     return result;
   }, [allKeywordRankingsData, userKeywords, activeBusiness?.place_id]); // Add activeBusiness?.place_id as dependency since it's used in formatChartData
@@ -561,74 +370,71 @@ export default function Page(): JSX.Element {
       : '?';
   };
 
+  // 타임머신바의 최대값을 동적으로 설정하는 useEffect
   useEffect(() => {
-    if (selectedKeywordData?.chartData && selectedKeywordData.chartData.length > 0) {
-      const daysAgo = rangeValue;
-      if (daysAgo === 0) {
+    if (selectedKeyword && keywordRankingsMap[selectedKeyword]?.chartData) {
+      const keywordDataLength = keywordRankingsMap[selectedKeyword].chartData.length;
+      const dynamicMaxRange = Math.min(keywordDataLength - 1, 60);
+  
+      // setMaxRangeValue만 호출하되, 변경이 실제 필요할 때만
+      setMaxRangeValue(prev => (prev !== dynamicMaxRange ? dynamicMaxRange : prev));
+  
+      // rangeValue가 정말 초과될 때만 setRangeValue
+      if (rangeValue > dynamicMaxRange) {
+        setRangeValue(dynamicMaxRange);
+      }
+    } else {
+      if (maxRangeValue !== 0) setMaxRangeValue(0);
+      if (rangeValue !== 0) setRangeValue(0);
+      setHistoricalData(null);
+    }
+  }, [selectedKeyword, keywordRankingsMap, rangeValue, maxRangeValue]);
+  
+  // Second effect - handle historical data based on the selected range
+  useEffect(() => {
+    if (!selectedKeyword || !keywordRankingsMap[selectedKeyword]?.chartData) {
+      if (historicalData !== null) {
         setHistoricalData(null);
-        return;
       }
+      return;
+    }
   
-      const dataLength = selectedKeywordData.chartData.length;
-      const targetIndex = dataLength - 1 - daysAgo;
+    const keywordDataLength = keywordRankingsMap[selectedKeyword].chartData.length;
+    const daysAgo = rangeValue;
+    if (daysAgo === 0) {
+      if (historicalData !== null) setHistoricalData(null);
+      return;
+    }
+  
+    const targetIndex = keywordDataLength - 1 - daysAgo;
+    if (targetIndex >= 0) {
+      const dataPoint = keywordRankingsMap[selectedKeyword].chartData[targetIndex];
+      const newHistoricalData: KeywordHistoricalData = {
+        date: dataPoint.date,
+        ranking: dataPoint.ranking ?? 0,
+        uv: dataPoint.uv,
+        place_id: String(dataPoint.place_id || ''),
+        date_key: dataPoint.date_key,
+        blog_review_count: dataPoint.blog_review_count,
+        receipt_review_count: dataPoint.receipt_review_count
+      };
+  
+      // 🔑 변경 전후 동일성 비교
+      if (JSON.stringify(historicalData) !== JSON.stringify(newHistoricalData)) {
+        setHistoricalData(newHistoricalData);
+      }
+    } else {
+      if (historicalData !== null) setHistoricalData(null);
+    }
+  }, [selectedKeyword, keywordRankingsMap, rangeValue, historicalData]);
       
-      if (targetIndex >= 0) {
-        // Convert ChartDataPoint to KeywordHistoricalData
-        const dataPoint = selectedKeywordData.chartData[targetIndex];
-        const historicalDataPoint: KeywordHistoricalData = {
-          date: dataPoint.date,
-          ranking: dataPoint.ranking || 0,
-          uv: dataPoint.uv,
-          place_id: String(dataPoint.place_id || ''),
-          date_key: dataPoint.date_key,
-          blog_review_count: dataPoint.blog_review_count,
-          receipt_review_count: dataPoint.receipt_review_count
-        };
-        setHistoricalData(historicalDataPoint);
-      } else if (selectedKeywordData.chartData.length > 0) {
-        // Use the first data point as fallback
-        const dataPoint = selectedKeywordData.chartData[0];
-        const historicalDataPoint: KeywordHistoricalData = {
-          date: dataPoint.date,
-          ranking: dataPoint.ranking || 0,
-          uv: dataPoint.uv,
-          place_id: String(dataPoint.place_id || ''),
-          date_key: dataPoint.date_key,
-          blog_review_count: dataPoint.blog_review_count,
-          receipt_review_count: dataPoint.receipt_review_count
-        };
-        setHistoricalData(historicalDataPoint);
-      }
-    }
-  }, [rangeValue, selectedKeywordData]); // 누락된 selectedKeywordData 추가
-  
+  // 업체를 변경할 때 즉각 테이블과 차트가 새로운 업체의 데이터로 자동 리렌더링
   useEffect(() => {
-    if (openAccordionItem) {
-      const index = parseInt(openAccordionItem.replace("item-", ""));
-      if (!isNaN(index) && userKeywords[index]) {
-        setSelectedAccordionKeyword(userKeywords[index]);
-      }
-    } else {
-      setSelectedAccordionKeyword("");
-    }
-  }, [openAccordionItem, userKeywords]); // 누락된 userKeywords 추가
-  
-  // Effect to set default selectedKeyword
-  useEffect(() => {
-    if (userKeywords.length > 0 && !selectedKeyword) {
-      setSelectedKeyword(userKeywords[0]);
-    }
-  }, [userKeywords, selectedKeyword]); // 누락된 selectedKeyword 추가
-  
-  // Effect to update document title based on activeBusiness
-  useEffect(() => {
-    if (activeBusiness?.place_name) {
-      document.title = `${activeBusiness.place_name} - 키워드 순위`;
-    } else {
-      document.title = "키워드 순위";
-    }
-  }, [activeBusiness]); // 누락된 activeBusiness 추가
-  
+    setSelectedKeyword("");  // 선택된 키워드 초기화
+    setRangeValue(0);        // 슬라이더 값 초기화
+    setHistoricalData(null); // 차트 및 테이블 데이터 초기화
+  }, [activeBusiness?.place_id]);
+
   useEffect(() => {
     console.log("[Debug] MarketingKeywordsPage:", {
       keywordsLoading,
@@ -646,43 +452,18 @@ export default function Page(): JSX.Element {
     userKeywords,
     selectedKeyword,
   ]); // 누락된 selectedKeyword 추가
-  
-  // Effect to calculate maxRangeValue based on selectedKeyword
-  useEffect(() => {
-    if (selectedKeyword && keywordRankingsMap[selectedKeyword]?.chartData?.length > 0) {
-      const chartData = keywordRankingsMap[selectedKeyword].chartData;
-      const availableDays = chartData.length - 1; // Days available in data
-      const maxDays = Math.min(59, availableDays); // Cap at 59 (60 days including today)
 
-      if (maxDays !== maxRangeValue) {
-        setMaxRangeValue(maxDays);
-        // If current range value is greater than the new max, reset it
-        if (rangeValue > maxDays) {
-          setRangeValue(0);
-        }
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // 브라우저에서 사용 가능한 메모리 API 사용
+      if (typeof window !== 'undefined' && window.performance && (performance as any).memory) {
+        console.log('Memory usage:', (performance as any).memory);
+      } else {
+        console.log('Memory monitoring not available in this browser');
       }
-    } else {
-      setMaxRangeValue(59); // Default to 59 if no data
     }
-  }, [selectedKeyword, keywordRankingsMap, maxRangeValue, rangeValue]); // 누락된 maxRangeValue, rangeValue 추가
-
-  // Effect to auto-refresh data
-  useEffect(() => {
-    const autoRefreshInterval = setInterval(() => {
-      if (activeBusiness?.place_id && user?.id) {
-        queryClient.invalidateQueries({
-          queryKey: ["keywordRankingDetails", activeBusiness.place_id, user.id],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["userKeywords", user.id, activeBusiness.place_id],
-        });
-        console.log("Auto-refresh executed");
-      }
-    }, 5 * 60 * 1000); // Refresh every 5 minutes
-
-    return () => clearInterval(autoRefreshInterval);
-  }, [activeBusiness?.place_id, user?.id, queryClient]); // 누락된 queryClient 추가
-
+  }, []);
+  
   interface ComboboxWithPropsProps {
     options: string[];
     value: string;
@@ -747,13 +528,8 @@ export default function Page(): JSX.Element {
     });
   };
 
-  // Helper function to check if a keyword is being updated (accounting for changes)
   const isKeywordUpdating = (keyword: string) => {
-    // Check if the keyword is directly in the updating list
-    if (updatingKeywords.includes(keyword)) return true;
-    
-    // Check if any changing keyword matches this one
-    return Object.keys(changingKeywords).includes(keyword);
+    return updatingKeywords.includes(keyword);
   };
   const formatKeywordDataForTable = (data: KeywordDataGroup | null): KeywordRankingData | null => {
     if (!data) return null;
@@ -831,7 +607,6 @@ export default function Page(): JSX.Element {
           const keywordObject = findKeywordObject(keyword);
           const itemValue = `item-${index}`;
           const isUpdating = isKeywordUpdating(keyword);
-          const isChanging = keyword in changingKeywords;
 
           return (
             <AccordionItem 
@@ -845,13 +620,11 @@ export default function Page(): JSX.Element {
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs font-medium">
-                      {isChanging 
-                        ? `"${changingKeywords[keyword]}"(으)로 변경 중...` 
-                        : "데이터 수집 중..."}
+                      데이터 수집 중...
                     </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               <AccordionTrigger className="px-4">
                 <div className="grid grid-cols-3 items-center gap-4">
                   <div className="flex items-center gap-2">
@@ -960,7 +733,7 @@ export default function Page(): JSX.Element {
                     </span>
                     {updatingKeywords.length > 0 && (
                       <span className="text-xs text-blue-500">
-                        키워드 수집 중
+                        키워드 수집 중 {keywordStatus && `(상태: ${keywordStatus})`}
                       </span>
                     )}
                   </div>
@@ -1022,13 +795,16 @@ export default function Page(): JSX.Element {
               min={0}
               max={maxRangeValue}
               value={rangeValue}
-              className="range w-full"
               step={1}
+              onChange={(e) => {
+                const newValue = Number(e.target.value);
+                setRangeValue(newValue);
+              }}
               onMouseDown={() => setIsRangePressed(true)}
               onMouseUp={() => setIsRangePressed(false)}
               onTouchStart={() => setIsRangePressed(true)}
               onTouchEnd={() => setIsRangePressed(false)}
-              onChange={(e) => setRangeValue(Number(e.target.value))}
+              className="range w-full"
             />
 
             <div className="flex justify-between px-1 mt-0.5 text-xs">
@@ -1049,7 +825,15 @@ export default function Page(): JSX.Element {
         />
       </div>
 
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog 
+        open={isAddDialogOpen} 
+        onOpenChange={(open) => {
+          setIsAddDialogOpen(open);
+          if (!open) {
+            setNewKeyword(''); // Reset state when dialog is closed
+          }
+        }}
+      >
         <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>키워드 추가</DialogTitle>
@@ -1073,8 +857,16 @@ export default function Page(): JSX.Element {
               취소
             </Button>
             <Button 
-              onClick={handleAddKeyword}
-              disabled={isLoading}
+              onClick={() => {
+                if (!newKeyword.trim()) {
+                  toast.error('키워드를 입력해주세요.');
+                  return;
+                }
+                addKeyword(newKeyword);
+                setPollingKeyword(newKeyword);
+                setIsAddDialogOpen(false); // Close dialog after action
+              }}               
+              disabled={isAdding || isLoading}
             >
               추가
             </Button>
@@ -1082,7 +874,16 @@ export default function Page(): JSX.Element {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isChangeDialogOpen} onOpenChange={setIsChangeDialogOpen}>
+      <Dialog 
+        open={isChangeDialogOpen} 
+        onOpenChange={(open) => {
+          setIsChangeDialogOpen(open);
+          if (!open) {
+            setEditKeyword(''); // Reset state when dialog is closed
+            setEditKeywordId(null);
+          }
+        }}
+      >
         <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>키워드 변경</DialogTitle>
@@ -1103,8 +904,16 @@ export default function Page(): JSX.Element {
               취소
             </Button>
             <Button 
-              onClick={handleChangeKeyword}
-              disabled={isLoading}
+              onClick={() => {
+                if (editKeywordId === null || !editKeyword.trim()) {
+                  toast.error('변경할 키워드를 입력해주세요.');
+                  return;
+                }
+                changeKeyword({ keywordId: editKeywordId, newKeyword: editKeyword });
+                setPollingKeyword(editKeyword);
+                setIsChangeDialogOpen(false); // Close dialog after action
+              }} 
+              disabled={isChanging || isLoading}
             >
               변경
             </Button>

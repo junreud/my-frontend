@@ -198,6 +198,10 @@ function DropdownInner({
           key={biz.place_id || idx}
           className={`gap-2 p-2 ${activeBusiness?.place_id === biz.place_id ? 'bg-gray-100' : ''}`}
           onSelect={() => {
+            console.log('업체 선택됨:', {
+              name: biz.place_name,
+              id: biz.place_id
+            });
             onSelectBusiness(biz)
           }}
         >
@@ -262,6 +266,16 @@ export function BusinessSwitcher() {
     canAddMoreBusinesses,
     userRole,
   } = useBusinessSwitcher()
+  
+  // 컴포넌트가 마운트될 때와 activeBusiness가 변경될 때 로그 출력
+  React.useEffect(() => {
+    console.log('BusinessSwitcher 렌더링:', {
+      activeBusiness: activeBusiness?.place_name,
+      businessesCount: businesses?.length || 0,
+      isLoading,
+      isError
+    });
+  }, [activeBusiness, businesses, isLoading, isError]);
 
   return (
     <SidebarMenu>

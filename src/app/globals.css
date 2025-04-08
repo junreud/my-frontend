@@ -114,3 +114,28 @@ calendar-date td[data-in-range="true"] {
   background-color: #f3f4f6 !important;
 }
 
+/* Add these styles somewhere in your CSS file */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip:hover::after {
+  content: attr(data-tooltip-content);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  background-color: #333;
+  color: white;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 14px;
+  z-index: 10;
+  margin-bottom: 5px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+

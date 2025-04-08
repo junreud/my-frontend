@@ -13,6 +13,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
 }) => {
   const [visibleItems, setVisibleItems] = useState(100); // 처음에 100개 항목만 표시
   const loaderRef = useRef<HTMLDivElement>(null); // 로더 요소에 대한 참조
+  const [usingFallbackData, setUsingFallbackData] = useState(false); // 어제 데이터 사용 여부
 
   // 최신 날짜의 데이터만 필터링하고 최대 순위까지만 순위 생성
   const latestData = React.useMemo(() => {
@@ -33,54 +34,87 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
       {} as Record<string, KeywordRankingDetail[]>
     );
     
-    // 최신 날짜 찾기 (날짜 정렬 수정)
-    const latestDate = Object.keys(dateGroups).sort((a: string, b: string) => {
-      return new Date(b).getTime() - new Date(a).getTime(); // 최신 날짜가 첫 번째로 오도록 정렬
-    })[0]; // 가장 최신 날짜를 가져옴
-
-    // 디버깅: 최신 날짜와 해당 데이터 확인
-    console.log('최신 날짜:', latestDate);
-    console.log('해당 날짜의 데이터 개수:', dateGroups[latestDate]?.length || 0);
-
-    // 최신 날짜의 데이터
-    const latestDateData = dateGroups[latestDate]?.sort(
+    // 날짜를 기준으로 내림차순 정렬 (최신 날짜부터)
+    const sortedDates = Object.keys(dateGroups).sort((a: string, b: string) => {
+      return new Date(b).getTime() - new Date(a).getTime();
+    });
+    
+    // 최신 날짜(오늘)와 그 다음 최신 날짜(어제) 가져오기
+    const todayDate = sortedDates[0];
+    const yesterdayDate = sortedDates[1];
+    
+    console.log('오늘 날짜:', todayDate);
+    console.log('어제 날짜:', yesterdayDate);
+    
+    // 오늘과 어제 데이터 각각 정렬
+    const todayData = dateGroups[todayDate]?.sort(
       (a: KeywordRankingDetail, b: KeywordRankingDetail) => (a.ranking || 0) - (b.ranking || 0)
     ) || [];
     
-    // 실제 데이터에 있는 최대 랭킹 찾기 (300위 고정이 아니라 실제 데이터 기반)
-    const actualMaxRank = latestDateData.length > 0
-      ? Math.max(...latestDateData.map((item: KeywordRankingDetail) => item.ranking || 0))
+    const yesterdayData = dateGroups[yesterdayDate]?.sort(
+      (a: KeywordRankingDetail, b: KeywordRankingDetail) => (a.ranking || 0) - (b.ranking || 0)
+    ) || [];
+    
+    console.log('오늘 데이터 개수:', todayData.length);
+    console.log('어제 데이터 개수:', yesterdayData.length);
+    
+    // 데이터 불완전 여부 확인 (오늘 데이터가 어제보다 50개 이상 적으면 불완전으로 판단)
+    let isDataIncomplete = false;
+    let dataToUse = todayData;
+    let dateToUse = todayDate;
+    
+    if (yesterdayData.length > 0 && todayData.length < yesterdayData.length - 50) {
+      console.warn('데이터 불완전 감지: 오늘 데이터가 어제보다 50개 이상 적음', {
+        today: todayData.length,
+        yesterday: yesterdayData.length,
+        diff: yesterdayData.length - todayData.length
+      });
+      isDataIncomplete = true;
+      dataToUse = yesterdayData; // 어제 데이터 사용
+      dateToUse = yesterdayDate;
+      setUsingFallbackData(true); // 어제 데이터 사용 상태 설정
+    } else {
+      setUsingFallbackData(false);
+    }
+    
+    // 실제 데이터에 있는 최대 랭킹 찾기
+    const actualMaxRank = dataToUse.length > 0
+      ? Math.max(...dataToUse.map((item: KeywordRankingDetail) => item.ranking || 0))
       : 0;
     
     console.log('실제 최대 순위:', actualMaxRank);
     
-    // 실제 데이터에 있는 최대 랭킹까지만 배열 생성 (300위 고정이 아님)
+    // 실제 데이터에 있는 최대 랭킹까지만 배열 생성
     const rankingArray: number[] = actualMaxRank > 0
       ? Array.from({ length: actualMaxRank }, (_, i) => i + 1)
       : [];
     
-    // 최신 데이터의 순위 집합 생성
-    const rankingsInLatestData = new Set(latestDateData.map((item: KeywordRankingDetail) => item.ranking));
+    // 데이터의 순위 집합 생성
+    const rankingsInData = new Set(dataToUse.map((item: KeywordRankingDetail) => item.ranking));
     
     // 디버깅: 누락된 순위 확인
     const allRanks = new Set(rankingArray);
-    const missingRanks = [...allRanks].filter((r: number) => !rankingsInLatestData.has(r));
+    const missingRanks = [...allRanks].filter((r: number) => !rankingsInData.has(r));
     console.log('비어있는 순위 개수:', missingRanks.length);
     console.log('비어있는 순위 샘플:', missingRanks.slice(0, 10));
 
     // 각 순위에 데이터 매핑
     return rankingArray.map((rank: number) => {
       // 현재 순위에 데이터가 있는지 확인
-      const todayDataForRank = latestDateData.find(
+      const dataForRank = dataToUse.find(
         (item: KeywordRankingDetail) => item.ranking === rank
       );
 
       // 순위에 데이터가 없는 경우
-      if (!todayDataForRank) {
+      if (!dataForRank) {
         return { 
+          id: `empty-${rank}`, // 누락된 필수 속성 추가
+          keyword_id: 0,       // 누락된 필수 속성 추가
+          keyword: selectedKeyword || '', // 누락된 필수 속성 추가
+          crawled_at: new Date().toISOString(), // 누락된 필수 속성 추가
           ranking: rank,
           place_id: `empty-${rank}`,
-          date_key: latestDate,
+          date_key: dateToUse,
           place_name: '',
           category: '',
           blog_review_count: null,
@@ -90,28 +124,37 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
         } as KeywordRankingDetail;
       }
 
-      // 같은 place_id를 가진 과거 데이터 모두 찾기
-      const pastDataItems = keywordData.rankingDetails.filter((item: KeywordRankingDetail) => 
-        item.place_id === todayDataForRank.place_id && 
-        item.date_key !== latestDate
-      ).sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => new Date(b.date_key).getTime() - new Date(a.date_key).getTime()); // 최신순 정렬
+      // 같은 place_id를 가진 과거 데이터 찾기
+      // 만약 어제 데이터를 사용 중이라면, 오늘 데이터에서 비교 데이터 찾기
+      let comparisonData = null;
+      if (isDataIncomplete) {
+        comparisonData = todayData.find((item: KeywordRankingDetail) => 
+          item.place_id === dataForRank.place_id
+        );
+      } else {
+        // 오늘 데이터를 사용 중이라면, 과거 데이터에서 비교 데이터 찾기
+        comparisonData = keywordData.rankingDetails.filter((item: KeywordRankingDetail) => 
+          item.place_id === dataForRank.place_id && 
+          item.date_key !== todayDate
+        ).sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => 
+          new Date(b.date_key).getTime() - new Date(a.date_key).getTime()
+        )[0] || null;
+      }
 
-      // 최신 과거 데이터를 fallback으로 사용
-      const recentPastData = pastDataItems[0] || null;
-
-      // 오늘 basic + 어제 detail 데이터 조합
+      // 데이터 조합
       return {
-        ...todayDataForRank,
-        blog_review_count: todayDataForRank.blog_review_count ?? recentPastData?.blog_review_count ?? null,
-        receipt_review_count: todayDataForRank.receipt_review_count ?? recentPastData?.receipt_review_count ?? null,
-        savedCount: todayDataForRank.savedCount ?? recentPastData?.savedCount ?? null,
+        ...dataForRank,
+        blog_review_count: dataForRank.blog_review_count ?? comparisonData?.blog_review_count ?? null,
+        receipt_review_count: dataForRank.receipt_review_count ?? comparisonData?.receipt_review_count ?? null,
+        savedCount: dataForRank.savedCount ?? comparisonData?.savedCount ?? null,
       };
     });
-  }, [keywordData]);
-
+  }, [keywordData, selectedKeyword]); // ✅ selectedKeyword 추가
+  
   // 디버깅: 데이터 로드 후 로그 추가
   useEffect(() => {
     console.log('최신 데이터 총 개수:', latestData.length);
+    console.log('어제 데이터 사용 여부:', usingFallbackData);
     
     const emptyRows = latestData.filter((item: KeywordRankingDetail) => 
       typeof item.place_id === 'string' && item.place_id.startsWith('empty-')
@@ -139,7 +182,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
     }
     
     console.log('빈 구간:', emptyRanges);
-  }, [latestData]);
+  }, [latestData, usingFallbackData]);
 
   // Intersection Observer 설정 (스크롤 감지용)
   useEffect(() => {
@@ -172,9 +215,10 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
       isError,
       selectedKeyword,
       rangeValue,
-      rowCount: latestData.length
+      rowCount: latestData.length,
+      usingFallbackData
     });
-  }, [isLoading, isError, selectedKeyword, rangeValue, latestData]);
+  }, [isLoading, isError, selectedKeyword, rangeValue, latestData, usingFallbackData]);
 
   useEffect(() => {
     console.log('[Debug] KeywordRankingTable:', {
@@ -202,10 +246,21 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
       ) : (
         <div className="table-container">
           <div className="mb-2 text-sm font-medium text-gray-700">
-            {rangeValue === 0 ? '오늘 기준 순위' : `오늘과 ${rangeValue}일 전 순위 비교`}
+            {rangeValue === 0 ? (
+              <>
+                {usingFallbackData ? '어제 기준 순위 (오늘 데이터 불완전)' : '오늘 기준 순위'}
+              </>
+            ) : (
+              `오늘과 ${rangeValue}일 전 순위 비교`
+            )}
             <span className="ml-2 text-xs text-gray-500">
               (총 {latestData.length}개 업체)
             </span>
+            {usingFallbackData && (
+              <span className="ml-2 px-2 py-0.5 text-xs text-red-600 bg-red-50 rounded-full">
+                오늘 데이터 크롤링 문제로 어제 데이터를 표시합니다
+              </span>
+            )}
           </div>
           <table className="table table-xs w-full table-fixed">
             <thead className="sticky top-0 bg-white z-10">
@@ -305,7 +360,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                           <NumberChangeIndicator 
                             current={item.receipt_review_count} 
                             past={pastData?.receipt_review_count}
-                            formatter={(val: number | null | undefined) => {
+                            formatter={(val: number | null | undefined): string => {
                               if (val === null || val === undefined) return '';
                               return val.toString(); // 리뷰 변화량 숫자 표시
                             }}
@@ -317,13 +372,13 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                     <td className="w-[12%]">
                       {isEmpty ? '-' : (
                         <div className="flex items-center">
-                          <span className="min-w-[24px] text-center">{item.savedCount ?? '-'}</span>
+                          <span className="min-w-[24px] text-center">{item.savedCount === null || item.savedCount === undefined ? '-' : item.savedCount}</span>
                           <NumberChangeIndicator 
                             current={item.savedCount} 
                             past={pastData?.savedCount}
-                            formatter={(val: number | null | undefined) => {
+                            formatter={(val: number | null | undefined): string => {
                               if (val === null || val === undefined) return '';
-                              return val.toString(); // 저장수 변화량 숫자 표시
+                              return val.toString(); // 리뷰 변화량 숫자 표시
                             }}
                             hideWhenNoChange={true} // 변화 없을 때 표시 안함
                           />

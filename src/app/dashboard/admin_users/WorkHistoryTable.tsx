@@ -55,8 +55,7 @@ interface UserWithPlaces {
   email: string;
   phone: string;
   place_names: string[];
-  place_ids: string[]; // Added place_ids to store actual place IDs
-  place_count: number;
+  place_ids: string[]; 
 }
 
 // Native JS date formatter
@@ -150,25 +149,59 @@ const WorkTable: React.FC<WorkTableProps> = ({
       alert("유저, 작업 종류, 실행사는 필수 입력 항목입니다.");
       return;
     }
-
+  
+    // 상세 로깅 추가
+    logger.debug('Submit data:', {
+      userId,
+      workType,
+      executor,
+      selectedUserDetails,
+      hasPlaceIds: selectedUserDetails?.place_ids?.length > 0
+    });
+  
+  // place_id 관련 방어적 코딩 개선
+  if (!selectedUserDetails) {
+    alert("선택된 사용자 정보를 찾을 수 없습니다.");
+    return;
+  }
+  
+  // place_ids와 place_names 모두 확인하는 개선된 체크
+  const hasPlaceIds = selectedUserDetails.place_ids && selectedUserDetails.place_ids.length > 0;
+  const hasPlaceNames = selectedUserDetails.place_names && selectedUserDetails.place_names.length > 0;
+  
+  if (!hasPlaceIds && !hasPlaceNames) {
+    alert("선택된 사용자에게 등록된 업체 정보가 없습니다. 먼저 업체를 등록해주세요.");
+    return;
+  }
+  
+  // place_ids가 없고 place_names만 있는 경우 임시 ID 생성
+  let selectedPlaceId;
+  if (!hasPlaceIds && hasPlaceNames) {
+    // 임시 ID 생성
+    selectedPlaceId = `temp_id_${Date.now()}`;
+    logger.warn('Using temporary place_id due to missing data', {
+      user: selectedUserDetails.name,
+      place_name: selectedUserDetails.place_names[0]
+    });
+  } else {
+    selectedPlaceId = selectedUserDetails.place_ids[0];
+  }
     setIsSaving(true);
     setSaveSuccess(false);
-
+  
     try {
       // Format dates using native JS
       const formatDate = (date: Date | undefined) => {
         if (!date) return null;
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       };
-
-      // Use the actual place_id instead of the place name
-      const selectedPlaceId = selectedUserDetails?.place_ids?.[0] || "";
-
+  
+      // Keep place_id as string (don't convert to number)
       const payload = {
         user_id: parseInt(userId[0]),
-        place_id: selectedPlaceId, // Updated to use place_id
-        work_type: workType, // Changed from array join to single string
-        executor: executor, // Changed from array join to single string
+        place_id: selectedPlaceId,
+        work_type: workType,
+        executor: executor,
         contract_keyword: contractKeyword || null,
         work_keyword: workKeyword || null,
         char_count: charCount || null,
@@ -178,12 +211,19 @@ const WorkTable: React.FC<WorkTableProps> = ({
         user_end_date: userDateRange?.to ? formatDate(userDateRange.to) : null,
         company_characteristics: null,
       };
-
-      // Log the payload to verify data format
+  
+      // Validate work_type
+      const validWorkTypes = ["트래픽", "저장하기", "블로그배포"];
+      if (!validWorkTypes.includes(payload.work_type)) {
+        alert(`작업 종류는 '트래픽', '저장하기', '블로그배포' 중 하나여야 합니다. 현재 값: ${payload.work_type}`);
+        setIsSaving(false);
+        return;
+      }
+  
       logger.info('Submitting work history data:', payload);
-
+  
       const response = await apiClient.post("/api/admin/work-histories", payload);
-
+  
       if (response.data.success) {
         logger.info('Work history added successfully:', response.data);
         setSaveSuccess(true);
@@ -249,7 +289,13 @@ const WorkTable: React.FC<WorkTableProps> = ({
       try {
         const res = await apiClient.get('/api/admin/users-with-places');
         if (res.data.success) {
-          return res.data.data;
+          // API 응답 데이터 정규화 - place_ids가 null이거나 undefined인 경우 빈 배열로 설정
+          const normalizedData = res.data.data.map(user => ({
+            ...user,
+            place_ids: user.place_ids || [],
+            place_names: user.place_names || []
+          }));
+          return normalizedData;
         } else {
           throw new Error(res.data.message || '사용자 정보를 불러오는데 실패했습니다');
         }
@@ -264,17 +310,71 @@ const WorkTable: React.FC<WorkTableProps> = ({
   const userOptions = React.useMemo(() => {
     if (!users || !Array.isArray(users)) return [];
     return users.map(user => {
-      const primaryPlace = user.place_names.length > 0 ? user.place_names[0] : '업체 미등록';
-      const additionalPlaces = user.place_names.length > 1 
+      const hasPlaceNames = user.place_names && user.place_names.length > 0;
+      const primaryPlace = hasPlaceNames ? user.place_names[0] : '업체 미등록';
+      const additionalPlaces = hasPlaceNames && user.place_names.length > 1 
         ? ` 외 ${user.place_names.length - 1}곳` 
         : '';
       return {
         value: user.user_id.toString(),
-        label: `${user.name} (${primaryPlace}${additionalPlaces}) ${user.phone}`,
-        userData: user
+        label: `${user.name} (${user.email}) - ${primaryPlace}${additionalPlaces}`,
+        userData: {
+          ...user,
+          place_ids: user.place_ids || [],
+          place_names: user.place_names || []
+        }
       };
     });
   }, [users]);
+
+  // 사용자 선택이 변경될 때 selectedUserDetails 업데이트하는 useEffect 추가
+// 사용자 선택이 변경될 때 selectedUserDetails 업데이트하는 useEffect 수정
+useEffect(() => {
+  if (userId.length > 0 && users) {
+    // users 배열에서 선택된 사용자 ID와 일치하는 사용자 정보 찾기
+    const userDetail = users.find(user => user.user_id.toString() === userId[0]);
+    if (userDetail) {
+      // place_ids가 없는 경우 빈 배열로 초기화하여 TypeScript 오류 방지
+      const normalizedUserDetail = {
+        ...userDetail,
+        place_ids: userDetail.place_ids || [],
+        place_names: userDetail.place_names || []
+      };
+      
+      // 사용자 정보가 있으면 상세정보 업데이트
+      setSelectedUserDetails(normalizedUserDetail);
+      
+      // 업체 정보 확인 로직 수정: place_ids와 place_names 모두 확인
+      const hasPlaceIds = normalizedUserDetail.place_ids && normalizedUserDetail.place_ids.length > 0;
+      const hasPlaceNames = normalizedUserDetail.place_names && normalizedUserDetail.place_names.length > 0;
+      
+      // place_ids만 없고 place_names는 있는 경우 - 데이터 불일치 가능성
+      if (!hasPlaceIds && hasPlaceNames) {
+        logger.warn('Data inconsistency: User has place_names but no place_ids', {
+          user: normalizedUserDetail.name,
+          place_names: normalizedUserDetail.place_names
+        });
+        
+        // place_names를 기반으로 place_ids를 생성하여 불일치 해결
+        // 이상적으로는 백엔드에서 해결해야 하는 문제지만 임시 해결책
+        normalizedUserDetail.place_ids = Array.from({length: normalizedUserDetail.place_names.length}, 
+          (_, i) => `temp_id_${i}`);
+        
+        setSelectedUserDetails(normalizedUserDetail);
+      }
+      
+      // 실제로 업체 정보가 없는 경우만 경고 표시 (place_ids와 place_names 모두 확인)
+      if (!hasPlaceIds && !hasPlaceNames) {
+        logger.warn('Selected user has no place information', userDetail);
+        alert("선택한 사용자에게 등록된 업체 정보가 없습니다. 업체 등록 후 작업을 생성할 수 있습니다.");
+      }
+    } else {
+      setSelectedUserDetails(null);
+    }
+  } else {
+    setSelectedUserDetails(null);
+  }
+}, [userId, users]);
 
   const [selectedUserDetails, setSelectedUserDetails] = useState<UserWithPlaces | null>(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
@@ -304,10 +404,10 @@ const WorkTable: React.FC<WorkTableProps> = ({
                 <div className="flex justify-between items-center mb-1">
                   {/* 업체명 우선 표시 */}
                   <span className="font-medium">
-                    {selectedUserDetails.place_names.length > 0 
+                    {selectedUserDetails.place_names && selectedUserDetails.place_names.length > 0 
                       ? selectedUserDetails.place_names[0] 
                       : '업체 미등록'} 
-                    {selectedUserDetails.place_names.length > 1 && 
+                    {selectedUserDetails.place_names && selectedUserDetails.place_names.length > 1 && 
                       <span className="text-xs text-gray-500">외 {selectedUserDetails.place_names.length - 1}곳</span>
                     }
                   </span>
@@ -328,7 +428,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
                     </div>
                     <div className="mt-1">
                       <span className="text-xs text-gray-500 mr-1">등록 업체:</span>
-                      {selectedUserDetails.place_names.length > 0 ? (
+                      {selectedUserDetails.place_names && selectedUserDetails.place_names.length > 0 ? (
                         <div className="flex flex-wrap gap-1 mt-1">
                           {selectedUserDetails.place_names.map((place, idx) => (
                             <Badge key={idx} variant="outline" className="text-xs">
@@ -337,7 +437,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400">등록된 업체가 없습니다</span>
+                        <span className="text-xs text-red-400 font-medium">등록된 업체가 없습니다 (작업 등록을 위해서는 업체 등록이 필요합니다)</span>
                       )}
                     </div>
                   </>
@@ -511,8 +611,65 @@ const WorkTable: React.FC<WorkTableProps> = ({
     // Get today's date for the modifier
     const today = new Date();
     
+    // Function to calculate days ago
+    const getDaysAgo = (date: Date | undefined) => {
+      if (!date) return "";
+      const diff = Math.floor((today.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+      if (diff === 0) return "오늘";
+      if (diff < 0) return `${Math.abs(diff)}일 후`;
+      return `${diff}일 전`;
+    };
+    
+    // Custom day rendering function to show days ago
+    const renderDay = (day: Date) => {
+      // const isSelected = tempRange?.from && tempRange?.to && 
+      //                   day >= tempRange.from && 
+      //                   day <= tempRange.to;
+                        
+      const isStart = tempRange?.from && 
+                     day.getDate() === tempRange.from.getDate() && 
+                     day.getMonth() === tempRange.from.getMonth() && 
+                     day.getFullYear() === tempRange.from.getFullYear();
+                     
+      const isEnd = tempRange?.to && 
+                   day.getDate() === tempRange.to.getDate() && 
+                   day.getMonth() === tempRange.to.getMonth() && 
+                   day.getFullYear() === tempRange.to.getFullYear();
+      
+      // Only show label for the start and end dates
+      const shouldShowLabel = isStart || isEnd;
+      
+      return (
+        <div className="relative">
+          <div>{day.getDate()}</div>
+          {shouldShowLabel && (
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-blue-600 font-medium whitespace-nowrap">
+              {getDaysAgo(day)}
+            </div>
+          )}
+        </div>
+      );
+    };
+    
+    // Custom styles for the day picker to make room for labels
+    const customStyles = `
+      .rdp-day {
+        height: 40px;  /* Add more height to accommodate the label */
+      }
+      .rdp-day_selected {
+        position: relative;
+      }
+      .rdp-tbody {
+        position: relative;
+      }
+      .rdp-table {
+        margin-bottom: 8px; /* Add more bottom margin for the labels */
+      }
+    `;
+    
     return (
       <div>
+        <style>{customStyles}</style>
         <div className="rdp-range">
           <DayPicker
             mode="range"
@@ -523,12 +680,19 @@ const WorkTable: React.FC<WorkTableProps> = ({
             modifiers={{ today: today }}
             modifiersStyles={{
               today: {
-                backgroundColor: '#edf2f7', // Light blue background
-                color: '#2563eb', // Blue text color
+                backgroundColor: '#edf2f7',
+                color: '#2563eb',
                 fontWeight: 'bold',
                 borderRadius: '50%',
-                border: '2px solid #2563eb', // Blue border
+                border: '2px solid #2563eb',
               }
+            }}
+            components={{
+              Day: ({ date, ...props }) => (
+                <button {...props}>
+                  {renderDay(date)}
+                </button>
+              )
             }}
           />
         </div>
@@ -550,8 +714,38 @@ const WorkTable: React.FC<WorkTableProps> = ({
     );
   };
 
+  const tooltipStyles = `
+  .tooltip {
+    position: relative;
+    display: inline-block;
+  }
+  .tooltip:before {
+    content: attr(data-tip);
+    position: absolute;
+    background-color: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    max-width: 300px;
+    white-space: pre-wrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+  }
+  .tooltip:hover:before {
+    opacity: 1;
+    visibility: visible;
+  }
+`;
+
   return (
     <div className="overflow-x-auto relative">
+      <style>{tooltipStyles}</style>
       <div className="mb-2 flex justify-between items-center">
         <span className="text-sm font-medium text-gray-700">
           {workHistories.length > 0 
@@ -639,6 +833,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
 
                 <div className="grid gap-4 py-4 bg-white">
                   {renderUserIdField()}
+                  
                   {/* 작업 종류 */}
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="work-type" className="text-right">
@@ -654,8 +849,8 @@ const WorkTable: React.FC<WorkTableProps> = ({
                         selected={workType}
                         onChange={setWorkType}
                         placeholder="작업 종류 선택"
-                        position="right" // Add position prop to open to the right
-                        multiSelect={false} // Add this to make it single-select
+                        position="right"
+                        multiSelect={false}
                       />
                     </div>
                   </div>
@@ -674,13 +869,13 @@ const WorkTable: React.FC<WorkTableProps> = ({
                         selected={executor}
                         onChange={setExecutor}
                         placeholder="실행사 선택"
-                        position="right" // Add position prop to open to the right
-                        multiSelect={false} // Add this to make it single-select
+                        position="right"
+                        multiSelect={false}
                       />
                     </div>
                   </div>
 
-                  {/* 계약 키워드 */}
+                  {/* 계약 키워드 - Fixed the div structure */}
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="contract-keyword" className="text-right">
                       계약 키워드
@@ -834,89 +1029,104 @@ const WorkTable: React.FC<WorkTableProps> = ({
                   />
                 </th>
               )}
-              <th className="p-2 font-medium">ID</th>
-              <th className="p-2 font-medium">유저 ID</th>
-              <th className="p-2 font-medium">업체 ID</th>
+              <th className="p-2 font-medium">No.</th>
+              <th className="p-2 font-medium">업체명</th>
+              <th className="p-2 font-medium">유저</th>
               <th className="p-2 font-medium">작업 종류</th>
               <th className="p-2 font-medium">실행사</th>
               <th className="p-2 font-medium">계약 키워드</th>
               <th className="p-2 font-medium">작업 키워드</th>
               <th className="p-2 font-medium">타수</th>
-              <th className="p-2 font-medium">실제 시작일</th>
-              <th className="p-2 font-medium">실제 종료일</th>
-              <th className="p-2 font-medium">유저 시작일</th>
-              <th className="p-2 font-medium">유저 종료일</th>
-              <th className="p-2 font-medium">업체 특징</th>
+              <th className="p-2 font-medium">실제 작업기간</th>
+              <th className="p-2 font-medium">유저 작업기간</th>
               {!isExportMode && <th className="p-2 font-medium w-16">관리</th>}
             </tr>
           </thead>
           <tbody className={`${(isLoading || workHistories.length === 0) ? 'opacity-30' : ''}`}>
-            {visibleData.map((item) => (
-              <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-50">
-                {isExportMode && (
+            {visibleData.map((item, index) => {
+              const userInfo = users?.find(u => u.user_id === item.user_id);
+              const tooltipContent = userInfo ? 
+                `이름: ${userInfo.name}\n이메일: ${userInfo.email}\n업체: ${
+                  userInfo.place_names && userInfo.place_names.length > 0 
+                    ? userInfo.place_names.join(', ') 
+                    : '업체 미등록'
+                }` : '사용자 정보 없음';
+
+              return (
+                <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-50">
+                  {isExportMode && (
+                    <td className="p-2">
+                      <Checkbox 
+                        checked={selectedRows.includes(item.id)}
+                        onCheckedChange={() => toggleRowSelection(item.id)}
+                      />
+                    </td>
+                  )}
+                  <td className="p-2">{index + 1}</td>
+                  <td className="p-2">{userInfo?.place_names?.[0] || '-'}</td>
                   <td className="p-2">
-                    <Checkbox 
-                      checked={selectedRows.includes(item.id)}
-                      onCheckedChange={() => toggleRowSelection(item.id)}
-                    />
+                    <div className="tooltip" data-tip={tooltipContent}>
+                      <span className="cursor-help border-dotted border-b border-gray-500">
+                        {userInfo?.name || `User ${item.user_id}`}
+                      </span>
+                    </div>
                   </td>
-                )}
-                <td className="p-2">{item.id}</td>
-                <td className="p-2">{item.user_id}</td>
-                <td className="p-2">{item.place_id}</td>
-                <td className="p-2">{item.work_type}</td>
-                <td className="p-2">{item.executor}</td>
-                <td className="p-2">{item.contract_keyword || '-'}</td>
-                <td className="p-2">{item.work_keyword || '-'}</td>
-                <td className="p-2">{item.char_count || '-'}</td>
-                <td className="p-2">{formatDateString(item.actual_start_date)}</td>
-                <td className="p-2">{formatDateString(item.actual_end_date)}</td>
-                <td className="p-2">{formatDateString(item.user_start_date)}</td>
-                <td className="p-2">{formatDateString(item.user_end_date)}</td>
-                <td className="p-2 max-w-xs truncate">{item.company_characteristics || '-'}</td>
-                {!isExportMode && (
+                  <td className="p-2">{item.work_type}</td>
+                  <td className="p-2">{item.executor}</td>
+                  <td className="p-2">{item.contract_keyword || '-'}</td>
+                  <td className="p-2">{item.work_keyword || '-'}</td>
+                  <td className="p-2">{item.char_count || '-'}</td>
                   <td className="p-2">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600"
-                          onClick={() => setDeleteWorkId(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>작업 이력 삭제</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            선택한 작업 이력을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>취소</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteWork(item.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                            disabled={isDeleting}
+                    {item.actual_start_date && `${formatDateString(item.actual_start_date)} ~ ${formatDateString(item.actual_end_date)}`}
+                  </td>
+                  <td className="p-2">
+                    {item.user_start_date && `${formatDateString(item.user_start_date)} ~ ${formatDateString(item.user_end_date)}`}
+                  </td>
+                  {!isExportMode && (
+                    <td className="p-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600"
+                            onClick={() => setDeleteWorkId(item.id)}
                           >
-                            {isDeleting && deleteWorkId === item.id ? (
-                              <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                삭제 중...
-                              </>
-                            ) : (
-                              "삭제"
-                            )}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </td>
-                )}
-              </tr>
-            ))}
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className='bg-white'>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>작업 이력 삭제</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              선택한 작업 이력을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>취소</AlertDialogCancel>
+                            {/* Fixed the AlertDialogAction structure */}
+                            <AlertDialogAction
+                              onClick={() => handleDeleteWork(item.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white"
+                              disabled={isDeleting}
+                            >
+                              {isDeleting && deleteWorkId === item.id ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  삭제 중...
+                                </>
+                              ) : (
+                                "삭제"
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 

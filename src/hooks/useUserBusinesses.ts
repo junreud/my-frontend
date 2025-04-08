@@ -1,8 +1,10 @@
 // hooks/useUserBusinesses.ts
-import { useQuery } from "@tanstack/react-query"
-import { useEffect, useState } from "react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useEffect, useState, useCallback } from "react"
 import apiClient from "@/lib/apiClient"
 import { Business } from "@/types"
+import { useUser } from "@/hooks/useUser" // Import useUser hook
+
 
 // Business limits by role
 const BUSINESS_LIMITS = {
@@ -12,21 +14,31 @@ const BUSINESS_LIMITS = {
 } as const;
 
 export function useUserBusinesses(userId: string | undefined) {
-  const [activeBusiness, setActiveBusiness] = useState<Business | null>(null)
+  const [activeBusiness, setActiveBusinessState] = useState<Business | null>(null)
   const [userRole, setUserRole] = useState<string>("user") // Default to 'user' role
+  
+  // Use the useUser hook instead of direct API call
+  const { data: userData } = useUser();
 
-  // Get user role
+  // Load active business from localStorage on mount
   useEffect(() => {
-    if (userId) {
-      apiClient.get<{ role: string }>("/api/user/me")
-        .then(response => {
-          setUserRole(response.data.role);
-        })
-        .catch(error => {
-          console.error("Failed to fetch user role:", error);
-        });
+    try {
+      const storedBusiness = localStorage.getItem('activeBusiness');
+      if (storedBusiness) {
+        const parsed = JSON.parse(storedBusiness);
+        setActiveBusinessState(parsed);
+      }
+    } catch (error) {
+      console.error("Failed to restore active business from localStorage:", error);
     }
-  }, [userId]);
+  }, []);
+
+  // Get user role from useUser hook
+  useEffect(() => {
+    if (userData?.role) {
+      setUserRole(userData.role);
+    }
+  }, [userData]);
 
   const {
     data: businesses,
@@ -101,12 +113,68 @@ export function useUserBusinesses(userId: string | undefined) {
     return Math.max(0, limit - businesses.length);
   };
 
-  // 첫 로드 시 첫 번째 비즈니스를 active로 설정
-  useEffect(() => {
-    if (businesses?.length && !activeBusiness) {
-      setActiveBusiness(businesses[0])
+  // Updated setActiveBusiness function
+  const queryClient = useQueryClient();
+  
+  const setActiveBusiness = useCallback(async (business: Business | null) => {
+    // 1. 동일한 business면 아무것도 안함 - 현재 구현과 동일
+    if (activeBusiness?.place_id === business?.place_id) {
+      return; // 같은 비즈니스면 아무 작업도 하지 않음
     }
-  }, [businesses, activeBusiness])
+    
+    // 2. 상태 업데이트와 localStorage 저장
+    setActiveBusinessState(business);
+    
+    if (business) {
+      localStorage.setItem('activeBusiness', JSON.stringify(business));
+    } else {
+      localStorage.removeItem('activeBusiness');
+    }
+    
+    // 3. 상태 업데이트 후 별도 실행으로 무한 루프 방지
+    if (business && userId) {
+      // 상태 업데이트 로직과 쿼리 무효화를 분리하기 위해 setTimeout 사용
+      setTimeout(() => {
+        const placeIdStr = String(business.place_id);
+        const userIdStr = String(userId);
+        
+        queryClient.invalidateQueries({
+          queryKey: ['keywordRankingDetails', placeIdStr, userIdStr],
+        });
+        
+        queryClient.invalidateQueries({
+          queryKey: ['userKeywords', userIdStr, placeIdStr],
+        });
+      }, 0);
+    }
+  }, [queryClient, userId, activeBusiness?.place_id]);
+
+  useEffect(() => {
+    // 이미 activeBusiness가 설정되어 있으면 작업 중지
+    if (activeBusiness || !businesses?.length) return;
+    
+    const storedBusinessId = localStorage.getItem('activeBusiness');
+    if (storedBusinessId) {
+      try {
+        const parsed = JSON.parse(storedBusinessId);
+        const matchedBusiness = businesses.find((b) => 
+          String(b.place_id) === String(parsed.place_id)
+        );
+  
+        if (matchedBusiness) {
+          setActiveBusinessState(matchedBusiness); // 직접 상태 설정으로 변경
+          return;
+        }
+      } catch (e) {
+        console.error("저장된 업체 정보 처리 오류:", e);
+      }
+    }
+  
+    // localStorage에 맞는게 없으면 기본 첫번째 업체로 설정
+    setActiveBusinessState(businesses[0]); // 직접 상태 설정으로 변경
+    localStorage.setItem('activeBusiness', JSON.stringify(businesses[0]));
+    
+  }, [businesses, activeBusiness, setActiveBusiness]); // 누락된 의존성 추가
 
   return {
     businesses,
