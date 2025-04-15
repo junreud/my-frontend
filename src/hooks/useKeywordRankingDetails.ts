@@ -1,4 +1,3 @@
-// useKeywordRankingDetails.ts
 import { useQuery } from '@tanstack/react-query';
 import { KeywordRankingDetail, KeywordRankData } from '@/types';
 import apiClient from '@/lib/apiClient';
@@ -12,8 +11,6 @@ interface UseKeywordRankingDetailsProps {
   activeBusinessId?: number | string; // activeBusinessId로 변경 (필수!)
   keyword?: string;
   userId?: number | string;
-  queryKey?: string[];
-  enabled?: boolean;
 }
 
 interface TransformedKeywordData {
@@ -39,7 +36,8 @@ export function useKeywordRankingDetails({
     queryKey: [
       'keywordRankingDetails', 
       activeBusinessId ? String(activeBusinessId) : 'no-business', 
-      userId ? String(userId) : 'no-user'
+      userId ? String(userId) : 'no-user',
+      keyword || 'no-keyword'
     ],
     enabled: Boolean(activeBusinessId) && Boolean(userId),
     queryFn: async () => {
@@ -49,7 +47,7 @@ export function useKeywordRankingDetails({
       }
 
       const response = await apiClient.get(
-        `/api/keyword-ranking-details?placeId=${activeBusinessId}&userId=${userId}`
+        `/api/keyword-ranking-details?placeId=${activeBusinessId}&userId=${userId}${keyword ? `&keyword=${encodeURIComponent(keyword)}` : ''}`
       );
 
       const actualData = response.data?.data || response.data;
@@ -72,20 +70,7 @@ export function useKeywordRankingDetails({
         };
       }
 
-      const filteredData = keyword
-        ? data.filter(item => item.keyword === keyword)
-        : data;
-
-      if (!filteredData.length) {
-        return {
-          rankingDetails: [],
-          chartData: [],
-          currentRanking: null,
-          rankingList: []
-        };
-      }
-
-      const rankingList: KeywordRankData[] = filteredData.map(item => ({
+      const rankingList: KeywordRankData[] = data.map(item => ({
         id: Number(item.id),
         keyword_id: Number(item.keyword_id),
         ranking: item.ranking === null ? 0 : Number(item.ranking),
@@ -99,9 +84,9 @@ export function useKeywordRankingDetails({
       }));
 
       return {
-        rankingDetails: filteredData,
-        chartData: transformToChartData(filteredData),
-        currentRanking: getCurrentRanking(filteredData) ?? null,
+        rankingDetails: data,
+        chartData: transformToChartData(data),
+        currentRanking: getCurrentRanking(data) ?? null,
         rankingList
       };
     },

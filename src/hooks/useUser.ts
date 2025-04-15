@@ -6,7 +6,6 @@ import apiClient from "@/lib/apiClient"
 // (A) Business 타입
 export interface Business {
   place_name: string
-  platform: string
 }
 
 // (B) User 타입에 businesses 추가
@@ -14,10 +13,9 @@ export interface User {
   id: number
   name: string
   email: string
-  avatar_url?: string
+  avatar_url: string
   businesses?: Business[]
-  role?: string;
-  
+  role: string;
   url_registration?: number; // 추가: 사용자 가입 상태 확인용
 }
 

@@ -76,7 +76,7 @@ const ADMIN_SIDEBAR_SECTIONS = [
     label: "고객 영업 관리",
     items: [
       { title: "크롤링하기", url: "/dashboard/admin_customer", icon: "Computer" },
-      { title: "크롤링관리", url: "/dashboard/review_blog", icon: "FileText" },
+      { title: "영업하기", url: "/dashboard/admin_manage_customer", icon: "Mail" },
     ],
   },
 ]

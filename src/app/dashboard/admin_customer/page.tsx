@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
 import { Button } from "@/components/ui/button";
 import { areaOptions } from "./areaData";
@@ -10,7 +10,7 @@ import apiClient from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
-import ProgressComponent from "./progressbar"; // Import ProgressComponent
+import ProgressComponent from "./progressbar";
 
 // Define a type for the added filter
 interface AddedFilter {
@@ -29,6 +29,42 @@ interface AlbamonJobResponse {
   address?: string;
   jobTitle?: string;
 }
+
+interface TableActionButtonsProps {
+  selectedCount: number;
+  totalCount: number;
+  onToggleAll: () => void;
+  onParseStart: () => void;
+  onCancel: () => void;
+  selectedRows: string[];
+}
+
+const TableActionButtons: React.FC<TableActionButtonsProps> = ({ 
+  selectedCount, 
+  totalCount, 
+  onToggleAll, 
+  onParseStart, 
+  onCancel, 
+  selectedRows 
+}) => (
+  <div className="flex justify-between mb-2">
+    <Button variant="outline" onClick={onToggleAll}>
+      {selectedCount === totalCount ? "전체 선택해제" : "전체 선택"}
+    </Button>
+    <div className="space-x-2">
+      <Button 
+        variant="default" 
+        onClick={onParseStart} 
+        disabled={selectedRows.length === 0}
+      >
+        파싱시작
+      </Button>
+      <Button variant="destructive" onClick={onCancel}>
+        취소
+      </Button>
+    </div>
+  </div>
+);
 
 export default function AlbamonFilter() {
   const router = useRouter();
@@ -57,114 +93,114 @@ export default function AlbamonFilter() {
     router.push('/login');
   }
 
-  // Get list of major regions (parent level regions)
-  const majorRegions = areaOptions.map(option => ({
+  // Memoize major regions for better performance
+  const majorRegions = useMemo(() => areaOptions.map(option => ({
     label: option.label,
     value: option.value
-  }));
+  })), []);
 
-  // Get list of sub-regions based on selected major region
-  const getSubRegions = () => {
+  // Get list of sub-regions based on selected major region (memoized)
+  const getSubRegions = useCallback(() => {
     if (!selectedMajorRegion) return [];
     const majorRegion = areaOptions.find(region => region.value === selectedMajorRegion);
     return majorRegion?.children || [];
-  };
+  }, [selectedMajorRegion]);
 
-  // Handle major region selection change
-  const handleMajorRegionChange = (value: string) => {
+  // Memoize handlers to prevent recreating on each render
+  const handleMajorRegionChange = useCallback((value: string) => {
     setSelectedMajorRegion(value);
-    setSelectedSubRegions([]); // Reset sub-regions when major region changes
-  };
+    setSelectedSubRegions([]); 
+  }, []);
 
-  // Handle sub-region selection change
-  const handleSubRegionChange = (selected: string[]) => {
+  const handleSubRegionChange = useCallback((selected: string[]) => {
     setSelectedSubRegions(selected);
-  };
+  }, []);
 
-  // Check if at least one major region is selected
-  const hasMajorRegionSelected = () => {
+  const hasMajorRegionSelected = useCallback(() => {
     return !!selectedMajorRegion;
-  };
+  }, [selectedMajorRegion]);
 
-  // Generate the Albamon URL based on current selections
-  const generateAlbamonUrl = () => {
-    // For 'area' search type, validate that a major region is selected
-    if (searchType === 'area' && !hasMajorRegionSelected()) {
-      alert('지역별 업종정보 검색 시 최소 하나의 대분류 지역을 선택해야 합니다.');
-      return null;
-    }
-  
-    let baseUrl = "";
-    const params = new URLSearchParams();
-    let allSelectedAreas = [];
-  
-    // Always include the major region if selected
-    if (selectedMajorRegion) {
-      allSelectedAreas.push(selectedMajorRegion);
-    }
-    
-    // Add selected sub-regions if any
-    if (selectedSubRegions.length > 0) {
-      allSelectedAreas = [...allSelectedAreas, ...selectedSubRegions];
-    }
-  
-    if (searchType === 'area') {
-      baseUrl = "https://www.albamon.com/jobs/area";
-      params.append("page", "1");
-      params.append("size", "50");
-      
-      if (allSelectedAreas.length > 0) {
-        params.append("areas", allSelectedAreas.join(","));
-      }
-      
-      if (includeKeyword) {
-        params.append("includeKeyword", includeKeyword);
-      }
-      
-      if (excludeKeyword) {
-        params.append("excludeKeywords", excludeKeyword);
-      }
-    } else if (searchType === 'total') {
-      baseUrl = "https://www.albamon.com/total-search";
-      params.append("page", "1");
-      params.append("size", "50");
-      
-      // For total search, use the searchKeyword parameter
-      params.append("keyword", searchKeyword || "");
-      
-      if (allSelectedAreas.length > 0) {
-        params.append("areas", allSelectedAreas.join(","));
-      }
-      
-      if (excludeKeyword) {
-        params.append("excludeKeywords", excludeKeyword);
-      }
-    }
-  
-    const fullUrl = `${baseUrl}?${params.toString()}`;
-    console.log("Generated URL:", fullUrl);
-    return fullUrl;
-  };
+  // Move resetForm before handleAddFilter to avoid reference error
+  const resetForm = useCallback(() => {
+    setSelectedMajorRegion("");
+    setSelectedSubRegions([]);
+    setIncludeKeyword("");
+    setExcludeKeyword("");
+    setSearchKeyword("");
+  }, []);
 
-  // Add the current filter to the list
-  const handleAddFilter = () => {
-    // Validate search keyword for total search
+  // Optimize handler functions
+  const handleAddFilter = useCallback(() => {
     if (searchType === 'total' && !searchKeyword) {
       alert("통합검색 시에는 검색어를 입력해야 합니다.");
       return;
     }
 
-    const url = generateAlbamonUrl();
-    if (!url) return;
+    // generateAlbamonUrl 함수를 여기로 이동
+    const generateUrl = () => {
+      if (searchType === 'area' && !hasMajorRegionSelected()) {
+        alert('지역별 업종정보 검색 시 최소 하나의 대분류 지역을 선택해야 합니다.');
+        return null;
+      }
+    
+      let baseUrl = "";
+      const params = new URLSearchParams();
+      let allSelectedAreas = [];
+    
+      if (selectedMajorRegion) {
+        allSelectedAreas.push(selectedMajorRegion);
+      }
+      
+      if (selectedSubRegions.length > 0) {
+        allSelectedAreas = [...allSelectedAreas, ...selectedSubRegions];
+      }
+    
+      if (searchType === 'area') {
+        baseUrl = "https://www.albamon.com/jobs/area";
+        params.append("page", "1");
+        params.append("size", "50");
+        
+        if (allSelectedAreas.length > 0) {
+          params.append("areas", allSelectedAreas.join(","));
+        }
+        
+        if (includeKeyword) {
+          params.append("includeKeyword", includeKeyword);
+        }
+        
+        if (excludeKeyword) {
+          params.append("excludeKeywords", excludeKeyword);
+        }
+      } else if (searchType === 'total') {
+        baseUrl = "https://www.albamon.com/total-search";
+        params.append("page", "1");
+        params.append("size", "50");
+        
+        params.append("keyword", searchKeyword || "");
+        
+        if (allSelectedAreas.length > 0) {
+          params.append("areas", allSelectedAreas.join(","));
+        }
+        
+        if (excludeKeyword) {
+          params.append("excludeKeywords", excludeKeyword);
+        }
+      }
+    
+      const fullUrl = `${baseUrl}?${params.toString()}`;
+      console.log("Generated URL:", fullUrl);
+      return fullUrl;
+    };
 
-    // Check for duplicate URL
+    const url = generateUrl(); // 내부 함수 사용
+    if (!url) return;
+    
     const isDuplicate = addedFilters.some(filter => filter.url === url);
     if (isDuplicate) {
       alert("이미 같은 URL의 필터가 추가되었습니다. 중복 필터는 추가할 수 없습니다.");
       return;
     }
-
-    // Collect all selected areas
+    
     let allSelectedAreas = [];
     if (selectedMajorRegion) {
       allSelectedAreas.push(selectedMajorRegion);
@@ -172,7 +208,7 @@ export default function AlbamonFilter() {
     if (selectedSubRegions.length > 0) {
       allSelectedAreas = [...allSelectedAreas, ...selectedSubRegions];
     }
-
+    
     const newFilter: AddedFilter = {
       id: Date.now().toString(),
       searchType,
@@ -182,29 +218,27 @@ export default function AlbamonFilter() {
       searchKeyword: searchType === 'total' ? searchKeyword : undefined,
       url
     };
-
-    setAddedFilters(prev => [...prev, newFilter]);
     
-    // Reset the form
+    setAddedFilters(prev => [...prev, newFilter]);
     resetForm();
-  };
+  }, [
+    // generateAlbamonUrl 의존성 제거하고 필요한 의존성만 나열
+    searchType,
+    searchKeyword,
+    selectedMajorRegion,
+    selectedSubRegions,
+    includeKeyword, 
+    excludeKeyword,
+    addedFilters,
+    resetForm,
+    hasMajorRegionSelected // hasMajorRegionSelected 함수 의존성 추가
+  ]);
 
-  // Remove a filter from the list
-  const handleRemoveFilter = (id: string) => {
+  const handleRemoveFilter = useCallback((id: string) => {
     setAddedFilters(prev => prev.filter(filter => filter.id !== id));
-  };
+  }, []);
 
-  // Reset the form fields
-  const resetForm = () => {
-    setSelectedMajorRegion("");
-    setSelectedSubRegions([]);
-    setIncludeKeyword("");
-    setExcludeKeyword("");
-    setSearchKeyword(""); // Reset search keyword as well
-  };
-
-  // Start crawling with the added filters
-  const handleStartCrawling = async () => {
+  const handleStartCrawling = useCallback(async () => {
     if (addedFilters.length === 0) return;
   
     try {
@@ -218,7 +252,6 @@ export default function AlbamonFilter() {
       console.log("크롤링 API 응답:", response.data);
       
       if (response.data.success && response.data.data?.length > 0) {
-        // Transform API response data to match our ParsedBusiness interface
         const transformedData: ParsedBusiness[] = response.data.data.map((item: AlbamonJobResponse) => ({
           id: item.jobId || String(Math.random()),
           businessName: item.companyName || "",
@@ -228,8 +261,6 @@ export default function AlbamonFilter() {
         
         setCrawledBusinesses(transformedData);
         setShowParsingTable(true);
-        
-        // Clear filters after successful crawling
         setAddedFilters([]);
       } else {
         alert('크롤링된 데이터가 없습니다.');
@@ -240,23 +271,20 @@ export default function AlbamonFilter() {
     } finally {
       setIsCrawling(false);
     }
-  };
+  }, [addedFilters]);
 
-  // Handler for when user starts parsing the selected businesses
-  const handleParseStart = async (selectedIds: string[]) => {
+  const handleParseStart = useCallback(async (selectedIds: string[]) => {
     if (selectedIds.length === 0) return;
     
     try {
-      setIsCrawling(true); // Reuse existing loading state
+      setIsCrawling(true);
       
-      // Filter the crawledBusinesses to only include selected ones
       const selectedBusinesses = crawledBusinesses.filter(business => 
         selectedIds.includes(business.id)
       );
       
       console.log("파싱할 업체 정보:", selectedBusinesses);
       
-      // Make API call to the contact endpoint
       const response = await apiClient.post('/api/customer/contact', {
         businesses: selectedBusinesses
       });
@@ -265,10 +293,9 @@ export default function AlbamonFilter() {
       
       if (response.data.success) {
         alert(`${selectedIds.length}개 업체의 상세 정보 파싱이 완료되었습니다.`);
-        // Clear the table and filters after successful parsing
         setShowParsingTable(false);
         setCrawledBusinesses([]);
-        setAddedFilters([]); // Clear filters after parsing
+        setAddedFilters([]);
       } else {
         alert('업체 정보 파싱 중 오류가 발생했습니다: ' + (response.data.message || '알 수 없는 오류'));
       }
@@ -278,21 +305,16 @@ export default function AlbamonFilter() {
     } finally {
       setIsCrawling(false);
     }
-  };
+  }, [crawledBusinesses]);
 
-  // Handler for when user cancels the parsing
-  const handleCancelParsing = () => {
+  const handleCancelParsing = useCallback(() => {
     setShowParsingTable(false);
-    // Don't clear addedFilters here so the user can modify and try again
-  };
+  }, []);
 
-  // Get the name of a region by its value
-  const getRegionNameByValue = (value: string) => {
-    // Check if it's a major region
+  const getRegionNameByValue = useCallback((value: string) => {
     const majorRegion = areaOptions.find(region => region.value === value);
     if (majorRegion) return majorRegion.label;
     
-    // Check if it's a sub-region
     for (const major of areaOptions) {
       if (!major.children) continue;
       
@@ -300,10 +322,9 @@ export default function AlbamonFilter() {
       if (subRegion) return subRegion.label;
     }
     
-    return value; // Return the value if no name is found
-  };
+    return value;
+  }, []);
 
-  // Show loading state while checking authorization
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -313,7 +334,6 @@ export default function AlbamonFilter() {
     );
   }
 
-  // Show access denied if not admin (this is a fallback, as we should redirect above)
   if (user?.role !== 'admin') {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
@@ -326,7 +346,6 @@ export default function AlbamonFilter() {
     );
   }
 
-  // Render the actual component content only for admin users
   return (
     <div className="p-6 space-y-4">
       <div className="w-full max-w-2xl">
@@ -342,7 +361,6 @@ export default function AlbamonFilter() {
               <option value="total">통합검색</option>
             </select>
             
-            {/* Add search keyword input when total search is selected */}
             {searchType === 'total' && (
               <div className="flex-1">
                 <input
@@ -368,7 +386,6 @@ export default function AlbamonFilter() {
           </label>
           
           <div className="flex space-x-4">
-            {/* Major Region Selection */}
             <div className="w-64">
               <select
                 className="border p-2 w-full"
@@ -384,7 +401,6 @@ export default function AlbamonFilter() {
               </select>
             </div>
             
-            {/* Sub-Region Selection - only shown if major region is selected */}
             {selectedMajorRegion && (
               <div className="w-64">
                 <MultiSelectCombobox
@@ -405,7 +421,6 @@ export default function AlbamonFilter() {
           )}
         </div>
 
-        {/* 지역별 업종정보일 때만 포함 키워드 입력칸 표시 */}
         {searchType === 'area' && (
           <div className="mb-4">
             <label className="text-xs font-medium mb-1 block">포함 키워드</label>
@@ -468,23 +483,19 @@ export default function AlbamonFilter() {
         </div>
       </div>
       
-      {/* Added Filters List */}
       {addedFilters.length > 0 && (
         <div className="mt-8">
           <h3 className="font-medium mb-2">추가된 필터</h3>
           <div className="flex flex-wrap gap-2">
             {addedFilters.map(filter => {
-              // Generate filter information text
               const filterInfo = [
                 `${filter.searchType === 'area' ? '지역별' : '통합검색'}`,
               ];
 
-              // Add search keyword for total search
               if (filter.searchType === 'total' && filter.searchKeyword) {
                 filterInfo.push(`검색어:${filter.searchKeyword}`);
               }
 
-              // Add region information
               if (filter.areas.length > 0) {
                 const majorRegion = filter.areas[0];
                 const majorRegionName = getRegionNameByValue(majorRegion);
@@ -498,7 +509,6 @@ export default function AlbamonFilter() {
                 }
               }
 
-              // Add include and exclude keywords
               if (filter.includeKeyword) {
                 filterInfo.push(`포함키워드:${filter.includeKeyword}`);
               }
@@ -535,7 +545,6 @@ export default function AlbamonFilter() {
         </div>
       )}
 
-      {/* Parsing Table for crawled data */}
       {showParsingTable && crawledBusinesses.length > 0 && (
         <div className="mt-8">
           <h3 className="font-medium mb-2">크롤링 결과 ({crawledBusinesses.length}개)</h3>
@@ -543,7 +552,7 @@ export default function AlbamonFilter() {
             businesses={crawledBusinesses}
             onParseStart={handleParseStart}
             onCancel={handleCancelParsing}
-            isLoading={isCrawling} // Pass the loading state
+            isLoading={isCrawling}
           />
         </div>
       )}
@@ -551,7 +560,6 @@ export default function AlbamonFilter() {
   );
 }
 
-// Changed from default export to named export to fix the multiple default exports error
 export interface ParsedBusiness {
   id: string;
   businessName: string;
@@ -563,10 +571,9 @@ interface ParsingTableProps {
   businesses: ParsedBusiness[];
   onParseStart: (selectedIds: string[]) => void;
   onCancel: () => void;
-  isLoading?: boolean; // Add loading state prop
+  isLoading?: boolean;
 }
  
-// Changed from default export to named export
 export const ParsingTable: React.FC<ParsingTableProps> = ({ 
   businesses,
   onParseStart,
@@ -575,21 +582,22 @@ export const ParsingTable: React.FC<ParsingTableProps> = ({
 }) => {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
  
-  const toggleSelectAll = () => {
-    if (selectedRows.length === businesses.length) {
-      setSelectedRows([]);
-    } else {
-      setSelectedRows(businesses.map(b => b.id));
-    }
-  };
+  const toggleSelectAll = useCallback(() => {
+    setSelectedRows(prev => 
+      prev.length === businesses.length ? [] : businesses.map(b => b.id)
+    );
+  }, [businesses]);
  
-  const handleCheckboxChange = (id: string) => {
+  const handleCheckboxChange = useCallback((id: string) => {
     setSelectedRows(prev =>
       prev.includes(id) ? prev.filter(rowId => rowId !== id) : [...prev, id]
     );
-  };
+  }, []);
+
+  const handleParseStart = useCallback(() => {
+    onParseStart(selectedRows);
+  }, [onParseStart, selectedRows]);
  
-  // If in loading state, show the progress component instead of table
   if (isLoading) {
     return (
       <div className="mt-4">
@@ -605,10 +613,20 @@ export const ParsingTable: React.FC<ParsingTableProps> = ({
       </div>
     );
   }
- 
-  // Show table when not loading
+
   return (
     <div className="overflow-x-auto mt-4 relative">
+      <div className="mb-2">
+        <TableActionButtons 
+          selectedCount={selectedRows.length}
+          totalCount={businesses.length}
+          onToggleAll={toggleSelectAll}
+          onParseStart={handleParseStart}
+          onCancel={onCancel}
+          selectedRows={selectedRows}
+        />
+      </div>
+      
       <table className="table table-xs w-full table-fixed">
         <thead className="sticky top-0 bg-white z-10">
           <tr>
@@ -643,22 +661,15 @@ export const ParsingTable: React.FC<ParsingTableProps> = ({
           ))}
         </tbody>
       </table>
-      <div className="flex justify-between mt-2">
-        <Button variant="outline" onClick={toggleSelectAll}>
-          {selectedRows.length === businesses.length ? "전체 선택해제" : "전체 선택"}
-        </Button>
-        <div className="space-x-2">
-          <Button 
-            variant="default" 
-            onClick={() => onParseStart(selectedRows)} 
-            disabled={selectedRows.length === 0}
-          >
-            파싱시작
-          </Button>
-          <Button variant="destructive" onClick={onCancel}>
-            취소
-          </Button>
-        </div>
+      <div className="mt-2">
+        <TableActionButtons 
+          selectedCount={selectedRows.length}
+          totalCount={businesses.length}
+          onToggleAll={toggleSelectAll}
+          onParseStart={handleParseStart}
+          onCancel={onCancel}
+          selectedRows={selectedRows}
+        />
       </div>
     </div>
   );

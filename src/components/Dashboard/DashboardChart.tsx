@@ -21,7 +21,7 @@ type FormatterName = string;
 export default function DashboardChart() {
   const { activeBusiness } = useBusinessSwitcher();
   const { data: keywordData } = useKeywordRankingDetails({
-    placeId: activeBusiness?.place_id,
+    activeBusinessId: activeBusiness?.place_id,
     keyword: activeBusiness?.main_keyword
   });
 

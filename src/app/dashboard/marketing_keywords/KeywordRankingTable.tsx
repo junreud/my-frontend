@@ -24,11 +24,16 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
     // 날짜별로 그룹화
     const dateGroups: Record<string, KeywordRankingDetail[]> = keywordData.rankingDetails.reduce(
       (acc: Record<string, KeywordRankingDetail[]>, item: KeywordRankingDetail) => {
-        const date = item.date_key;
-        if (!acc[date]) {
-          acc[date] = [];
+        // date_key가 undefined일 경우에 대한 처리 추가
+        const date = item.date_key || item.date;
+        
+        // undefined나 null이 아닌 경우에만 처리
+        if (date) {
+          if (!acc[date]) {
+            acc[date] = [];
+          }
+          acc[date].push(item);
         }
-        acc[date].push(item);
         return acc;
       },
       {} as Record<string, KeywordRankingDetail[]>
@@ -157,7 +162,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
     console.log('어제 데이터 사용 여부:', usingFallbackData);
     
     const emptyRows = latestData.filter((item: KeywordRankingDetail) => 
-      typeof item.place_id === 'string' && item.place_id.startsWith('empty-')
+      typeof item.place_id === 'string' && (item.place_id as string).startsWith('empty-')
     );
     console.log('빈 행 개수:', emptyRows.length);
     
@@ -167,7 +172,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
     
     for (let i = 0; i < latestData.length; i++) {
       const isEmpty = typeof latestData[i].place_id === 'string' && 
-                      latestData[i].place_id.startsWith('empty-');
+                     (latestData[i].place_id as string).startsWith('empty-');
       
       if (isEmpty && startEmpty === -1) {
         startEmpty = i + 1; // 순위는 1부터 시작
@@ -275,8 +280,9 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
             </thead>
             <tbody>
               {visibleData.map((item: KeywordRankingDetail) => {
-                // 빈 순위인지 확인
-                const isEmpty = typeof item.place_id === 'string' && item.place_id.startsWith('empty-');
+                // 빈 순위인지 확인 (타입 단언 추가)
+                const isEmpty = typeof item.place_id === 'string' && 
+                               (item.place_id as string).startsWith('empty-');
 
                 // 과거 데이터에서 해당 업체 찾기
                 const pastData = !isEmpty && historicalData && keywordData

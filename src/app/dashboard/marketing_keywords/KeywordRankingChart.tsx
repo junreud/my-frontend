@@ -40,7 +40,28 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
     myBusinessData.forEach(item => {
       const dateOnly = item.date?.split('T')[0] || item.date;
       if (dateOnly) {
-        dateMap.set(dateOnly, item);
+        const existingItem = dateMap.get(dateOnly);
+
+        if (!existingItem) {
+          dateMap.set(dateOnly, item);
+        } else {
+          // 모든 가능한 저장 필드들을 통합
+          const mergedSavedCount = 
+            item.saved_count ?? existingItem.savedCount ?? existingItem.saved ?? existingItem.saved_count;
+          
+          dateMap.set(dateOnly, {
+            ...existingItem,
+            // 이제 타입이 통일되어 일관된 필드명 사용
+            savedCount: mergedSavedCount,
+            saved: mergedSavedCount, // 추가: 이전 필드명과의 호환성
+            saved_count: mergedSavedCount, // 추가: 다른 가능한 필드명
+            blog_review_count: item.blog_review_count ?? existingItem.blog_review_count ?? existingItem.blogReviews,
+            receipt_review_count: item.receipt_review_count ?? item.receiptReviews ?? existingItem.receipt_review_count ?? existingItem.receiptReviews,
+            // 다른 필드도 추가
+            blogReviews: item.blogReviews ?? item.blog_review_count ?? existingItem.blogReviews ?? existingItem.blog_review_count,
+            receiptReviews: item.receiptReviews ?? item.receipt_review_count ?? existingItem.receiptReviews ?? existingItem.receipt_review_count,
+          });
+        }
       }
     });
 
@@ -59,7 +80,13 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
     // 처리된 데이터 디버깅
     console.log('[Debug] KeywordRankingChart 처리된 데이터:', { 
       filteredDataLength: filteredData.length,
-      sampleItem: filteredData.length > 0 ? filteredData[0] : null
+      sampleItem: filteredData.length > 0 ? filteredData[0] : null,
+      // 저장 데이터 필드 디버깅 추가
+      savedFieldSample: filteredData.length > 0 ? {
+        savedCount: filteredData[0].savedCount,
+        saved: filteredData[0].saved,
+        saved_count: filteredData[0].saved_count
+      } : null
     });
 
     return filteredData;
@@ -133,16 +160,26 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
   const savedYAxisDomain = useMemo(() => {
     if (!processedData || processedData.length === 0) return [0, 10];
     
-    // 선택적 매핑 옵션 개선
+    // 모든 가능한 저장 필드를 고려
     const savedCounts = processedData.map(item => {
-      // 각 필드 값 확인 후 숫자로 변환
+      // 각 필드 값 확인 후 숫자로 변환 (차트의 dataKey와 동일한 로직 사용)
       if (item.savedCount !== undefined && item.savedCount !== null) {
         return Number(item.savedCount);
       }
       if (item.saved !== undefined && item.saved !== null) {
         return Number(item.saved);
       }
+      if (item.saved_count !== undefined && item.saved_count !== null) {
+        return Number(item.saved_count);
+      }
       return 0;
+    });
+    
+    // savedCounts 디버깅 로그 추가
+    console.log('[Debug] 저장 데이터 값:', {
+      counts: savedCounts,
+      max: Math.max(...savedCounts),
+      nonZeroCount: savedCounts.filter(val => val > 0).length
     });
     
     return calculateOptimalYAxisDomain(savedCounts);
@@ -291,18 +328,9 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
               <Line
                 type="monotone"
                 dataKey={(d) => {
-                  // 가능한 모든 필드명 검사
-                  if (d.savedCount !== undefined && d.savedCount !== null) {
-                    return Number(d.savedCount);
-                  } 
-                  if (d.saved !== undefined && d.saved !== null) {
-                    return Number(d.saved);
-                  }
-                  if (d.saved_count !== undefined && d.saved_count !== null) {
-                    return Number(d.saved_count);
-                  }
-                  // 백엔드에서 전달되는 다른 가능한 필드명도 확인
-                  return 0;
+                  // 가능한 모든 필드명 검사 (순서 중요)
+                  const value = d.savedCount ?? d.saved ?? d.saved_count ?? 0;
+                  return Number(value); // 항상 숫자 반환
                 }}
                 name="저장 수"
                 stroke="#ff9800"

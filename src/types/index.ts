@@ -183,38 +183,58 @@ export interface KeywordRankData {
   receipt_review_count: number | null;  // ✅ null 허용 추가
   blog_review_count: number | null;     // ✅ null 허용 추가
   savedCount?: number | null;           // 선택적으로 null 허용 추가 가능
-  crawled_at: string;
+  crawled_at?: string;
+}
+
+/**
+ * 키워드 데이터의 기본 필드를 정의하는 기본 인터페이스
+ */
+export interface BaseKeywordData {
+  date: string;
+  date_key: string;  // 옵셔널 제거
+  place_id: string | number;
+  ranking: number | null;
+  blog_review_count?: number | null;
+  receipt_review_count?: number | null;
+  savedCount?: number | null;
+  
+  // 다양한 API 응답 필드명에 대응하기 위한 추가 필드
+  saved?: number | null;  // 저장 수의 대체 필드명
+  saved_count?: number | null;  // 저장 수의 또 다른 대체 필드명
+  blogReviews?: number | null;  // blog_review_count의 대체 필드명
+  receiptReviews?: number | null;  // receipt_review_count의 대체 필드명
 }
 
 export interface KeywordHistoricalData {
-  date: string;
-  ranking: number;
-  uv: number; // For chart representation
-  place_id: string;
   date_key: string;
-  blog_review_count?: number;
-  receipt_review_count?: number;
+  date: string;
+  ranking: number | null;
+  uv?: number | null; // ⭐️ null 허용 추가
+  blog_review_count?: number | null;
+  receipt_review_count?: number | null;
+  saved_count?: number | null;
+  place_id: string | number;
+  receiptReviews?: number | null;  // receipt_review_count의 대체 필드명
+  blogReviews?: number | null;  // blog_review_count의 대체 필드명
+  saved?: number | null;  // saved_count의 대체 필드명
+  savedCount?: number | null;  // saved_count의 대체 필드명
 }
+/**
+ * 키워드 차트 데이터 포인트
+ * (KeywordHistoricalData와 동일한 구조 사용)
+ */
+export type ChartDataPoint = KeywordHistoricalData & {
+  keywordItems?: string[];
+};
 
-export interface KeywordRankingDetail {
+export interface KeywordRankingDetail extends BaseKeywordData {
   id: string | number;
   keyword_id: string | number;
   keyword: string;
-  ranking: number | null;
-  place_id: string;
   place_name: string;
   category: string;
-  savedCount?: number | null;
-  blog_review_count?: number | null;
-  receipt_review_count?: number | null;
-  keywordList?: string[] | null;
-  date_key: string;
-  crawled_at: string;
-}
-
-export interface KeywordRankingChartProps {
-  chartData: KeywordHistoricalData[];
-  activeBusiness: Business | null; 
+  keywordList: string[] | null;
+  crawled_at?: string;
 }
 
 /**
@@ -223,12 +243,17 @@ export interface KeywordRankingChartProps {
 export interface KeywordRankingData {
   rankingDetails: KeywordRankingDetail[];
   rankingList: KeywordRankData[];
-  chartData?: KeywordHistoricalData[];
+  chartData?: KeywordHistoricalData[];  // 옵셔널로 통일
   metadata?: {
     totalCount?: number;
     currentPage?: number;
     lastUpdated?: string;
   };
+}
+
+export interface KeywordRankingChartProps {
+  chartData: KeywordHistoricalData[];  // 여기서는 필수 속성으로 유지
+  activeBusiness: Business | null; 
 }
 
 export interface KeywordRankingTableProps {
@@ -239,4 +264,26 @@ export interface KeywordRankingTableProps {
   keywordData: KeywordRankingData | null;
   historicalData: KeywordHistoricalData[] | null;
   rangeValue: number;
+}
+
+export interface ICustomerInfo {
+  id: number;
+  posting_id: string;
+  title: string;
+  company_name: string;
+  address: string | null;
+  naverplace_url: string | null;
+  created_at: string;
+  updated_at: string;
+  contacts?: IContactInfo[];
+}
+
+export interface IContactInfo {
+  id: number;
+  customer_id: number;
+  phone_number: string | null;
+  contact_person: string | null;
+  created_at: string;
+  updated_at: string;
+  CustomerInfo?: ICustomerInfo;
 }

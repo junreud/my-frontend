@@ -31,50 +31,20 @@ import { Button } from "@/components/ui/button";
 // Components
 import KeywordRankingChart from "./KeywordRankingChart";
 import KeywordRankingTable from "./KeywordRankingTable";
-import { UserKeyword, KeywordHistoricalData, KeywordRankData, KeywordRankingDetail } from "@/types";
+import { 
+  UserKeyword, 
+  KeywordHistoricalData, 
+  KeywordRankData, 
+  KeywordRankingDetail,
+  KeywordRankingData,
+  ChartDataPoint
+} from "@/types";
 
 const logger = createLogger("MarketingKeywordsPage");
 
-// 키워드 세부 정보 인터페이스
-interface KeywordDetail {
-  id: string | number;
-  keyword_id: string | number;
-  keyword: string;
-  ranking: number | null;
-  place_id: string; // number에서 string으로 변경
-  place_name: string;
-  category: string;
-  savedCount: number | null;
-  blog_review_count: number | null;
-  receipt_review_count: number | null;
-  keywordList: string[] | null;
-  date_key: string;
-}
-interface KeywordRankingData {
-  rankingDetails: KeywordRankingDetail[];
-  chartData: KeywordHistoricalData[];
-  rankingList: KeywordRankData[];
-}
-// 차트 데이터 포인트 인터페이스
-interface ChartDataPoint {
-  date: string;
-  place_id: string | number | null;  // number 타입과 string 타입 모두 허용
-  ranking: number | null;
-  savedCount: number;
-  blog_review_count: number;
-  receipt_review_count: number;
-  keywordItems: string[];
-  saved: number;
-  blogReviews: number;
-  receiptReviews: number;
-  // Add these properties to make it compatible with KeywordHistoricalData
-  uv: number;
-  date_key: string;
-}
-
 // 키워드 데이터 그룹 인터페이스
 interface KeywordDataGroup {
-  rankingDetails: KeywordDetail[];
+  rankingDetails: KeywordRankingDetail[];
   chartData: ChartDataPoint[];
   rankingList: KeywordRankData[];
 }
@@ -85,10 +55,10 @@ interface KeywordRankingsMap {
 }
 
 // Move formatChartData function outside of useMemo to prevent recreation on each render
-function formatChartDataForKeywordMap(details: KeywordDetail[], activePlaceId?: string | null): ChartDataPoint[] {
+function formatChartDataForKeywordMap(details: KeywordRankingDetail[], activePlaceId?: string | null): ChartDataPoint[] {
   if (!details || details.length === 0) return [];
   
-  const dateGroups: Record<string, KeywordDetail[]> = {};
+  const dateGroups: Record<string, KeywordRankingDetail[]> = {};
   details.forEach(item => {
     if (!dateGroups[item.date_key]) {
       dateGroups[item.date_key] = [];
@@ -108,7 +78,7 @@ function formatChartDataForKeywordMap(details: KeywordDetail[], activePlaceId?: 
         date,
         date_key: date,
         uv: activePlaceItem?.ranking ?? 0,
-        place_id: activePlaceItem?.place_id || null,
+        place_id: activePlaceItem?.place_id || '', // null 대신 빈 문자열로 변경
         ranking: activePlaceItem?.ranking || null,
         savedCount: activePlaceItem?.savedCount || 0,
         blog_review_count: activePlaceItem?.blog_review_count || 0,
@@ -290,7 +260,7 @@ export default function Page(): JSX.Element {
   const keywordRankingsMap = useMemo<KeywordRankingsMap>(() => {
     if (!allKeywordRankingsData?.rankingDetails) return {};
     
-    const allDetails: KeywordDetail[] = allKeywordRankingsData.rankingDetails.map(detail => {
+    const allDetails: KeywordRankingDetail[] = allKeywordRankingsData.rankingDetails.map(detail => {
       // 타입 호환성을 위해 디테일 객체를 잠시 타입 변환
       const detailAny = detail as unknown as { 
         id?: string | number; 
@@ -370,37 +340,36 @@ export default function Page(): JSX.Element {
       : '?';
   };
 
-  // 타임머신바의 최대값을 동적으로 설정하는 useEffect
+  // 타임머신바 최대값 설정 useEffect 수정
   useEffect(() => {
     if (selectedKeyword && keywordRankingsMap[selectedKeyword]?.chartData) {
       const keywordDataLength = keywordRankingsMap[selectedKeyword].chartData.length;
       const dynamicMaxRange = Math.min(keywordDataLength - 1, 60);
   
-      // setMaxRangeValue만 호출하되, 변경이 실제 필요할 때만
-      setMaxRangeValue(prev => (prev !== dynamicMaxRange ? dynamicMaxRange : prev));
+      if (maxRangeValue !== dynamicMaxRange) {
+        setMaxRangeValue(dynamicMaxRange);
+      }
   
-      // rangeValue가 정말 초과될 때만 setRangeValue
       if (rangeValue > dynamicMaxRange) {
         setRangeValue(dynamicMaxRange);
       }
     } else {
       if (maxRangeValue !== 0) setMaxRangeValue(0);
       if (rangeValue !== 0) setRangeValue(0);
-      setHistoricalData(null);
+      if (historicalData !== null) setHistoricalData(null);
     }
-  }, [selectedKeyword, keywordRankingsMap, rangeValue, maxRangeValue]);
+  }, [selectedKeyword, keywordRankingsMap, rangeValue, maxRangeValue, historicalData]);
   
-  // Second effect - handle historical data based on the selected range
+  // historicalData 처리 useEffect 수정
   useEffect(() => {
     if (!selectedKeyword || !keywordRankingsMap[selectedKeyword]?.chartData) {
-      if (historicalData !== null) {
-        setHistoricalData(null);
-      }
+      if (historicalData !== null) setHistoricalData(null);
       return;
     }
   
     const keywordDataLength = keywordRankingsMap[selectedKeyword].chartData.length;
     const daysAgo = rangeValue;
+  
     if (daysAgo === 0) {
       if (historicalData !== null) setHistoricalData(null);
       return;
@@ -409,18 +378,23 @@ export default function Page(): JSX.Element {
     const targetIndex = keywordDataLength - 1 - daysAgo;
     if (targetIndex >= 0) {
       const dataPoint = keywordRankingsMap[selectedKeyword].chartData[targetIndex];
-      const newHistoricalData: KeywordHistoricalData = {
+      const newHistoricalData = {
         date: dataPoint.date,
         ranking: dataPoint.ranking ?? 0,
         uv: dataPoint.uv,
         place_id: String(dataPoint.place_id || ''),
         date_key: dataPoint.date_key,
         blog_review_count: dataPoint.blog_review_count,
-        receipt_review_count: dataPoint.receipt_review_count
+        receipt_review_count: dataPoint.receipt_review_count,
       };
   
-      // 🔑 변경 전후 동일성 비교
-      if (JSON.stringify(historicalData) !== JSON.stringify(newHistoricalData)) {
+      const isDataDifferent =
+        !historicalData ||
+        historicalData.date !== newHistoricalData.date ||
+        historicalData.ranking !== newHistoricalData.ranking ||
+        historicalData.place_id !== newHistoricalData.place_id;
+  
+      if (isDataDifferent) {
         setHistoricalData(newHistoricalData);
       }
     } else {
@@ -569,20 +543,26 @@ export default function Page(): JSX.Element {
     return [safeData];
   };
   
-  // KeywordRankingChart를 위한 데이터 변환
-  const formatChartData = (data: ChartDataPoint[] | undefined): KeywordHistoricalData[] => {
+  // formatChartData 함수 최적화
+  const formatChartData = useCallback((data: ChartDataPoint[] | undefined): KeywordHistoricalData[] => {
     if (!data || data.length === 0) return [];
-    
+  
     return data.map(point => ({
       date: point.date,
-      ranking: point.ranking ?? 0, // null을 0으로 변환
+      ranking: point.ranking ?? 0,
       uv: point.uv,
       place_id: String(point.place_id || ''),
       date_key: point.date_key,
       blog_review_count: point.blog_review_count,
-      receipt_review_count: point.receipt_review_count
+      receipt_review_count: point.receipt_review_count,
     }));
-  };
+  }, []);
+
+  // 레인지 슬라이더 onChange 핸들러 최적화
+  const handleRangeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = Number(e.target.value);
+    setRangeValue(newValue);
+  }, []);
 
   return (
     <div className="p-6 space-y-8 relative">
@@ -796,10 +776,7 @@ export default function Page(): JSX.Element {
               max={maxRangeValue}
               value={rangeValue}
               step={1}
-              onChange={(e) => {
-                const newValue = Number(e.target.value);
-                setRangeValue(newValue);
-              }}
+              onChange={handleRangeChange}
               onMouseDown={() => setIsRangePressed(true)}
               onMouseUp={() => setIsRangePressed(false)}
               onTouchStart={() => setIsRangePressed(true)}
