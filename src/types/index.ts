@@ -209,15 +209,15 @@ export interface KeywordHistoricalData {
   date_key: string;
   date: string;
   ranking: number | null;
-  uv?: number | null; // ⭐️ null 허용 추가
+  uv?: number | null;
   blog_review_count?: number | null;
   receipt_review_count?: number | null;
   saved_count?: number | null;
-  place_id: string | number;
-  receiptReviews?: number | null;  // receipt_review_count의 대체 필드명
-  blogReviews?: number | null;  // blog_review_count의 대체 필드명
-  saved?: number | null;  // saved_count의 대체 필드명
-  savedCount?: number | null;  // saved_count의 대체 필드명
+  place_id: string | number | null; // null 허용으로 변경
+  receiptReviews?: number | null;
+  blogReviews?: number | null;
+  saved?: number | null;
+  savedCount?: number | null;
 }
 /**
  * 키워드 차트 데이터 포인트
@@ -275,7 +275,11 @@ export interface ICustomerInfo {
   naverplace_url: string | null;
   created_at: string;
   updated_at: string;
+  source_filter: string | null; // source_filter 컬럼 추가
   contacts?: IContactInfo[];
+  favorite?: boolean; // 즐겨찾기 여부
+  friend_add_status?: 'pending' | 'success' | 'fail' | 'already_registered'; // 친구추가 상태
+  blacklist?: boolean; // 블랙리스트 여부
 }
 
 export interface IContactInfo {
@@ -286,4 +290,7 @@ export interface IContactInfo {
   created_at: string;
   updated_at: string;
   CustomerInfo?: ICustomerInfo;
+  favorite?: boolean;    // 즐겨찾기 여부
+  blacklist?: boolean;   // 블랙리스트 여부
+  friend_add_status?: 'pending' | 'success' | 'fail' | 'already_registered'; // 친구추가 상태
 }

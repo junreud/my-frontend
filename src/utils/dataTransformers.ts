@@ -3,7 +3,7 @@ import { KeywordRankingDetail } from '@/types';
 // 차트 데이터로 변환하는 함수
 export function transformToChartData(rankingDetails: KeywordRankingDetail[]) {
   if (!rankingDetails || !Array.isArray(rankingDetails) || rankingDetails.length === 0) {
-    console.error('transformToChartData: 유효한 데이터가 아님', rankingDetails);
+    // 빈 데이터의 경우 빈 배열을 반환합니다
     return [];
   }
 
@@ -25,7 +25,7 @@ export function transformToChartData(rankingDetails: KeywordRankingDetail[]) {
 // 현재 순위 데이터 추출
 export function getCurrentRanking(rankingDetails: KeywordRankingDetail[]) {
   if (!rankingDetails || !Array.isArray(rankingDetails) || rankingDetails.length === 0) {
-    console.error('getCurrentRanking: 유효한 데이터가 아님', rankingDetails);
+    // 빈 데이터의 경우 null 반환
     return null;
   }
 

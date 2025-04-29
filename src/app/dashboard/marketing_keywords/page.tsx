@@ -407,7 +407,9 @@ export default function Page(): JSX.Element {
     setSelectedKeyword("");  // 선택된 키워드 초기화
     setRangeValue(0);        // 슬라이더 값 초기화
     setHistoricalData(null); // 차트 및 테이블 데이터 초기화
-  }, [activeBusiness?.place_id]);
+    // 비즈니스 변경 시 키워드 데이터와 순위 상세를 즉시 다시 로드
+    refreshKeywordData();
+  }, [activeBusiness?.place_id, refreshKeywordData]);
 
   useEffect(() => {
     console.log("[Debug] MarketingKeywordsPage:", {
@@ -619,10 +621,10 @@ export default function Page(): JSX.Element {
               </AccordionTrigger>
 
               <AccordionContent>
-                <KeywordRankingChart 
-                  chartData={keywordRankingsMap[keyword]?.chartData ? 
-                    formatChartData(keywordRankingsMap[keyword]?.chartData) : []}
-                  activeBusiness={activeBusiness} 
+                <KeywordRankingChart
+                  // Pass raw chartData with savedCount field for plotting
+                  chartData={keywordRankingsMap[keyword]?.chartData || []}
+                  activeBusiness={activeBusiness}
                 />
               </AccordionContent>
             </AccordionItem>

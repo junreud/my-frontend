@@ -145,10 +145,10 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
     return { success: false, finalKeywords: [] };
   }
   
-  // 빈 데이터 검증
+  // 빈 데이터 검증: 그룹화 없이 성공으로 처리
   if (externalDataList.length === 0) {
-    logger.warn("전달된 키워드가 없습니다.");
-    return { success: false, finalKeywords: [] };
+    logger.warn("전달된 키워드가 없습니다. 그룹화 단계를 건너뜁니다.");
+    return { success: true, finalKeywords: [] };
   }
   
   // 데이터 형식 검증

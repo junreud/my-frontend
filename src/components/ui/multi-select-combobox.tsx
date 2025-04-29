@@ -183,13 +183,13 @@ export function MultiSelectCombobox<T = unknown>(props: ComboboxProps<T>) {
         className="p-0" 
         align="start"
         side={position === "right" ? "right" : "bottom"}
-        // Set width to approximately half of the trigger width
-        style={{ width: "calc(var(--radix-popover-trigger-width) * 0.5)" }}
+        // Popover width matches trigger width
+        style={{ width: "var(--radix-popover-trigger-width)" }}
       >
         <div className="border-none p-0 outline-none">
           <div className="px-3 py-2">
             <input
-              className="w-full border-none bg-transparent outline-none placeholder:text-muted-foreground"
+              className="w-full border-none bg-transparent outline-none placeholder:text-muted-foreground text-sm"
               placeholder={`${placeholder} 검색...`}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}

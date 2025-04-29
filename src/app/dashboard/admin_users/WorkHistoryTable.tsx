@@ -608,7 +608,6 @@ useEffect(() => {
     setTempRange: React.Dispatch<React.SetStateAction<DateRange | undefined>>,
     handleConfirm: () => void
   ) => {
-    // Get today's date for the modifier
     const today = new Date();
     
     // Function to calculate days ago

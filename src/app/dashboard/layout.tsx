@@ -20,7 +20,8 @@ import {
 
 // ────────────────────────────────────────────────────────────
 // 1) shadcn/ui Toast 불러오기
-import { Toaster } from "@/components/ui/sonner"  
+import { Toaster } from "@/components/ui/sonner"
+import React, { Suspense } from 'react';
 //  position, duration 등은 <Toaster />에 prop으로 넘길 수 있음
 // ────────────────────────────────────────────────────────────
 
@@ -92,7 +93,18 @@ export default function DashboardLayout({
               </div>
             </header>
 
-            <main className="flex-1 p-4">{children}</main>
+            <main className="flex-1 p-4">
+              <Suspense fallback={
+                <div className="animate-pulse space-y-4">
+                  <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                </div>
+              }>
+                {children}
+              </Suspense>
+            </main>
           </SidebarInset>
         </SidebarProvider>
 

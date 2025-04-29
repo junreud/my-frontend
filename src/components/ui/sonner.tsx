@@ -217,7 +217,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      position={props.position || "bottom-right"}
+      // 기본 위치를 top-right로 설정
+      position={props.position || "top-right"}
+      // 우측 상단 닫기 버튼 활성화
+      closeButton
       toastOptions={{
         classNames: {
           toast:
@@ -228,7 +231,6 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
         },
-        // Remove descriptionAs property as it doesn't exist in ToastOptions
         closeButtonAriaLabel: "닫기",
       }}
       {...props}

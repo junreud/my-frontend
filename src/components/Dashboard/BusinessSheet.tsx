@@ -202,23 +202,12 @@ export function BusinessSheet({
     }
   }
 
-  // 로컬 스토리지에서 dialogOpen 상태를 복구
+  // 다이얼로그 단계가 열릴 때 초기 단계로 설정
   React.useEffect(() => {
-    const savedDialogOpen = localStorage.getItem('dialogOpen')
-    if (savedDialogOpen) {
-      setDialogOpen(savedDialogOpen === 'true')
-    }
-  }, [setDialogOpen])
-
-  // dialogOpen 상태가 변경될 때 로컬 스토리지에 저장
-  React.useEffect(() => {
-    localStorage.setItem('dialogOpen', dialogOpen.toString())
-    
-    // Dialog가 열리면 초기 단계로 설정
     if (dialogOpen) {
       setDialogStep('confirm');
     }
-  }, [dialogOpen])
+  }, [dialogOpen]);
 
   // 2차 Dialog "생성하기" - 프로세스 시작
   async function onConfirmCreate() {
@@ -350,6 +339,13 @@ export function BusinessSheet({
     }
   }, [dialogOpen, onOpenChange])
 
+  React.useEffect(() => {
+    // If a business was already saved, close the dialog and clear its persisted state
+    if (savedPlaceId) {
+      setDialogOpen(false);
+    }
+  }, [savedPlaceId, setDialogOpen]);
+
   // URL 표시
   const truncatedUrl = normalizedData?.normalizedUrl ? 
     (normalizedData.normalizedUrl.length > 30
@@ -469,6 +465,9 @@ export function BusinessSheet({
             }
           }}
         >
+          {/* Hidden title for accessibility */}
+          <DialogTitle className="sr-only">다이얼로그</DialogTitle>
+
           {/* 1단계: 확인 */}
           {dialogStep === 'confirm' && (
             <>
@@ -753,55 +752,37 @@ export function BusinessSheet({
               </DialogHeader>
 
               {/* 키워드 리스트 */}
-              <div className="mt-4 space-y-3 max-h-[50vh] overflow-auto px-1"></div>
-                {finalKeywords && finalKeywords.length > 0 ? (
+              <div className="mt-4 space-y-3 max-h-[50vh] overflow-auto px-1">
+                {currentStep !== 'complete' ? (
+                  <p className="text-sm text-gray-500 text-center py-6">
+                    생성된 키워드를 불러오는 중...
+                  </p>
+                ) : finalKeywords && finalKeywords.length > 0 ? (
                   finalKeywords.map((item: FinalKeyword, idx: number) => {
                     const kw = item.combinedKeyword;
                     const isChecked = selectedKeywords.includes(kw);
                     const disabled = !isChecked && isUserRole && selectedKeywords.length >= maxSelection;
-                    
-                    const totalVolume = item.details?.reduce((acc, curr) => {
-                      return acc + (curr.monthlySearchVolume ?? 0)
-                    }, 0) ?? 0
+                    const totalVolume = item.details?.reduce((acc, curr) => acc + (curr.monthlySearchVolume ?? 0), 0) ?? 0
 
                     return (
-                      <label
-                        key={idx}
-                        className={`
-                          flex items-center gap-2 border-b py-2
-                          ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
-                          leading-none
-                        `}
-                      >
-                        <Checkbox
-                          checked={isChecked}
-                          onCheckedChange={() => {
-                            if (!disabled) {
-                              toggleKeyword(kw)
-                            }
-                          }}
-                          disabled={disabled}
-                        />
+                      <label key={idx} className={`flex items-center gap-2 border-b py-2 ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"} leading-none`}>
+                        <Checkbox checked={isChecked} onCheckedChange={() => { if (!disabled) toggleKeyword(kw) }} disabled={disabled} />
                         <span className="font-semibold">{kw}</span>
-                        {item.details && (
-                          <span className="ml-2 text-xs text-gray-500">
-                            (총 {totalVolume} 검색량)
-                          </span>
-                        )}
+                        {item.details && <span className="ml-2 text-xs text-gray-500">(총 {totalVolume} 검색량)</span>}
                       </label>
                     );
                   })
                 ) : (
                   <p className="text-sm text-gray-500 text-center py-6">
-                    생성된 키워드를 불러오는 중...
+                    선택 가능한 키워드가 없습니다.
                   </p>
                 )}
-              
-
+              </div>
+             
               <DialogFooter className="mt-4">
-              <Button 
-                  onClick={onSubmitKeywords}
-                  disabled={selectedKeywords.length === 0}
+                <Button 
+                    onClick={onSubmitKeywords}
+                    disabled={selectedKeywords.length === 0}
                 >
                   선택하기
                 </Button>

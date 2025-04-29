@@ -40,13 +40,13 @@ const STATIC_SIDEBAR_SECTIONS = [
       { title: "블로그리뷰", url: "/dashboard/review_blog", icon: "FileText" },
     ],
   },
-  {
-    label: "결제/요금",
-    items: [
-      { title: "Introduction", url: "/dashboard/payment_intro", icon: "BookOpen" },
-      { title: "Get Started", url: "/dashboard/payment_started", icon: "PlayCircle" },
-    ],
-  },
+  // {
+  //   label: "결제/요금",
+  //   items: [
+  //     { title: "Introduction", url: "/dashboard/payment_intro", icon: "BookOpen" },
+  //     { title: "Get Started", url: "/dashboard/payment_started", icon: "PlayCircle" },
+  //   ],
+  // },
   {
     label: "설정",
     items: [
@@ -207,7 +207,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup className="mt-auto">
           <NavSecondary
             items={[
-              { title: "도움말/지원", url: "/help", icon: "LifeBuoy" },
+              // { title: "도움말/지원", url: "/help", icon: "LifeBuoy" },
               { title: "문의하기/고객센터", url: "/contact", icon: "Mail" },
             ]}
             currentPath={pathname}

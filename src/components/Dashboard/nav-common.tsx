@@ -1,6 +1,8 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useTransition } from "react"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -58,6 +60,8 @@ interface NavCommonProps {
 }
 
 export function NavCommon({ sections, currentPath }: NavCommonProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   return (
     <>
       {sections.map((section) => (
@@ -65,6 +69,10 @@ export function NavCommon({ sections, currentPath }: NavCommonProps) {
           <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
           <SidebarMenu>
             {section.items.map((item) => {
+              // prefetch page code and data on hover
+              const handleMouseEnter = () => {
+                router.prefetch(item.url)
+              }
               const IconComponent = getIconByName(item.icon)
               const hasSubItems = item.items && item.items.length > 0
 
@@ -80,13 +88,25 @@ export function NavCommon({ sections, currentPath }: NavCommonProps) {
                     <SidebarMenuButton asChild>
                       <Link
                         href={item.url}
+                        prefetch={true}
+                        onMouseEnter={handleMouseEnter}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          startTransition(() => {
+                            router.push(item.url)
+                          })
+                        }}
                         className={`flex items-center gap-3 px-4 py-3 text-base transition-colors rounded-md ${
-                          isActiveParent 
-                            ? "bg-gray-200 text-black font-bold" 
+                          isActiveParent
+                            ? "bg-gray-200 text-black font-bold"
                             : "text-gray-500 hover:bg-gray-100 hover:text-black"
                         }`}
                       >
-                        <IconComponent className={`shrink-0 h-5 w-5 ${isActiveParent ? "stroke-[2px]" : ""}`} />
+                        <IconComponent
+                          className={`shrink-0 h-5 w-5 ${
+                            isActiveParent ? "stroke-[2px]" : ""
+                          }`}
+                        />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -103,8 +123,8 @@ export function NavCommon({ sections, currentPath }: NavCommonProps) {
                               <Link
                                 href={sub.url}
                                 className={`block px-3 py-2 text-sm rounded-md transition-colors ${
-                                  isActiveSub 
-                                    ? "bg-gray-200 text-black font-medium" 
+                                  isActiveSub
+                                    ? "bg-gray-200 text-black font-medium"
                                     : "text-gray-500 hover:bg-gray-100 hover:text-black font-normal"
                                 }`}
                               >

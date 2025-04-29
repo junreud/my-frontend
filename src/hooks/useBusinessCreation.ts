@@ -423,29 +423,29 @@ export function useBusinessCreation(userId?: string) {
           return await groupKeywords(checkRes.externalDataList);
         });
         
-        if (!groupRes.success) {
-          logger.error("키워드 그룹화 실패");
-          throw new Error("키워드 그룹화 실패");
+        // 그룹화 결과가 없으면, 기존 combinedKeywords를 사용 (fallback)
+        let finalList = groupRes.finalKeywords;
+        if ((!groupRes.success || finalList.length === 0) && Array.isArray(combinedKeywords)) {
+          logger.info('그룹화 결과가 없어 초기 조합된 키워드 사용');
+          finalList = combinedKeywords.map(k => ({ combinedKeyword: k, details: [] }));
         }
-        
-        logger.info("키워드 그룹화 성공", {
-          finalKeywordCount: groupRes.finalKeywords.length
-        });
+         
+        logger.info("키워드 그룹화 완료 - 최종 키워드 수", { finalKeywordCount: finalList.length });
         
         // ---- 완료 ----
         logger.info("비즈니스 생성 프로세스 완료", {
           placeId,
-          finalKeywordCount: groupRes.finalKeywords.length
+          finalKeywordCount: finalList.length
         });
         
         updateProgress("complete", 100);
         
-        // 이제 키워드 선택 대화상자를 열 상태로 만들기
-        setFinalKeywords(groupRes.finalKeywords);
-        
-        // 키워드 선택 다이얼로그를 열기 위한 상태 설정
+        // 최종 키워드 상태 세팅
+        setFinalKeywords(finalList);
+         
+        // 키워드 선택 다이얼로그 열기
         setKeywordDialogOpen(true);
-        
+         
         return groupRes;
       } catch (error) {
         // 오류 발생 시 상세 로깅

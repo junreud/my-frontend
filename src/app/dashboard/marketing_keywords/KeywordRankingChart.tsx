@@ -45,17 +45,24 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
         if (!existingItem) {
           dateMap.set(dateOnly, item);
         } else {
-          // 모든 가능한 저장 필드들을 통합
-          const mergedSavedCount = 
-            item.saved_count ?? existingItem.savedCount ?? existingItem.saved ?? existingItem.saved_count;
+          // 모든 가능한 저장 필드들을 통합, nullish coalescing만 사용
+          const mergedSavedCount = Number(
+            item.savedCount
+              ?? item.saved
+              ?? item.saved_count
+              ?? existingItem.savedCount
+              ?? existingItem.saved
+              ?? existingItem.saved_count
+              ?? 0
+          );
           
           dateMap.set(dateOnly, {
             ...existingItem,
-            // 이제 타입이 통일되어 일관된 필드명 사용
+            // 일관된 numeric 필드 사용
             savedCount: mergedSavedCount,
-            saved: mergedSavedCount, // 추가: 이전 필드명과의 호환성
-            saved_count: mergedSavedCount, // 추가: 다른 가능한 필드명
-            blog_review_count: item.blog_review_count ?? existingItem.blog_review_count ?? existingItem.blogReviews,
+            saved: mergedSavedCount,
+            saved_count: mergedSavedCount,
+            blog_review_count: item.blog_review_count ?? item.blogReviews ?? existingItem.blog_review_count ?? existingItem.blogReviews,
             receipt_review_count: item.receipt_review_count ?? item.receiptReviews ?? existingItem.receipt_review_count ?? existingItem.receiptReviews,
             // 다른 필드도 추가
             blogReviews: item.blogReviews ?? item.blog_review_count ?? existingItem.blogReviews ?? existingItem.blog_review_count,
@@ -327,11 +334,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
               <Legend />
               <Line
                 type="monotone"
-                dataKey={(d) => {
-                  // 가능한 모든 필드명 검사 (순서 중요)
-                  const value = d.savedCount ?? d.saved ?? d.saved_count ?? 0;
-                  return Number(value); // 항상 숫자 반환
-                }}
+                dataKey="savedCount"
                 name="저장 수"
                 stroke="#ff9800"
                 strokeWidth={2}

@@ -252,11 +252,12 @@ export default function AlbamonFilter() {
       console.log("크롤링 API 응답:", response.data);
       
       if (response.data.success && response.data.data?.length > 0) {
-        const transformedData: ParsedBusiness[] = response.data.data.map((item: AlbamonJobResponse) => ({
+        const transformedData: ParsedBusiness[] = response.data.data.map((item: AlbamonJobResponse, idx: number) => ({
           id: item.jobId || String(Math.random()),
           businessName: item.companyName || "",
           address: item.address || "",
-          postTitle: item.jobTitle || ""
+          postTitle: item.jobTitle || "",
+          filter: addedFilters[idx] // Add the filter information to the crawled data
         }));
         
         setCrawledBusinesses(transformedData);
@@ -278,11 +279,32 @@ export default function AlbamonFilter() {
     
     try {
       setIsCrawling(true);
+      interface Filter {
+        searchType?: string;
+        searchKeyword?: string;
+        includeKeyword?: string;
+        excludeKeyword?: string;
+        areas?: string[];
+      }
+      const selectedBusinesses = crawledBusinesses
+      .filter(business => selectedIds.includes(business.id))
+      .map(business => {
+        const filter: Filter = business.filter || {};
+        const isTotal = filter.searchType === 'total';
+        const isArea = filter.searchType === 'area';
       
-      const selectedBusinesses = crawledBusinesses.filter(business => 
-        selectedIds.includes(business.id)
-      );
-      
+        return {
+          ...business,
+          parsingType: filter.searchType || '',
+          includeKeywords: isTotal
+            ?  ''
+            : (filter.includeKeyword ?? ''),
+          excludeKeywords: filter.excludeKeyword ?? '',
+          region: isArea && Array.isArray(filter.areas) && filter.areas.length > 0
+            ? filter.areas
+            : undefined, // undefined로 보내면 백엔드에서 ''로 처리됨
+        };
+      });
       console.log("파싱할 업체 정보:", selectedBusinesses);
       
       const response = await apiClient.post('/api/customer/contact', {
@@ -306,7 +328,6 @@ export default function AlbamonFilter() {
       setIsCrawling(false);
     }
   }, [crawledBusinesses]);
-
   const handleCancelParsing = useCallback(() => {
     setShowParsingTable(false);
   }, []);
@@ -350,7 +371,7 @@ export default function AlbamonFilter() {
     <div className="p-6 space-y-4">
       <div className="w-full max-w-2xl">
         <div className="mb-4">
-          <label className="text-xs font-medium mb-1 block">파싱 종류 선택</label>
+          <label className="text-xs font-medium mb-1 block">파싱 종류 선택 <span className="text-red-500">*</span></label>
           <div className="flex space-x-4 items-center">
             <select
               className="border p-2 w-64"
@@ -435,7 +456,12 @@ export default function AlbamonFilter() {
         )}
 
         <div className="mb-4">
-          <label className="text-xs font-medium mb-1 block">제외 키워드</label>
+          <label className="text-xs font-medium mb-1 block flex items-center gap-2">
+            제외 키워드
+            <span className="text-xs text-gray-500">
+              (주소, 업체명, 공고제목 중 해당 키워드가 온전히 들어있다면 삭제합니다.)
+            </span>
+          </label>
           <input
             type="text"
             className="border p-2 w-64"
@@ -443,9 +469,6 @@ export default function AlbamonFilter() {
             onChange={(e) => setExcludeKeyword(e.target.value)}
             placeholder="제외할 키워드 입력"
           />
-            <p className="text-xs text-gray-500 mt-1">
-            주소, 업체명, 공고제목 중 해당 키워드가 온전히 들어있다면 삭제합니다.
-          </p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -565,6 +588,7 @@ export interface ParsedBusiness {
   businessName: string;
   address: string;
   postTitle: string;
+  filter?: AddedFilter; // filter 정보 추가 (optional)
 }
  
 interface ParsingTableProps {

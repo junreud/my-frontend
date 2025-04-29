@@ -66,7 +66,10 @@ apiClient.interceptors.response.use(
         pendingRequests = [];
         // 쿠키 문제일 경우 로그아웃으로 처리
         localStorage.removeItem("accessToken");
-        // 로그인 페이지로 리디렉션 코드 추가 가능
+        // 토큰 만료 시 로그인 페이지로 리디렉션
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

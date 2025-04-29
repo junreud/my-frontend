@@ -1,95 +1,180 @@
-"use client"
+import { headers } from 'next/headers'; // headers import 유지
+import { redirect } from "next/navigation"
 
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { useUser } from "@/hooks/useUser" // useUser 훅 import
-
-// 아래는 원래 home/page.tsx에서 불러오던 컴포넌트들
-import { AnimatedNumber } from "@/components/animations/AnimatedNumber"
+import { ClientAnimatedNumber } from "@/components/animations/ClientAnimatedNumber" // 새로 만든 클라이언트 컴포넌트 import
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import DashboardChart from "@/components/Dashboard/DashboardChart"
+import DashboardChart from "@/components/Dashboard/DashboardChart" // !! 중요: 이 컴포넌트 파일 상단에 "use client" 필요
+
+// --- 서버 측 데이터 타입 정의 (예시) ---
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  url_registration: number;
+  // ... 기타 사용자 속성
+}
+
+interface MainKeywordStatus {
+  keyword: string;
+  currentRank: number;
+  diff: number;
+}
+// --- ---
+
+// --- 서버 측 데이터 Fetch 함수 (수정: 함수 내부에서 headers() 호출) ---
+
+// fetchServerAPI 헬퍼 함수는 token을 받도록 유지 (호출하는 쪽에서 전달)
+async function fetchServerAPI(endpoint: string, token: string | undefined | null) {
+  if (!token) {
+    console.warn(`Authorization header not found or empty for API call: ${endpoint}`);
+    return null;
+  }
+  if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+    console.error("API Base URL (NEXT_PUBLIC_API_BASE_URL) is not defined.");
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}${endpoint}`, {
+      headers: {
+        // 미들웨어에서 설정한 Authorization 헤더를 그대로 사용
+        'Authorization': token, // token 변수에는 'Bearer xxx' 형태가 담겨있음
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch ${endpoint} on server: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching ${endpoint} on server:`, error);
+    return null;
+  }
+}
+
+// 각 함수가 token 파라미터를 제거하고 내부에서 headers() 호출
+async function getUserData(): Promise<User | null> {
+  const headersList = headers(); // 함수 내부에서 호출
+  const token = headersList.get('Authorization');
+  const data = await fetchServerAPI('/users/me', token);
+  return data?.user || null;
+}
+
+async function getMainKeywordStatus(): Promise<MainKeywordStatus | null> {
+  const headersList = headers(); // 함수 내부에서 호출
+  const token = headersList.get('Authorization');
+  const data = await fetchServerAPI('/keyword/main-status', token);
+  return data?.data || null;
+}
+
+async function getDailyStats(): Promise<{ todayUsers: { count: number; description: string }; newClients: { count: number; description: string } } | null> {
+  const headersList = headers(); // 함수 내부에서 호출
+  const token = headersList.get('Authorization');
+  const data = await fetchServerAPI('/stats/daily-summary', token); // !! 실제 엔드포인트 확인 !!
+  if (!data) {
+    return {
+      todayUsers: { count: 0, description: '데이터 로딩 실패' },
+      newClients: { count: 0, description: '데이터 로딩 실패' }
+    };
+  }
+  return { // !! 실제 응답 구조 확인 !!
+    todayUsers: data.todayUsers || { count: 0, description: '데이터 없음' },
+    newClients: data.newClients || { count: 0, description: '데이터 없음' }
+  };
+}
+
+async function getKeywordRankings(): Promise<{ keyword: string; rank: string }[]> {
+  const headersList = headers(); // 함수 내부에서 호출
+  const token = headersList.get('Authorization');
+  const data = await fetchServerAPI('/keywords/rankings', token); // !! 실제 엔드포인트 확인 !!
+  return data?.rankings || []; // !! 실제 응답 구조 확인 !!
+}
+
+async function getChartData(mainKeyword: string | undefined): Promise<any> {
+  if (!mainKeyword) {
+    console.warn("Main keyword is undefined, cannot fetch chart data.");
+    return null;
+  }
+  const headersList = headers(); // 함수 내부에서 호출
+  const token = headersList.get('Authorization');
+  const encodedKeyword = encodeURIComponent(mainKeyword);
+  const data = await fetchServerAPI(`/keywords/chart-data/${encodedKeyword}`, token); // !! 실제 엔드포인트 확인 !!
+  return data?.chartData || null; // !! 실제 응답 구조 확인 !!
+}
+// --- ---
+
 
 /**
- * /dashboard로 접근했을 때:
- * 1) 토큰 확인
- *   - 없으면 /login
- * 2) 토큰 유효 & url_registration === 0 → /welcomepage
- * 3) 나머지(정상 사용자)면 "대시보드 UI" 렌더
+ * /dashboard로 접근했을 때 (서버 컴포넌트):
+ * 1) 서버에서 사용자 인증 및 데이터 로드 시도
+ *   - 인증 실패 시 /login 리다이렉트
+ *   - url_registration === 0 시 /welcomepage 리다이렉트
+ * 2) 필요한 데이터 병렬 로드 (사용자 정보, 메인 키워드, 기타 카드/테이블 데이터)
+ * 3) 데이터 로드 완료 후 "대시보드 UI" 렌더 (데이터는 props로 전달)
  */
 
-export default function DashboardPage() {
-  const router = useRouter()
-  
-  // useUser 훅으로 데이터 및 상태 관리
-  const { data: user, isLoading, error: userError } = useUser()
+// 페이지 컴포넌트를 async 함수로 변경
+export default async function DashboardPage() {
+  // 메인 키워드 상태 먼저 가져오기 (내부에서 headers() 사용)
+  const mainKeywordStatus = await getMainKeywordStatus();
+  const mainKeyword = mainKeywordStatus?.keyword;
 
-  // 사용자 접근 권한: "정상적으로 대시보드 렌더해도 되는가?"
-  const [isAuthorized, setIsAuthorized] = useState(false)
+  // 나머지 데이터 병렬 로딩 (내부에서 headers() 사용)
+  const [
+    user,
+    dailyStats,
+    keywordRankings,
+    chartData
+  ] = await Promise.all([
+    getUserData(), // token 인자 제거
+    getDailyStats(), // token 인자 제거
+    getKeywordRankings(), // token 인자 제거
+    getChartData(mainKeyword) // token 인자 제거
+  ]);
 
-  useEffect(() => {
-    // (A) 먼저 토큰 확인
-    const token = localStorage.getItem("accessToken")
-    if (!token) {
-      // 토큰이 없으면 => 로그인 페이지로
-      router.replace("/login")
-      return
-    }
-
-    // (B) 백엔드 데이터 확인 (useUser 훅 결과 활용)
-    if (!isLoading && user) {
-      if (user.url_registration === 0) {
-        // 가입 완료 전이면 /welcomepage
-        router.replace("/welcomepage")
-      } else {
-        // 정상 사용자
-        setIsAuthorized(true)
-      }
-    }
-  }, [router, user, isLoading])
-
-  // (C) 아직 서버 응답 대기 중이면 로딩 스피너
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-solid border-gray-300 border-t-transparent" />
-      </div>
-    )
+  // (A) 사용자 인증 및 상태 확인 (서버 측)
+  if (!user) {
+    // 토큰이 없거나 유효하지 않아 사용자 정보를 가져오지 못한 경우
+    console.log("User data fetch failed, likely due to missing or invalid token. Redirecting to login.");
+    redirect("/login");
+  }
+  // url_registration 체크는 유지
+  if (user.url_registration === 0) {
+    redirect("/welcomepage");
   }
 
-  // (D) 통신 완료 후, 에러가 있다면 에러 메시지 표시
-  if (userError) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-white text-red-500">
-        <div>
-          <p className="mb-4">오류가 발생했습니다.</p>
-          <p>{(userError as Error).message || "서버 연결 실패"}</p>
-          {/* 필요 시, "재시도" 버튼 등 추가 */}
-        </div>
-      </div>
-    )
-  }
+  // 데이터 로딩 실패 또는 null일 경우 기본값 설정
+  const todaysUsersData = dailyStats?.todayUsers || { count: 0, description: '데이터 로딩 실패' };
+  const newClientsData = dailyStats?.newClients || { count: 0, description: '데이터 로딩 실패' };
 
-  // (E) 검증은 끝났지만 isAuthorized가 false 이면?
-  // => 이미 useEffect에서 router.replace 했을 것이므로, 여기서는 잠깐 null
-  //    (혹은 "리다이렉트중" 메시지)
-  if (!isAuthorized) {
-    return null
-  }
 
   // -------------------------
-  // (이하: 원래 home/page.tsx 내용)
+  // (이하: UI 렌더링 - 서버에서 로드한 데이터 사용)
   // -------------------------
   return (
     <>
       <div className="grid gap-4 md:grid-cols-3">
-        {/* 카드 1: Today’s Money */}
+        {/* 카드 1: Main Keyword Status */}
         <Card>
           <CardHeader>
-            <CardTitle>Today’s Money</CardTitle>
-            <CardDescription>+55% than last week</CardDescription>
+            <CardTitle>Main Keyword</CardTitle>
+            <CardDescription>
+              {mainKeywordStatus
+                ? `${mainKeywordStatus.diff > 0 ? '+' : ''}${mainKeywordStatus.diff}위 변동`
+                : '데이터 없음' }
+            </CardDescription>
           </CardHeader>
-          <CardContent className="text-4xl font-bold text-green-600">
-            <AnimatedNumber to={53} duration={2} />k
+          <CardContent className="text-4xl font-bold text-indigo-600">
+            {mainKeywordStatus
+              ? `${mainKeywordStatus.currentRank}위`
+              : 'N/A' }
+            {mainKeywordStatus && (
+              <div className="text-sm text-gray-500 mt-1">{mainKeywordStatus.keyword}</div>
+            )}
           </CardContent>
         </Card>
 
@@ -97,10 +182,11 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Today’s Users</CardTitle>
-            <CardDescription>+3% than last month</CardDescription>
+            {/* 서버에서 가져온 설명 사용 */}
+            <CardDescription>{todaysUsersData.description}</CardDescription>
           </CardHeader>
           <CardContent className="text-4xl font-bold text-blue-600">
-            <AnimatedNumber to={2300} duration={2} />
+            <ClientAnimatedNumber to={todaysUsersData.count} duration={1.5} />
           </CardContent>
         </Card>
 
@@ -108,25 +194,23 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>New Clients</CardTitle>
-            <CardDescription>-2% than yesterday</CardDescription>
+            {/* 서버에서 가져온 설명 사용 */}
+            <CardDescription>{newClientsData.description}</CardDescription>
           </CardHeader>
           <CardContent className="text-4xl font-bold text-orange-600">
-            <AnimatedNumber to={3462} duration={2} />
+             <ClientAnimatedNumber to={newClientsData.count} duration={1.5} />
           </CardContent>
         </Card>
       </div>
 
       {/* 아래쪽: 그래프 + 키워드 테이블 영역 */}
       <div className="grid gap-4 md:grid-cols-2 mt-4">
-        {/* 그래프 */}
-        <DashboardChart />
+        {/* 그래프 - DashboardChart는 클라이언트 컴포넌트. 서버에서 가져온 데이터 전달 */}
+        <DashboardChart initialData={chartData} />
 
-        {/* 키워드 순위 테이블 */}
+        {/* 키워드 순위 테이블 - 서버에서 로드한 데이터 사용 */}
         <Card className="rounded-xl p-4">
-          {/* 제목 중앙정렬 */}
           <h2 className="mb-2 text-lg font-semibold text-center">내 키워드 현재 순위</h2>
-          
-          {/* 테이블 컨테이너 - 테두리 제거 및 중앙 정렬 */}
           <div className="w-full max-w-3xl mx-auto px-4 py-2">
             <table className="w-full table-auto text-left text-sm">
               <thead>
@@ -136,23 +220,18 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {/* 행 테두리 제거하고 구분을 위해 배경색 추가 */}
-                <tr className="hover:bg-gray-50">
-                  <td className="p-2">A키워드</td>
-                  <td className="p-2">3위</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="p-2">B키워드</td>
-                  <td className="p-2">5위</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="p-2">C키워드</td>
-                  <td className="p-2">10위</td>
-                </tr>
-                <tr className="hover:bg-gray-50">
-                  <td className="p-2">D키워드</td>
-                  <td className="p-2">12위</td>
-                </tr>
+                {keywordRankings && keywordRankings.length > 0 ? (
+                  keywordRankings.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="p-2">{item.keyword}</td>
+                      <td className="p-2">{item.rank}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={2} className="p-2 text-center text-gray-500">키워드 데이터가 없습니다.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

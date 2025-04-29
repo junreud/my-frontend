@@ -85,10 +85,6 @@ export function NavUser() {
                 <BadgeCheck />
                 Account
               </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-gray-100">
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
               <DropdownMenuItem className="hover:bg-gray-100 !important">
                 <Bell />
                 Notifications
@@ -96,11 +92,14 @@ export function NavUser() {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => {
-                // 예: 로그아웃 처리
-                localStorage.removeItem("accessToken")
-                // 쿠키도 제거 or 서버 로그아웃 API 호출
-                window.location.href = "/login"
+              onClick={async () => {
+                // 로그아웃 API 호출 (optional)
+                try {
+                  await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
+                } catch {}
+                // 토큰 삭제 및 리다이렉션
+                localStorage.removeItem('accessToken');
+                window.location.href = '/login';
               }}
             >
               <LogOut />
