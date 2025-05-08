@@ -1,5 +1,5 @@
 "use client"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef, useEffect } from "react"
 import { useUser } from "./useUser"
 import { useUserBusinesses } from "./useUserBusinesses"
 import { useBusinessCreation } from "./useBusinessCreation"
@@ -10,6 +10,11 @@ import { createLogger } from "@/lib/logger"
 const logger = createLogger('BusinessSwitcher');
 
 export function useBusinessSwitcher() {
+  // 로딩 상태 전후의 레이아웃 쉬프트 방지를 위한 상태
+  const [prevHeight, setPrevHeight] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [isHeightStabilized, setIsHeightStabilized] = useState(false);
+
   // 1) 유저 가져오기
   const { data: user, isLoading: userIsLoading } = useUser()
 
@@ -58,6 +63,46 @@ export function useBusinessSwitcher() {
     category?: string;
     platform?: string;
   } | null>(null);
+
+  // 높이 관리 함수
+  const measureAndStabilizeHeight = useCallback(() => {
+    if (containerRef.current) {
+      const height = containerRef.current.offsetHeight;
+      setPrevHeight(height);
+      setIsHeightStabilized(true);
+    }
+  }, []);
+
+  // 비즈니스 변경 시 높이 안정화 처리
+  const handleBusinessChange = useCallback((business) => {
+    // 높이 기록
+    measureAndStabilizeHeight();
+    
+    // 비즈니스 변경
+    setActiveBusiness(business);
+    
+    // 높이 안정화 해제 타이머 설정
+    setTimeout(() => {
+      setIsHeightStabilized(false);
+    }, 500); // 트랜지션이 완료되는 적절한 시간 후에
+  }, [measureAndStabilizeHeight, setActiveBusiness]);
+
+  // 로딩 상태 변경 감지
+  useEffect(() => {
+    const isLoading = userIsLoading || businessesLoading;
+    
+    if (!isLoading && prevHeight === null) {
+      // 초기 로딩 완료 시 높이 측정
+      measureAndStabilizeHeight();
+    } else if (!isLoading && prevHeight !== null) {
+      // 후속 로딩 완료 시, 일정 시간 후 높이 안정화 해제
+      const timer = setTimeout(() => {
+        setIsHeightStabilized(false);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [userIsLoading, businessesLoading, prevHeight, measureAndStabilizeHeight]);
 
   // 새로운 초기화 함수 추가
   const resetBusinessCreation = useCallback(() => {
@@ -145,11 +190,16 @@ export function useBusinessSwitcher() {
     user,
     businesses,
     activeBusiness,
-    setActiveBusiness,
+    setActiveBusiness: handleBusinessChange, // 기존 함수 대신 높이 안정화 처리가 포함된 함수 사용
     isLoading: userIsLoading || businessesLoading,
     isError: businessesError,
     refetchBusinesses: refetch,
 
+    // 레이아웃 쉬프트 방지용 prop 추가
+    containerRef,
+    prevHeight,
+    isHeightStabilized,
+    
     // Business limit related
     canAddMoreBusinesses,
     businessLimit,

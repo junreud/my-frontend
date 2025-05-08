@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
 import { createLogger } from "@/lib/logger";
 import WorkTable from "./WorkHistoryTable";
@@ -10,9 +10,31 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
 
 const logger = createLogger("AdminWorkHistoryPage");
+
+// 작업 옵션을 가져오는 커스텀 훅
+function useWorkOptions() {
+  return useQuery({
+    queryKey: ['work-history-options'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/api/admin/work-histories/options');
+        if (response.data.success) {
+          return response.data.data;
+        } else {
+          throw new Error(response.data.message || '작업 옵션을 가져오는데 실패했습니다.');
+        }
+      } catch (error) {
+        logger.error('작업 옵션 조회 오류:', error);
+        throw error;
+      }
+    },
+    staleTime: 10 * 60 * 1000, // 10분 동안 캐시 유지
+  });
+}
 
 export default function Page() {
   const { data: userData, isLoading: userLoading } = useUser();
@@ -20,6 +42,9 @@ export default function Page() {
   const [workType, setWorkType] = useState<string>("");
   const [executor, setExecutor] = useState<string>("");
   const queryClient = useQueryClient();
+
+  // 백엔드에서 작업 종류와 실행사 목록 가져오기
+  const { data: workOptions, isLoading: optionsLoading, isError: optionsError } = useWorkOptions();
 
   // 관리자 권한 확인
   const isAdmin = userData?.role === "admin";
@@ -67,23 +92,11 @@ export default function Page() {
     });
   }, [workHistories]);
 
-  // 사용 가능한 작업 타입과 실행사 옵션 생성
-  const workTypeOptions = ["트래픽", "저장하기", "블로그배포"];
+  // workTypeOptions와 executorOptions에 백엔드에서 받은 데이터 사용
+  const workTypeOptions = workOptions?.workTypes || [];
+  const executorOptions = workOptions?.executors || [];
 
-  // executorOptions 생성 방식 수정 - 방어적 코딩
-  const executorOptions = React.useMemo(() => {
-    if (!workHistories || !Array.isArray(workHistories)) return [];
-
-    // null/undefined 체크와 중복 제거를 안전하게 수행
-    const executors = workHistories
-      .filter(history => history && history.executor) // null/undefined 값 필터링
-      .map(history => history.executor)
-      .filter((value, index, self) => self.indexOf(value) === index); // 중복 제거
-
-    return executors;
-  }, [workHistories]);
-
-  if (userLoading) {
+  if (userLoading || optionsLoading) {
     return <div className="p-6 text-center">로딩 중...</div>;
   }
 
@@ -125,9 +138,9 @@ export default function Page() {
         <div className="w-64">
           <label className="text-xs font-medium mb-1 block">실행사 필터</label>
           <MultiSelectCombobox
-            options={(executorOptions || []).map(exec => ({
-              label: exec || '',
-              value: exec || ''
+            options={executorOptions.map(exec => ({
+              label: exec,
+              value: exec
             }))}
             selected={executor}
             onChange={setExecutor}
@@ -155,7 +168,7 @@ export default function Page() {
           isLoading={isLoading}
           isError={isError}
           refreshData={async () => {
-            await refreshWorkHistories(); // 반환값을 무시
+            await refreshWorkHistories();
           }}        
         />
       </Card>

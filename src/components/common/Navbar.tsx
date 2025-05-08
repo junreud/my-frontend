@@ -47,7 +47,7 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
   if (isLoggedIn) {
     // 로그인 상태
     if (userRole === "admin") {
-      linkUrl = "/admin";
+      linkUrl = "/dashboard";
       linkText = "어드민 대시보드";
     } else if (userRole === "user") {
       linkUrl = "/dashboard";

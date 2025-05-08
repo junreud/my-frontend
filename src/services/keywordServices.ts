@@ -123,8 +123,8 @@ export async function checkSearchVolume(normalizedUrl: string, candidateKeywords
   
   try {
     const response = await apiClient.post<SearchVolumeResponse>(
-      `/keyword/search-volume?normalizedUrl=${normalizedUrl}`,
-      { candidateKeywords }
+      "/keyword/search-volume",
+      { normalizedUrl, candidateKeywords }
     );
     
     logger.info("월 검색량 데이터:", response.data);
@@ -138,21 +138,27 @@ export async function checkSearchVolume(normalizedUrl: string, candidateKeywords
 
 export async function groupKeywords(externalDataList: ExternalData[]): Promise<GroupedKeywordsResponse> {
   logger.info("키워드 그룹화 시작", { dataCount: externalDataList.length });
-  
+
+  // unexpected props (e.g., rank) removed: only keep keyword & monthlySearchVolume
+  const cleanedList = externalDataList.map(item => ({
+    keyword: item.keyword,
+    monthlySearchVolume: item.monthlySearchVolume
+  }));
+
   // 데이터 검증
-  if (!Array.isArray(externalDataList)) {
+  if (!Array.isArray(cleanedList)) {
     logger.error("유효하지 않은 데이터 형식: 배열이 아님");
     return { success: false, finalKeywords: [] };
   }
-  
+
   // 빈 데이터 검증: 그룹화 없이 성공으로 처리
-  if (externalDataList.length === 0) {
+  if (cleanedList.length === 0) {
     logger.warn("전달된 키워드가 없습니다. 그룹화 단계를 건너뜁니다.");
     return { success: true, finalKeywords: [] };
   }
-  
+
   // 데이터 형식 검증
-  const isValidData = externalDataList.every(item => 
+  const isValidData = cleanedList.every(item => 
     typeof item === 'object' && 
     item !== null && 
     typeof item.keyword === 'string' && 
@@ -160,7 +166,7 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
   );
   
   if (!isValidData) {
-    logger.error("groupKeywords: 유효하지 않은 데이터 형식", externalDataList);
+    logger.error("groupKeywords: 유효하지 않은 데이터 형식", cleanedList);
     return { success: false, finalKeywords: [] };
   }
   
@@ -177,7 +183,7 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
 
       const response = await apiClient.post<GroupedKeywordsResponse>(
         "/keyword/group",
-        { externalDataList },
+        { externalDataList: cleanedList },
         {
           headers: { 'Content-Type': 'application/json' },
           timeout: 30000 // 타임아웃을 30초로 증가

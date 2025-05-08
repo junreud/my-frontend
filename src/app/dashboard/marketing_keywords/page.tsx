@@ -3,14 +3,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useKeywordRankingDetails } from "@/hooks/useKeywordRankingDetails";
 import { useUserKeywords } from "@/hooks/useUserKeywords";
-import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { useAddKeyword } from '@/hooks/useAddKeyword';
 import { useChangeKeyword } from '@/hooks/useChangeKeyword';
 import { useKeywordStatusPolling } from '@/hooks/useKeywordStatusPolling';
-import { createLogger } from "@/lib/logger";
 import { useUser } from "@/hooks/useUser";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient"; // Import apiClient
 // shadcn/ui components
 import {
   Accordion,
@@ -25,9 +24,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { X } from 'lucide-react';
 // Components
 import KeywordRankingChart from "./KeywordRankingChart";
 import KeywordRankingTable from "./KeywordRankingTable";
@@ -39,14 +40,14 @@ import {
   KeywordRankingData,
   ChartDataPoint
 } from "@/types";
-
-const logger = createLogger("MarketingKeywordsPage");
+import { useBusinessContext } from "../BusinessContext";
 
 // 키워드 데이터 그룹 인터페이스
 interface KeywordDataGroup {
   rankingDetails: KeywordRankingDetail[];
   chartData: ChartDataPoint[];
   rankingList: KeywordRankData[];
+  isRestaurant: boolean;
 }
 
 // 키워드 맵 인터페이스
@@ -74,19 +75,21 @@ function formatChartDataForKeywordMap(details: KeywordRankingDetail[], activePla
         item => String(item.place_id) === String(activePlaceId)
       ) : null;
       
+      // combine saved count from various fields
+      const savedValue = activePlaceItem?.savedCount ?? activePlaceItem?.saved_count ?? activePlaceItem?.saved ?? null;
       return {
         date,
         date_key: date,
         uv: activePlaceItem?.ranking ?? 0,
-        place_id: activePlaceItem?.place_id || '', // null 대신 빈 문자열로 변경
-        ranking: activePlaceItem?.ranking || null,
-        savedCount: activePlaceItem?.savedCount || 0,
-        blog_review_count: activePlaceItem?.blog_review_count || 0,
-        receipt_review_count: activePlaceItem?.receipt_review_count || 0,
+        place_id: activePlaceItem?.place_id || '',
+        ranking: activePlaceItem?.ranking ?? null,
+        savedCount: savedValue,
+        blog_review_count: activePlaceItem?.blog_review_count ?? null,
+        receipt_review_count: activePlaceItem?.receipt_review_count ?? null,
         keywordItems: activePlaceItem?.keywordList || [],
-        saved: activePlaceItem?.savedCount || 0,
-        blogReviews: activePlaceItem?.blog_review_count || 0,
-        receiptReviews: activePlaceItem?.receipt_review_count || 0,
+        saved: savedValue,
+        blogReviews: activePlaceItem?.blog_review_count ?? null,
+        receiptReviews: activePlaceItem?.receipt_review_count ?? null,
       };
     });
   
@@ -100,6 +103,7 @@ function formatChartDataForKeywordMap(details: KeywordRankingDetail[], activePla
 }
 
 export default function Page(): JSX.Element {
+  const { activeBusiness, user } = useBusinessContext();
   const [openAccordionItem, setOpenAccordionItem] = useState<string | undefined>(undefined);
   const [rangeValue, setRangeValue] = useState<number>(0);
   const [maxRangeValue, setMaxRangeValue] = useState<number>(59); // Default to 59 (60 days)
@@ -116,8 +120,6 @@ export default function Page(): JSX.Element {
   const [isComboboxOpen, setIsComboboxOpen] = useState(false);
   const [pollingKeyword, setPollingKeyword] = useState<string | null>(null);
   const [updatingKeywords, setUpdatingKeywords] = useState<string[]>([]);
-
-  const { activeBusiness, user } = useBusinessSwitcher();
 
   const { addKeyword, isAdding } = useAddKeyword(
     user?.id ?? 0, 
@@ -145,7 +147,8 @@ export default function Page(): JSX.Element {
   const { 
     keywords: userKeywordObjects, 
     loading: keywordsLoading,
-    error: keywordsError
+    error: keywordsError,
+    refetch: refetchUserKeywords  // refetch function for user keywords
   } = useUserKeywords(user?.id, activeBusiness?.place_id);
 
   const userKeywords = useMemo<string[]>(() => 
@@ -185,12 +188,12 @@ export default function Page(): JSX.Element {
       
       // 쿼리 무효화
       await queryClient.invalidateQueries({
-        queryKey: ['keywordRankingDetails', activeBusiness?.place_id, user?.id],
+        queryKey: ['keywordRankingDetails', String(activeBusiness?.place_id), String(user?.id)],
       });
       await queryClient.invalidateQueries({
-        queryKey: ['userKeywords', user?.id, activeBusiness?.place_id],
+        queryKey: ['userKeywords', String(user?.id), String(activeBusiness?.place_id)],
       });
-  
+
       console.log('Keyword data refreshed successfully');
     } catch (error) {
       console.error("Error refreshing data:", error);
@@ -210,7 +213,7 @@ export default function Page(): JSX.Element {
       setIsKeywordsUpdating(false);
       setUpdatingKeywords([]);
     }
-  }, [pollingKeyword]);
+  }, [pollingKeyword, isKeywordsUpdating, updatingKeywords.length]);
   
   // handlePollingComplete를 리팩토링
   const handlePollingComplete = useCallback(() => {
@@ -278,6 +281,7 @@ export default function Page(): JSX.Element {
       };
       
       return {
+        date: detailAny.date_key || '',
         id: detailAny.id || '',  
         keyword_id: detailAny.keyword_id || '',
         keyword: detailAny.keyword || '',
@@ -285,7 +289,9 @@ export default function Page(): JSX.Element {
         place_id: detail.place_id,
         place_name: detailAny.place_name || '',
         category: detailAny.category || '',
-        savedCount: detailAny.savedCount ?? null,
+        savedCount: detailAny.savedCount ?? detailAny.saved_count ?? null,
+        saved_count: detailAny.saved_count ?? detailAny.saved ?? null,
+        saved: detailAny.saved ?? detailAny.saved_count ?? detailAny.savedCount ?? null,
         blog_review_count: detailAny.blog_review_count ?? null,
         receipt_review_count: detailAny.receipt_review_count ?? null,
         keywordList: detailAny.keywordList || [],
@@ -301,16 +307,20 @@ export default function Page(): JSX.Element {
 
       if (keywordDetails.length > 0) {
         const chartData = formatChartDataForKeywordMap(keywordDetails, placeId);
-
+        // determine if this keyword corresponds to a restaurant based on category field
+        const activeDetail = keywordDetails.find(detail => String(detail.place_id) === String(placeId));
+        const category = activeDetail?.category || '';
+        const isRestaurant = category.includes('음식점') || category.includes('레스토랑');
         result[keyword] = {
           rankingDetails: keywordDetails,
           chartData,
-          rankingList: allKeywordRankingsData.rankingList || []
+          rankingList: allKeywordRankingsData.rankingList || [],
+          isRestaurant,
         };
       }
     });
 
-    logger.info(`${Object.keys(result).length}개 키워드 데이터 매핑 완료`);
+    // logger.info(`${Object.keys(result).length}개 키워드 데이터 매핑 완료`);
     return result;
   }, [allKeywordRankingsData, userKeywords, activeBusiness?.place_id]); // Add activeBusiness?.place_id as dependency since it's used in formatChartData
 
@@ -407,39 +417,11 @@ export default function Page(): JSX.Element {
     setSelectedKeyword("");  // 선택된 키워드 초기화
     setRangeValue(0);        // 슬라이더 값 초기화
     setHistoricalData(null); // 차트 및 테이블 데이터 초기화
-    // 비즈니스 변경 시 키워드 데이터와 순위 상세를 즉시 다시 로드
+    // 비즈니스 변경 시 키워드 데이터 즉시 새로 로드
     refreshKeywordData();
-  }, [activeBusiness?.place_id, refreshKeywordData]);
+    refetchUserKeywords();    // refetch user keywords for accordion & combobox
+  }, [activeBusiness?.place_id, refreshKeywordData, refetchUserKeywords]);
 
-  useEffect(() => {
-    console.log("[Debug] MarketingKeywordsPage:", {
-      keywordsLoading,
-      keywordsError,
-      allKeywordsLoading,
-      allKeywordsError,
-      userKeywordsCount: userKeywords.length,
-      selectedKeyword,
-    });
-  }, [
-    keywordsLoading,
-    keywordsError,
-    allKeywordsLoading,
-    allKeywordsError,
-    userKeywords,
-    selectedKeyword,
-  ]); // 누락된 selectedKeyword 추가
-
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      // 브라우저에서 사용 가능한 메모리 API 사용
-      if (typeof window !== 'undefined' && window.performance && (performance as any).memory) {
-        console.log('Memory usage:', (performance as any).memory);
-      } else {
-        console.log('Memory monitoring not available in this browser');
-      }
-    }
-  }, []);
-  
   interface ComboboxWithPropsProps {
     options: string[];
     value: string;
@@ -545,21 +527,6 @@ export default function Page(): JSX.Element {
     return [safeData];
   };
   
-  // formatChartData 함수 최적화
-  const formatChartData = useCallback((data: ChartDataPoint[] | undefined): KeywordHistoricalData[] => {
-    if (!data || data.length === 0) return [];
-  
-    return data.map(point => ({
-      date: point.date,
-      ranking: point.ranking ?? 0,
-      uv: point.uv,
-      place_id: String(point.place_id || ''),
-      date_key: point.date_key,
-      blog_review_count: point.blog_review_count,
-      receipt_review_count: point.receipt_review_count,
-    }));
-  }, []);
-
   // 레인지 슬라이더 onChange 핸들러 최적화
   const handleRangeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = Number(e.target.value);
@@ -622,9 +589,9 @@ export default function Page(): JSX.Element {
 
               <AccordionContent>
                 <KeywordRankingChart
-                  // Pass raw chartData with savedCount field for plotting
-                  chartData={keywordRankingsMap[keyword]?.chartData || []}
+                  chartData={keywordRankingsMap[keyword]?.chartData.map(d => ({ ...d, place_id: d.place_id ?? '' })) || []}
                   activeBusiness={activeBusiness}
+                  isRestaurantKeyword={activeBusiness?.isRestaurant || false}  // always show for restaurant businesses
                 />
               </AccordionContent>
             </AccordionItem>
@@ -804,18 +771,15 @@ export default function Page(): JSX.Element {
         />
       </div>
 
-      <Dialog 
-        open={isAddDialogOpen} 
-        onOpenChange={(open) => {
-          setIsAddDialogOpen(open);
-          if (!open) {
-            setNewKeyword(''); // Reset state when dialog is closed
-          }
-        }}
-      >
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => { console.log('[Modal Debug] AddDialog onOpenChange:', open); setIsAddDialogOpen(open); }}>
         <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>키워드 추가</DialogTitle>
+            <DialogClose asChild>
+              <button aria-label="Close" className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+              </button>
+            </DialogClose>
           </DialogHeader>
           <div className="py-4">
             <Input
@@ -841,9 +805,36 @@ export default function Page(): JSX.Element {
                   toast.error('키워드를 입력해주세요.');
                   return;
                 }
-                addKeyword(newKeyword);
-                setPollingKeyword(newKeyword);
-                setIsAddDialogOpen(false); // Close dialog after action
+                
+                // 키워드 추가 시도
+                addKeyword(newKeyword, {
+                  onError: (error) => {
+                    // 에러 처리는 useAddKeyword 훅에서 이미 처리되며, 여기서는 추가 작업 필요 없음
+                    
+                    // "조건에 맞는 업체가 없음" 에러가 아닌 경우만 폴링 시작
+                    if (error instanceof Error && 
+                        !error.message.includes("조건에 맞는 업체가 없습니다")) {
+                      setPollingKeyword(newKeyword);
+                      // 업데이트 중인 키워드 배열에 추가
+                      setUpdatingKeywords(prev => [...prev, newKeyword]);
+                    }
+                  },
+                  onSuccess: () => {
+                    // 기존 폴링 시작
+                    setPollingKeyword(newKeyword);
+                    setUpdatingKeywords(prev => [...prev, newKeyword]);
+                    // 병렬: Naver API 호출로 검색량 업데이트
+                    apiClient.post('/keyword/search-volume', { candidateKeywords: [newKeyword] })
+                      .then(() => {
+                        // 갱신된 검색량 반영을 위해 키워드 목록 및 순위 갱신
+                        queryClient.invalidateQueries(['userKeywords', String(user?.id), String(activeBusiness?.place_id)]);
+                        queryClient.invalidateQueries(['keywordRankingDetails', String(activeBusiness?.place_id), String(user?.id)]);
+                      })
+                      .catch(err => console.error('검색량 업데이트 실패:', err));
+                  }
+                });
+                
+                setIsAddDialogOpen(false); // 다이얼로그 닫기
               }}               
               disabled={isAdding || isLoading}
             >
@@ -853,19 +844,15 @@ export default function Page(): JSX.Element {
         </DialogContent>
       </Dialog>
 
-      <Dialog 
-        open={isChangeDialogOpen} 
-        onOpenChange={(open) => {
-          setIsChangeDialogOpen(open);
-          if (!open) {
-            setEditKeyword(''); // Reset state when dialog is closed
-            setEditKeywordId(null);
-          }
-        }}
-      >
+      <Dialog open={isChangeDialogOpen} onOpenChange={(open) => { console.log('[Modal Debug] ChangeDialog onOpenChange:', open); setIsChangeDialogOpen(open); }}>
         <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>키워드 변경</DialogTitle>
+            <DialogClose asChild>
+              <button aria-label="Close" className="absolute right-4 top-4">
+                <X className="h-4 w-4" />
+              </button>
+            </DialogClose>
           </DialogHeader>
           <div className="py-4">
             <Input
@@ -888,9 +875,35 @@ export default function Page(): JSX.Element {
                   toast.error('변경할 키워드를 입력해주세요.');
                   return;
                 }
-                changeKeyword({ keywordId: editKeywordId, newKeyword: editKeyword });
-                setPollingKeyword(editKeyword);
-                setIsChangeDialogOpen(false); // Close dialog after action
+                
+                // 키워드 변경 시도
+                changeKeyword(
+                  { keywordId: editKeywordId, newKeyword: editKeyword },
+                  {
+                    onError: (error) => {
+                      // "조건에 맞는 업체가 없음" 에러가 아닌 경우만 폴링 시작
+                      if (error instanceof Error && 
+                          !error.message.includes("조건에 맞는 업체가 없습니다")) {
+                        setPollingKeyword(editKeyword);
+                        // 업데이트 중인 키워드 배열에 추가 - 이 부분이 누락되었음
+                        setUpdatingKeywords(prev => [...prev, editKeyword]);
+                      }
+                    },
+                    onSuccess: () => {
+                      setPollingKeyword(editKeyword);
+                      setUpdatingKeywords(prev => [...prev, editKeyword]);
+                      // 병렬: Naver API 호출로 검색량 업데이트
+                      apiClient.post('/keyword/search-volume', { candidateKeywords: [editKeyword] })
+                        .then(() => {
+                          queryClient.invalidateQueries(['userKeywords', String(user?.id), String(activeBusiness?.place_id)]);
+                          queryClient.invalidateQueries(['keywordRankingDetails', String(activeBusiness?.place_id), String(user?.id)]);
+                        })
+                        .catch(err => console.error('검색량 업데이트 실패:', err));
+                    }
+                  }
+                );
+                
+                setIsChangeDialogOpen(false); // 다이얼로그 닫기
               }} 
               disabled={isChanging || isLoading}
             >

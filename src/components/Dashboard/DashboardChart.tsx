@@ -9,7 +9,6 @@ import {
   Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 import { Card } from "../ui/card";
-import { useKeywordRankingDetails } from "@/hooks/useKeywordRankingDetails";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 import { Box, Skeleton } from '@mui/material';
 import { KeywordHistoricalData } from '@/types';
@@ -18,23 +17,20 @@ import { KeywordHistoricalData } from '@/types';
 type FormatterValue = string | number | readonly (string | number)[];
 type FormatterName = string;
 
-export default function DashboardChart() {
+interface DashboardChartProps { initialData: KeywordHistoricalData[] | null }
+export default function DashboardChart({ initialData }: DashboardChartProps) {
   const { activeBusiness } = useBusinessSwitcher();
-  const { data: keywordData } = useKeywordRankingDetails({
-    activeBusinessId: activeBusiness?.place_id,
-    keyword: activeBusiness?.main_keyword
-  });
 
   const processedData: KeywordHistoricalData[] = useMemo(() => {
-    console.log("원본 차트 데이터:", keywordData?.chartData);
+    console.log("원본 차트 데이터:", initialData);
     console.log("활성 업체 ID:", activeBusiness?.place_id);
 
-    if (!keywordData?.chartData || keywordData.chartData.length === 0) {
+    if (!initialData || initialData.length === 0) {
       console.log("차트 데이터가 없거나 비어 있습니다");
       return [];
     }
 
-    let myBusinessData = keywordData.chartData;
+    let myBusinessData = initialData;
 
     if (activeBusiness?.place_id) {
       console.log("업체 ID 타입:", typeof activeBusiness.place_id);
@@ -78,7 +74,7 @@ export default function DashboardChart() {
       ...item,
       date_key: item.date // Also add date_key for the fallback data
     }));
-  }, [keywordData?.chartData, activeBusiness?.place_id]);
+  }, [initialData, activeBusiness?.place_id]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -126,7 +122,7 @@ if (!processedData.length) {
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tickFormatter={formatDate} />
-              <YAxis domain={[1, Math.max(...processedData.map(d => d.ranking), 10)]} reversed />
+              <YAxis domain={[1, Math.max(10, ...processedData.map(d => d.ranking ?? 0))]} reversed />
               <Tooltip 
                 formatter={(value: FormatterValue) => [`${value}위`, '순위']}
                 labelFormatter={(label: string) => {

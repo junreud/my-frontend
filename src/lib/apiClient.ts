@@ -84,3 +84,11 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
+/**
+ * Wrapper for server-side fetching using axios instance
+ */
+export async function fetchServerAPI(endpoint: string) {
+  const response = await apiClient.get(endpoint);
+  return response.data;
+}

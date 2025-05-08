@@ -107,6 +107,14 @@ function Calendar({
     }
   }
 
+  // displayMonth prop 제거 작업
+  const dayPickerProps = { ...props };
+  
+  // displayMonth prop이 존재하면 제거
+  if ('displayMonth' in dayPickerProps) {
+    delete dayPickerProps.displayMonth;
+  }
+
   return (
     <DayPicker
       // 항상 range 모드
@@ -183,7 +191,7 @@ function Calendar({
           footer
         )
       }
-      {...props}
+      {...dayPickerProps}
     />
   )
 }

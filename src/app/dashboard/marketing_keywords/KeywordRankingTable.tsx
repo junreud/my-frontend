@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { NumberChangeIndicator } from '@/components/NumberChangeIndicator';
+import { NumberChangeIndicator } from '@/components/ui/NumberChangeIndicator';
 import { KeywordRankingTableProps, KeywordRankingDetail } from '@/types/index';
 
 const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({

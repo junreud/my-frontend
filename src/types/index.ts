@@ -19,6 +19,7 @@ export interface User {
   name: string;
   email: string;
   role?: string;
+  url_registration?: number;  // add registration flag
   // 필요한 다른 속성들
 }
 /**
@@ -42,6 +43,7 @@ export interface Business {
   place_id?: string;
   isNewlyOpened?: boolean;
   main_keyword?: string;
+  isRestaurant?: boolean; // Add restaurant flag
 }
 
 export interface UserKeyword {
@@ -52,7 +54,7 @@ export interface UserKeyword {
   keyword?: string;
   created_at?: string;
 }
-
+  
 export interface ApiKeywordResponse {
   id: number;
   user_id: number;
@@ -293,4 +295,11 @@ export interface IContactInfo {
   favorite?: boolean;    // 즐겨찾기 여부
   blacklist?: boolean;   // 블랙리스트 여부
   friend_add_status?: 'pending' | 'success' | 'fail' | 'already_registered'; // 친구추가 상태
+}
+
+// 메인 키워드 상태 타입 추가
+export interface MainKeywordStatus {
+  keyword: string;
+  currentRank: number;
+  diff: number;
 }

@@ -466,6 +466,15 @@ export function useBusinessCreation(userId?: string) {
     },
   })
 
+  // 비즈니스 생성 성공 시 모달 자동 닫기
+  useEffect(() => {
+    if (createBusinessMutation.isSuccess) {
+      logger.info('비즈니스 생성 성공, 모달 닫기');
+      // 키워드 선택 다이얼로그 및 생성 모달 모두 닫기
+      setKeywordDialogOpen(false);
+    }
+  }, [createBusinessMutation.isSuccess]);
+
   // (7) 선택한 키워드 저장
   const saveKeywordsMutation = useMutation({
     mutationFn: async (params: {

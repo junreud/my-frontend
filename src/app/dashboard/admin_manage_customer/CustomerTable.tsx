@@ -20,7 +20,7 @@ interface Template {
   id?: number;
   name: string;
   description?: string;
-  items?: TemplateItem[];
+  items: TemplateItem[]; // items always defined for easier handling
 }
 
 interface CustomerTableProps {
@@ -49,6 +49,19 @@ function makeKakaoFriendName(company: string | undefined, person: string | undef
   return `${company.slice(0, cutLen)}-${person}`;
 }
 
+// 주소 요약 함수 추가
+function shortenAddress(address: string, maxLength = 40): string {
+  if (!address) return '-';
+  if (address.length <= maxLength) return address;
+  
+  // 주소에서 더 많은 부분까지 표시하고 뒤는 생략
+  const parts = address.split(' ');
+  if (parts.length <= 4) return address.substring(0, maxLength) + '...';
+  
+  // 주소의 앞부분 최대 4개 요소까지 표시 - 더 많은 정보 포함
+  return parts.slice(0, 4).join(' ') + '...';
+}
+
 export default function CustomerTable({
   customers,
   currentPage,
@@ -62,7 +75,25 @@ export default function CustomerTable({
 }: CustomerTableProps) {
   // infinite scroll 관련 ref
   const containerRef = useRef<HTMLDivElement>(null);
-  // displayCount state 이미 선언됨
+  
+  // 화면 크기 감지를 위한 상태 추가
+  const [isWideScreen, setIsWideScreen] = useState(false);
+  
+  // 화면 크기 변경 감지 hook
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsWideScreen(window.innerWidth >= 1400); // 1400px 이상인 경우 넓은 화면으로 간주
+    };
+    
+    // 초기 로드 시 화면 크기 확인
+    checkScreenSize();
+    
+    // 창 크기 변경 시 이벤트 리스너 등록
+    window.addEventListener('resize', checkScreenSize);
+    
+    // 컴포넌트 언마운트 시 이벤트 리스너 제거
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   const handleDeleteCustomer = (customer: ICustomerInfo) => {
     toast(
@@ -200,12 +231,13 @@ export default function CustomerTable({
         return;
       }
     }
-    if (!templateWithItems.items || templateWithItems.items.length === 0) {
+    const items = templateWithItems.items || [];
+    if (items.length === 0) {
       toast.error('선택한 템플릿에 내용이 없습니다. 템플릿 내용을 입력해주세요.');
       return;
     }
-    // 템플릿 메시지 내용 추출 (여기서는 첫 번째 아이템만 사용, 필요시 반복문/다중메시지로 확장)
-    const templateContent = templateWithItems.items[0]?.content || '';
+    const firstContent = items[0].content;
+    const templateContent = Array.isArray(firstContent) ? firstContent.join(' ') : firstContent || '';
     if (!templateContent.trim()) {
       toast.error('템플릿 메시지 내용이 비어 있습니다. 내용을 입력해주세요.');
       return;
@@ -239,13 +271,16 @@ export default function CustomerTable({
       }
       // 3. 모든 선택된 연락처에 대해 템플릿 순서대로 메시지 그룹 생성 및 전송
       const message_groups = contactsToProcess.map(ct => ({
-        username: makeKakaoFriendName(ct.company_name, ct.contact_person ?? undefined), // 매핑된 company_name, null 처리
-        messages: templateWithItems.items.map((item: TemplateItem) => ({ // item 타입 명시
-          type: item.type,
-          content: item.type === 'image'
-            ? item.content // TemplateModal에서 저장된 상대 경로 배열/문자열 그대로 사용
-            : typeof item.content === 'string' ? item.content.replace(/\{name\}/g, ct.contact_person || '') : '' // 텍스트일 때만 치환, 문자열 아니면 빈 문자열
-        }))
+        username: makeKakaoFriendName(ct.company_name, ct.contact_person ?? undefined),
+        messages: items.map((item: TemplateItem) => {
+          const raw = item.content;
+          const txt = item.type === 'image'
+            ? raw
+            : typeof raw === 'string'
+              ? raw.replace(/\{name\}/g, ct.contact_person || '')
+              : '';
+          return { type: item.type, content: txt };
+        })
       }));
       // 4. 메시지 전송
       await apiClient.post('/api/kakao/send', { message_groups });
@@ -353,242 +388,244 @@ export default function CustomerTable({
           총 {filteredCustomers.length}개의 고객 정보
         </div>
         <div
-          className="overflow-y-auto overflow-x-auto shadow-md rounded-lg text-xs"
+          className="overflow-y-auto shadow-md rounded-lg text-xs"
           style={{ maxHeight: '75vh' }}
           ref={containerRef}
         >
-          <table className="w-full table-auto bg-white text-xs min-w-[1200px]">
-            <thead>
-              <tr className="bg-gray-100 text-gray-600 uppercase text-[0.65rem] h-12">
-                {isSelectionMode && (
-                  <th className="px-3 py-3 text-center border-b">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedCustomers.length === customers.length}
-                      onChange={toggleSelectAll}
-                      className="h-4 w-4"
-                    />
-                  </th>
-                )}
-                <th className="px-4 py-3 border-b">No.</th>
-                <th className="px-6 py-3 border-b">업체명</th>
-                <th className="px-6 py-3 border-b">담당자명</th>
-                <th className="px-6 py-3 border-b">번호</th>
-                <th className="px-6 py-3 border-b w-36">주소</th>
-                <th className="px-6 py-3 border-b w-48">필터설정</th>
-                <th className="px-6 py-3 border-b">&nbsp;</th>
-                {/* 액션 버튼 컬럼: 삭제, 즐겨찾기, 블랙리스트, 친구추가 버튼 */}
-              </tr>
-            </thead>
-            <tbody className="text-gray-600 text-[0.65rem]">
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={isSelectionMode ? 11 : 10} className="px-6 text-center border-b">
-                    데이터가 없습니다.
-                  </td>
+          <div className={isWideScreen ? "w-full" : "overflow-x-auto"}>
+            <table className={`w-full table-auto bg-white text-xs ${!isWideScreen ? 'min-w-[1200px]' : ''}`}>
+              <thead>
+                <tr className="bg-gray-100 text-gray-600 uppercase text-[0.65rem] h-10">
+                  {isSelectionMode && (
+                    <th className="px-2 py-2 text-center border-b">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedCustomers.length === customers.length}
+                        onChange={toggleSelectAll}
+                        className="h-3 w-3"
+                      />
+                    </th>
+                  )}
+                  <th className="px-2 py-2 border-b w-10 text-center">No.</th>
+                  <th className="px-3 py-2 border-b w-32">업체명</th>
+                  <th className="px-3 py-2 border-b w-16 text-center">담당자명</th>
+                  <th className="px-3 py-2 border-b w-24 text-center">번호</th>
+                  <th className={`px-3 py-2 border-b ${isWideScreen ? 'w-36' : 'w-36'}`}>주소</th>
+                  <th className="px-3 py-2 border-b w-24">필터설정</th>
+                  <th className="px-3 py-2 border-b w-20">액션</th>
                 </tr>
-              ) : (
-                rows.map((customer, index) => {
-                  const contacts = customer.contacts || [];
-                  
-                  return contacts.length > 0 ? (
-                    contacts.map((contact, contactIndex) => {
-                      return (
-                      <tr
-                        key={`${customer.id}-${contact.id}`}
-                        className={contactIndex % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
-                      >
-                        {isSelectionMode && contactIndex === 0 && (
-                          <td className="px-3 text-center border-b" rowSpan={contacts.length}>
+              </thead>
+              <tbody className="text-gray-600 text-[0.65rem]">
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={isSelectionMode ? 8 : 7} className="px-3 text-center border-b py-2">
+                      데이터가 없습니다.
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((customer, index) => {
+                    const contacts = customer.contacts || [];
+                    
+                    return contacts.length > 0 ? (
+                      contacts.map((contact, contactIndex) => {
+                        return (
+                        <tr
+                          key={`${customer.id}-${contact.id}`}
+                          className={contactIndex % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
+                        >
+                          {isSelectionMode && contactIndex === 0 && (
+                            <td className="px-2 text-center border-b py-2" rowSpan={contacts.length}>
+                              <input 
+                                type="checkbox"
+                                checked={selectedCustomers.some(c => c.id === customer.id)}
+                                onChange={() => toggleSelectCustomer(customer)}
+                                className="h-3 w-3"
+                              />
+                            </td>
+                          )}
+                          {contactIndex === 0 && (
+                            <>
+                              <td className="px-2 border-b py-2 text-center" rowSpan={contacts.length}>
+                                {(currentPage - 1) * pageSize + index + 1}
+                              </td>
+                              <td className="px-3 border-b py-2" rowSpan={contacts.length}>
+                                {customer.company_name}
+                              </td>
+                            </>
+                          )}
+                          <td className="px-3 border-b py-2 text-center">
+                            {contact.contact_person ? (
+                              <div className="relative group w-max mx-auto">
+                                <span className="cursor-pointer underline text-black">
+                                  {contact.contact_person}
+                                </span>
+                                {/* 호버 시에만 업체명-담당자명 조합 툴팁 표시 (주소 툴팁과 동일한 디자인) */}
+                                <div className="absolute bottom-full left-0 mb-0 hidden group-hover:block hover:block bg-white border rounded shadow-lg p-2 min-w-[200px] max-w-xs whitespace-nowrap z-10 flex items-center justify-between gap-2">
+                                  <span className="break-all text-gray-800">{makeKakaoFriendName(customer.company_name, contact.contact_person ?? undefined)}</span>
+                                  <button
+                                    className="ml-2 p-1 hover:bg-gray-100 rounded"
+                                    onClick={() => copyToClipboard(makeKakaoFriendName(customer.company_name, contact.contact_person ?? undefined))}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2z" /></svg>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : ('-')}
+                          </td>
+                          <td className="px-3 border-b py-2 text-center">
+                            <span className="inline-block w-full">{contact.phone_number || '-'}</span>
+                          </td>
+                          {contactIndex === 0 && (
+                            <>
+                              <td className="px-3 border-b py-2" rowSpan={contacts.length}>
+                                <div className="relative group">
+                                  <span className="block truncate w-full">{shortenAddress(customer.address || '-')}</span>
+                                  {customer.address && (
+                                    <div className="absolute bottom-full left-0 mb-0 hidden group-hover:block hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg z-10 max-w-xs">
+                                      <span className="break-words">{customer.address}</span>
+                                      <button onClick={() => copyToClipboard(customer.address || '')} className="ml-2 p-1 hover:bg-gray-100 rounded">
+                                        <Copy className="h-4 w-4 text-gray-500" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                {customer.naverplace_url && (
+                                  <a
+                                    href={customer.naverplace_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline block text-[0.6rem]"
+                                  >
+                                    네이버 플레이스
+                                  </a>
+                                )}
+                              </td>
+                              <td className="px-3 border-b py-2 truncate" rowSpan={contacts.length}>
+                                <span className="inline-block w-full truncate">{customer.source_filter || '-'}</span>
+                              </td>
+                              <td className="px-3 border-b py-2 text-center" rowSpan={contacts.length}>
+                                <div className="flex flex-row items-center gap-1 justify-center">
+                                  <button
+                                    className="p-1 h-5 w-5 flex items-center justify-center"
+                                    onClick={() => handleDeleteCustomer(customer)}
+                                  >
+                                    <Trash2 className="h-3 w-3 text-red-500" />
+                                  </button>
+                                  <div className="relative inline-flex flex-col-reverse items-center group">
+                                    <button
+                                      className={`p-1 h-5 w-5 flex items-center justify-center rounded-full transition-colors
+                                        ${contact.favorite ? 'bg-yellow-100' : ''}`}
+                                      onClick={() => handleToggleFavorite(contact.id, contact.favorite ?? false)}
+                                    >
+                                      <Star className={`${contact.favorite ? 'fill-current text-yellow-400' : 'text-gray-400'} h-3 w-3`} />
+                                    </button>
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
+                                      {contact.favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                                    </div>
+                                  </div>
+                                  <div className="relative inline-flex flex-col-reverse items-center group">
+                                    <button
+                                      className={`p-1 h-5 w-5 flex items-center justify-center rounded-full transition-colors
+                                        ${contact.blacklist ? 'bg-red-100' : ''}`}
+                                    onClick={() => handleToggleBlacklist(contact.id, contact.blacklist ?? false)}
+                                    >
+                                      <Ban className={`${contact.blacklist ? 'text-red-500' : 'text-gray-400'} h-3 w-3`} />
+                                    </button>
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
+                                      {contact.blacklist ? '블랙리스트 해제' : '블랙리스트 추가'}
+                                    </div>
+                                  </div>
+                                  <div className="relative inline-flex flex-col-reverse items-center group">
+                                    <button
+                                      className={`p-1 h-5 w-5 flex items-center justify-center rounded-full transition-colors
+                                        ${contact.friend_add_status === 'success' || contact.friend_add_status === 'already_registered' ? 'bg-green-100'
+                                        : contact.friend_add_status === 'fail' ? 'bg-red-100'
+                                        : ''}`}
+                                      onClick={() => contact.friend_add_status === 'pending' && handleAddFriend(customer.company_name, contact)}
+                                    >
+                                      {contact.friend_add_status === 'success' || contact.friend_add_status === 'already_registered' ? (
+                                        <UserCheck className="text-green-500 h-3 w-3" />
+                                      ) : contact.friend_add_status === 'fail' ? (
+                                        <UserX className="text-red-500 h-3 w-3" />
+                                      ) : (
+                                        <UserPlus className="text-gray-400 h-3 w-3" />
+                                      )}
+                                    </button>
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
+                                      {contact.friend_add_status === 'success' ? '친구입니다!'
+                                        : contact.friend_add_status === 'already_registered' ? '친구입니다!'
+                                        : contact.friend_add_status === 'fail' ? '친구추가가 거부되었습니다!'
+                                        : '친구추가하기'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                        );
+                      })
+                    ) : (
+                      <tr key={customer.id} className="bg-white hover:bg-gray-100">
+                        {isSelectionMode && (
+                          <td className="px-2 text-center border-b py-2">
                             <input 
                               type="checkbox"
                               checked={selectedCustomers.some(c => c.id === customer.id)}
                               onChange={() => toggleSelectCustomer(customer)}
-                              className="h-4 w-4"
+                              className="h-3 w-3"
                             />
                           </td>
                         )}
-                        {contactIndex === 0 && (
-                          <>
-                            <td className="px-4 border-b" rowSpan={contacts.length}>
-                              {(currentPage - 1) * pageSize + index + 1}
-                            </td>
-                            <td className="px-6 border-b" rowSpan={contacts.length}>
-                              {customer.company_name}
-                            </td>
-                          </>
-                        )}
-                        <td className="px-6 border-b">
-                          {contact.contact_person ? (
-                            <div className="relative group w-max">
-                              <span className="cursor-pointer underline text-black">
-                                {contact.contact_person}
-                              </span>
-                              {/* 호버 시에만 업체명-담당자명 조합 툴팁 표시 (주소 툴팁과 동일한 디자인) */}
-                              <div className="absolute bottom-full left-0 mb-0 hidden group-hover:block hover:block bg-white border rounded shadow-lg p-2 min-w-[200px] max-w-xs whitespace-nowrap z-10 flex items-center justify-between gap-2">
-                                <span className="break-all text-gray-800">{makeKakaoFriendName(customer.company_name, contact.contact_person ?? undefined)}</span>
-                                <button
-                                  className="ml-2 p-1 hover:bg-gray-100 rounded"
-                                  onClick={() => copyToClipboard(makeKakaoFriendName(customer.company_name, contact.contact_person ?? undefined))}
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2z" /></svg>
-                                </button>
-                              </div>
-                            </div>
-                          ) : ('-')}
+                        <td className="px-2 border-b py-2 text-center">
+                          {(currentPage - 1) * pageSize + index + 1}
                         </td>
-                        <td className="px-6 border-b">{contact.phone_number || '-'}</td>
-                        {contactIndex === 0 && (
-                          <>
-                            <td className="px-6 border-b" rowSpan={contacts.length}>
-                              <div className="relative group">
-                                <span className="block overflow-hidden whitespace-nowrap text-ellipsis w-full">{customer.address || '-'}</span>
-                                {customer.address && (
-                                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
-                                    <span className="break-all">{customer.address}</span>
-                                    <button onClick={() => copyToClipboard(customer.address || '')} className="ml-2 p-1 hover:bg-gray-100 rounded">
-                                      <Copy className="h-4 w-4 text-gray-500" />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                              {customer.naverplace_url && (
-                                <a
-                                  href={customer.naverplace_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-500 hover:underline block mt-1"
-                                >
-                                  네이버 플레이스
-                                </a>
-                              )}
-                            </td>
-                            <td className="px-6 border-b" rowSpan={contacts.length}>
-                              {/* 필터설정 값 - source_filter 컬럼 사용 */}
-                              {customer.source_filter || '-'}
-                            </td>
-                            <td className="px-6 border-b text-center" rowSpan={contacts.length}>
-                              <div className="flex flex-row items-center gap-1">
-                                <button
-                                  className="p-1 h-6 w-6 flex items-center justify-center"
-                                  onClick={() => handleDeleteCustomer(customer)}
-                                >
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </button>
-                                <div className="relative inline-flex flex-col-reverse items-center group">
-                                  <button
-                                    className={`p-1 h-6 w-6 flex items-center justify-center rounded-full transition-colors
-                                      ${contact.favorite ? 'bg-yellow-100' : ''}`}
-                                    onClick={() => handleToggleFavorite(contact.id, contact.favorite ?? false)}
-                                  >
-                                    <Star className={`${contact.favorite ? 'fill-current text-yellow-400' : 'text-gray-400'} h-4 w-4`} />
-                                  </button>
-                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
-                                    {contact.favorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-                                  </div>
-                                </div>
-                                <div className="relative inline-flex flex-col-reverse items-center group">
-                                  <button
-                                    className={`p-1 h-6 w-6 flex items-center justify-center rounded-full transition-colors
-                                      ${contact.blacklist ? 'bg-red-100' : ''}`}
-                                    onClick={() => handleToggleBlacklist(contact.id, contact.blacklist ?? false)}
-                                  >
-                                    <Ban className={`${contact.blacklist ? 'text-red-500' : 'text-gray-400'} h-4 w-4`} />
-                                  </button>
-                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
-                                    {contact.blacklist ? '블랙리스트 해제' : '블랙리스트 추가'}
-                                  </div>
-                                </div>
-                                <div className="relative inline-flex flex-col-reverse items-center group">
-                                  <button
-                                    className={`p-1 h-6 w-6 flex items-center justify-center rounded-full transition-colors
-                                      ${contact.friend_add_status === 'success' || contact.friend_add_status === 'already_registered' ? 'bg-green-100'
-                                      : contact.friend_add_status === 'fail' ? 'bg-red-100'
-                                      : ''}`}
-                                    onClick={() => contact.friend_add_status === 'pending' && handleAddFriend(customer.company_name, contact)}
-                                  >
-                                    {contact.friend_add_status === 'success' || contact.friend_add_status === 'already_registered' ? (
-                                      <UserCheck className="text-green-500 h-4 w-4" />
-                                    ) : contact.friend_add_status === 'fail' ? (
-                                      <UserX className="text-red-500 h-4 w-4" />
-                                    ) : (
-                                      <UserPlus className="text-gray-400 h-4 w-4" />
-                                    )}
-                                  </button>
-                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
-                                    {contact.friend_add_status === 'success' ? '친구입니다!'
-                                      : contact.friend_add_status === 'already_registered' ? '친구입니다!'
-                                      : contact.friend_add_status === 'fail' ? '친구추가가 거부되었습니다!'
-                                      : '친구추가하기'}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                          </>
-                        )}
-                      </tr>
-                      );
-                    })
-                  ) : (
-                    <tr key={customer.id} className="bg-white hover:bg-gray-100">
-                      {isSelectionMode && (
-                        <td className="px-3 text-center border-b">
-                          <input 
-                            type="checkbox"
-                            checked={selectedCustomers.some(c => c.id === customer.id)}
-                            onChange={() => toggleSelectCustomer(customer)}
-                            className="h-4 w-4"
-                          />
-                        </td>
-                      )}
-                      <td className="px-4 border-b">
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </td>
-                      <td className="px-6 border-b">{customer.company_name}</td>
-                      <td className="px-6 border-b">-</td>
-                      <td className="px-6 border-b">-</td>
-                      <td className="px-6 border-b">
-                        <div className="relative group">
-                          <span className="block overflow-hidden whitespace-nowrap text-ellipsis w-full">{customer.address || '-'}</span>
-                          {customer.address && (
-                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg whitespace-nowrap z-10">
-                              <span className="break-all">{customer.address}</span>
+                        <td className="px-3 border-b py-2">{customer.company_name}</td>
+                        <td className="px-3 border-b py-2 text-center">-</td>
+                        <td className="px-3 border-b py-2 text-center">-</td>
+                        <td className="px-3 border-b py-2">
+                          <div className="relative group">
+                            <span className="block truncate w-full">{shortenAddress(customer.address || '-')}</span>
+                            {customer.address && (
+                              <div className="absolute bottom-full left-0 mb-0 hidden group-hover:block hover:block bg-white text-xs text-gray-800 border rounded px-2 py-1 shadow-lg z-10 max-w-xs">
+                              <span className="break-words">{customer.address}</span>
                               <button onClick={() => copyToClipboard(customer.address || '')} className="ml-2 p-1 hover:bg-gray-100 rounded">
                                 <Copy className="h-4 w-4 text-gray-500" />
                               </button>
                             </div>
+                            )}
+                          </div>
+                          {customer.naverplace_url && (
+                            <a
+                              href={customer.naverplace_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:underline block text-[0.6rem]"
+                            >
+                              네이버 플레이스
+                            </a>
                           )}
-                        </div>
-                        {customer.naverplace_url && (
-                          <a
-                            href={customer.naverplace_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline block mt-1"
+                        </td>
+                        <td className="px-3 border-b py-2 truncate">
+                          <span className="inline-block w-full truncate">{customer.source_filter || '-'}</span>
+                        </td>
+                        <td className="px-3 border-b py-2 text-center">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            className="h-5 w-5"
+                            onClick={() => handleDeleteCustomer(customer)}
                           >
-                            네이버 플레이스
-                          </a>
-                        )}
-                      </td>
-                      <td className="px-6 border-b">
-                        {/* 필터설정 값 - source_filter 컬럼 사용 */}
-                        {customer.source_filter || '-'}
-                      </td>
-                      <td className="px-6 border-b text-center">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleDeleteCustomer(customer)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                            <Trash2 className="h-3 w-3 text-red-500" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       {/* 하단 페이지네이션 제거: infinite scroll 사용 */}

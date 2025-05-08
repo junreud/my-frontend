@@ -21,7 +21,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { getPlatformLogo } from "@/lib/getPlatformLogo"
-import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher"
+import { useBusinessContext } from "@/app/dashboard/BusinessContext"
 import { BusinessSheet } from "./BusinessSheet"
 
 // Import the Business type from useBusinessSwitcher hook
@@ -265,8 +265,8 @@ export function BusinessSwitcher() {
     setSheetOpen,
     canAddMoreBusinesses,
     userRole,
-  } = useBusinessSwitcher()
-  
+  } = useBusinessContext()
+
   // 컴포넌트가 마운트될 때와 activeBusiness가 변경될 때 로그 출력
   React.useEffect(() => {
     console.log('BusinessSwitcher 렌더링:', {

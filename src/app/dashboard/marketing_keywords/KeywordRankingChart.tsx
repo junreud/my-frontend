@@ -1,11 +1,25 @@
 import React, { useMemo } from 'react';
+// Define chart data item type
+interface ChartDataItem {
+  date: string;
+  place_id?: string | number;
+  ranking?: number | null;
+  hasCrawlInfo?: boolean;
+  [key: string]: any;
+}
+import { Business } from '@/types/index';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend
 } from "recharts";
-import { KeywordRankingChartProps } from '@/types';
 
-const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, activeBusiness }) => {
+interface KeywordRankingChartProps {
+  chartData: ChartDataItem[] | null;
+  activeBusiness: Business | null;
+  isRestaurantKeyword?: boolean;
+}
+
+const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, activeBusiness, isRestaurantKeyword = false }) => {
   // 데이터 디버깅 로그 추가
   console.log('[Debug] KeywordRankingChart 입력 데이터:', {
     chartDataLength: chartData?.length || 0,
@@ -21,112 +35,170 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
   const processedData = useMemo(() => {
     if (!chartData || chartData.length === 0) return [];
 
-    let myBusinessData = [];
-    if (activeBusiness?.place_id) {
-      const activeId = String(activeBusiness.place_id);
+    // Derive recentDates from actual chartData dates, up to latest 30 entries
+    const uniqueDates = Array.from(new Set(chartData.map(item => item.date))).sort();
+    // If fewer than 30 days of data, include all; else take last 30
+    const recentDates = uniqueDates.length <= 30
+      ? uniqueDates
+      : uniqueDates.slice(uniqueDates.length - 30);
 
-      myBusinessData = chartData.filter(item => 
-        String(item.place_id) === activeId
-      );
-
-      if (myBusinessData.length === 0) {
-        myBusinessData = chartData;
+    // Map existing chartData by date
+    const chartMap = new Map<string, ChartDataItem>();
+    chartData.forEach(item => chartMap.set(item.date, item));
+    // Create dataArr for each date
+    const dataArr: ChartDataItem[] = recentDates.map(date => {
+      const rec = chartMap.get(date);
+      if (rec) {
+        return { ...rec, date, hasBasicCrawl: rec.ranking !== null };
+      } else {
+        // no record this date
+        return {
+          date,
+          ranking: null,
+          blogReviews: null,
+          receiptReviews: null,
+          savedCount: null,
+          blog_review_count: null,
+          receipt_review_count: null,
+          saved: null,
+          saved_count: null,
+          place_id: activeBusiness?.place_id || '',
+          hasBasicCrawl: false
+        };
       }
-    } else {
-      myBusinessData = chartData;
-    }
+    });
 
-    const dateMap = new Map();
-    myBusinessData.forEach(item => {
-      const dateOnly = item.date?.split('T')[0] || item.date;
-      if (dateOnly) {
-        const existingItem = dateMap.get(dateOnly);
+    // Find indices where basic crawl exists (actual ranking data)
+    const anchorIdxs = dataArr
+      .map((d, idx) => d.hasBasicCrawl ? idx : -1)
+      .filter(idx => idx >= 0);
 
-        if (!existingItem) {
-          dateMap.set(dateOnly, item);
-        } else {
-          // 모든 가능한 저장 필드들을 통합, nullish coalescing만 사용
-          const mergedSavedCount = Number(
-            item.savedCount
-              ?? item.saved
-              ?? item.saved_count
-              ?? existingItem.savedCount
-              ?? existingItem.saved
-              ?? existingItem.saved_count
-              ?? 0
-          );
-          
-          dateMap.set(dateOnly, {
-            ...existingItem,
-            // 일관된 numeric 필드 사용
-            savedCount: mergedSavedCount,
-            saved: mergedSavedCount,
-            saved_count: mergedSavedCount,
-            blog_review_count: item.blog_review_count ?? item.blogReviews ?? existingItem.blog_review_count ?? existingItem.blogReviews,
-            receipt_review_count: item.receipt_review_count ?? item.receiptReviews ?? existingItem.receipt_review_count ?? existingItem.receiptReviews,
-            // 다른 필드도 추가
-            blogReviews: item.blogReviews ?? item.blog_review_count ?? existingItem.blogReviews ?? existingItem.blog_review_count,
-            receiptReviews: item.receiptReviews ?? item.receipt_review_count ?? existingItem.receiptReviews ?? existingItem.receipt_review_count,
-          });
+    if (anchorIdxs.length > 0) {
+      const firstIdx = anchorIdxs[0];
+      // Fill before first anchor
+      for (let i = 0; i < firstIdx; i++) {
+        dataArr[i].ranking = dataArr[firstIdx].ranking;
+      }
+      // Interpolate between anchors
+      for (let j = 0; j < anchorIdxs.length - 1; j++) {
+        const start = anchorIdxs[j];
+        const end = anchorIdxs[j+1];
+        const v1 = dataArr[start].ranking!;
+        const v2 = dataArr[end].ranking!;
+        for (let k = start + 1; k < end; k++) {
+          const ratio = (k - start) / (end - start);
+          dataArr[k].ranking = Math.round(v1 + (v2 - v1) * ratio);
         }
       }
+      // Fill after last anchor
+      const lastIdx = anchorIdxs[anchorIdxs.length - 1];
+      for (let i = lastIdx + 1; i < dataArr.length; i++) {
+        dataArr[i].ranking = dataArr[lastIdx].ranking;
+      }
+      // Forward-fill detail fields
+      for (let i = 1; i < dataArr.length; i++) {
+        ['blogReviews','blog_review_count','receiptReviews','receipt_review_count','savedCount','saved','saved_count'].forEach(key => {
+          if (dataArr[i][key] == null) dataArr[i][key] = dataArr[i-1][key];
+        });
+      }
+    }
+
+    // Add normalized saved count and apply domain filters
+    return dataArr.map(item => {
+      const normSaved = Number(item.savedCount ?? item.saved ?? item.saved_count ?? 0);
+      // clamp ranking to 1~300
+      const rankingVal = item.ranking != null && item.ranking >= 1 && item.ranking <= 300 ? item.ranking : null;
+      // clamp reviews to 0~2000
+      const blogRev = item.blog_review_count != null && item.blog_review_count <= 2000 ? item.blog_review_count : null;
+      const receiptRev = item.receipt_review_count != null && item.receipt_review_count <= 2000 ? item.receipt_review_count : null;
+      // clamp saved to 0~100000
+      const savedVal = normSaved <= 100000 ? normSaved : null;
+      return {
+        ...item,
+        ranking: rankingVal,
+        blog_review_count: blogRev,
+        receipt_review_count: receiptRev,
+        savedCount: savedVal,
+        saved: savedVal,
+        saved_count: savedVal,
+        savedCountNormalized: savedVal ?? 0
+      };
     });
-
-    const uniqueData = Array.from(dateMap.values()).sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    const filteredData = uniqueData.filter(item => 
-      new Date(item.date) >= thirtyDaysAgo
-    );
-
-    // 처리된 데이터 디버깅
-    console.log('[Debug] KeywordRankingChart 처리된 데이터:', { 
-      filteredDataLength: filteredData.length,
-      sampleItem: filteredData.length > 0 ? filteredData[0] : null,
-      // 저장 데이터 필드 디버깅 추가
-      savedFieldSample: filteredData.length > 0 ? {
-        savedCount: filteredData[0].savedCount,
-        saved: filteredData[0].saved,
-        saved_count: filteredData[0].saved_count
-      } : null
-    });
-
-    return filteredData;
-  }, [chartData, activeBusiness]);
+  }, [chartData]);
   
   // 현재 순위를 기준으로 Y축 범위 계산
   const rankingYAxisDomain = useMemo(() => {
     if (!processedData || processedData.length === 0) return [1, 10];
-  
-    const ranks = processedData.map(d => Number(d.ranking) || 0);
-    const minRank = Math.min(...ranks);
-    const maxRank = Math.max(...ranks);
-    
-    // 범위 계산
+    // extract valid ranks
+    const validRanks = processedData
+      .map(d => d.ranking)
+      .filter((r): r is number => typeof r === 'number');
+    if (validRanks.length === 0) return [1, 10];
+    const minRank = Math.min(...validRanks);
+    const maxRank = Math.max(...validRanks);
     const range = maxRank - minRank;
-    
-    // 여백 계산 (범위의 30% 또는 최소 3등급)
-    const buffer = Math.max(Math.ceil(range * 0.3), 3);
-    
-    // 상단 여백 (1등 미만으로 내려가지 않게)
-    const topLimit = Math.max(1, minRank - buffer);
-    
-    // 하단 여백 (그래프가 바닥에 붙지 않게)
-    const bottomLimit = maxRank + buffer;
-    
-    // 최소 10개 간격 확보
-    return [topLimit, Math.max(bottomLimit, topLimit + 10)];
+    // determine bottom limit: extend at least 9 positions or 20% of range
+    let bottomLimit: number;
+    if (range <= 9) {
+      bottomLimit = minRank + 9;
+    } else {
+      bottomLimit = minRank + Math.ceil(range * 0.2);
+    }
+    // ensure domain covers actual max rank, top fixed at 1
+    const yMax = Math.max(bottomLimit, maxRank);
+    return [1, yMax];
   }, [processedData]);
   
-  // 차트용 날짜 포맷팅
+  // 날짜 포맷팅
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return `${date.getMonth() + 1}/${date.getDate()}`;
+  };
+
+  // X축 날짜 간격을 계산하는 함수
+  const generateTickValues = (data: ChartDataItem[]): string[] => {
+    if (!data || data.length === 0) return [];
+    
+    // 최소 5개, 최대 10개의 눈금을 표시하도록 설정
+    const maxTicks = 8;
+    const dataLength = data.length;
+    
+    // 데이터가 적으면 모든 날짜 표시
+    if (dataLength <= maxTicks) {
+      return data.map(item => item.date);
+    }
+    
+    // 적절한 간격 계산 (균등하게 분포)
+    const step = Math.ceil(dataLength / maxTicks);
+    
+    // 균등하게 분포된 날짜 선택
+    const ticks = [];
+    
+    // 첫 날짜는 항상 포함
+    ticks.push(data[0].date);
+    
+    // 중간 날짜들은 계산된 간격으로 선택
+    for (let i = step; i < dataLength - 1; i += step) {
+      // 중복된 월이 연속으로 표시되지 않도록 필터링
+      const currentDate = new Date(data[i].date);
+      const prevDate = new Date(ticks[ticks.length - 1]);
+      
+      // 같은 월이면서 가까운 날짜인 경우 스킵
+      if (currentDate.getMonth() === prevDate.getMonth() && 
+          Math.abs(currentDate.getDate() - prevDate.getDate()) < 5) {
+        continue;
+      }
+      
+      ticks.push(data[i].date);
+    }
+    
+    // 마지막 날짜는 항상 포함
+    const lastDate = data[dataLength - 1].date;
+    if (ticks[ticks.length - 1] !== lastDate) {
+      ticks.push(lastDate);
+    }
+    
+    return ticks;
   };
 
   // Utility function to calculate optimal Y-axis domain
@@ -156,40 +228,31 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
   // Review graph Y-axis domain - 필드명 수정 (blogReviews -> blog_review_count)
   const reviewYAxisDomain = useMemo(() => {
     if (!processedData || processedData.length === 0) return [0, 10];
-
-    const blogReviews = processedData.map(item => item.blogReviews || item.blog_review_count || 0);
-    const receiptReviews = processedData.map(item => item.receiptReviews || item.receipt_review_count || 0);
-
-    return calculateOptimalYAxisDomain([...blogReviews, ...receiptReviews]);
+    // collect all review values
+    const values = processedData.map(item => item.blog_review_count ?? 0).concat(
+      processedData.map(item => item.receipt_review_count ?? 0)
+    );
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const range = maxVal - minVal;
+    const buffer = range > 0 ? Math.ceil(range * 0.1) : Math.ceil(maxVal * 0.1) || 10;
+    const yMin = Math.max(0, minVal - buffer);
+    const yMax = maxVal + buffer;
+    return [yMin, yMax];
   }, [processedData]);
 
-  // Saved count graph Y-axis domain - 데이터 처리 로직 개선
+  // Saved count graph Y-axis domain - 자동 스케일링 알고리즘 개선
   const savedYAxisDomain = useMemo(() => {
     if (!processedData || processedData.length === 0) return [0, 10];
-    
-    // 모든 가능한 저장 필드를 고려
-    const savedCounts = processedData.map(item => {
-      // 각 필드 값 확인 후 숫자로 변환 (차트의 dataKey와 동일한 로직 사용)
-      if (item.savedCount !== undefined && item.savedCount !== null) {
-        return Number(item.savedCount);
-      }
-      if (item.saved !== undefined && item.saved !== null) {
-        return Number(item.saved);
-      }
-      if (item.saved_count !== undefined && item.saved_count !== null) {
-        return Number(item.saved_count);
-      }
-      return 0;
-    });
-    
-    // savedCounts 디버깅 로그 추가
-    console.log('[Debug] 저장 데이터 값:', {
-      counts: savedCounts,
-      max: Math.max(...savedCounts),
-      nonZeroCount: savedCounts.filter(val => val > 0).length
-    });
-    
-    return calculateOptimalYAxisDomain(savedCounts);
+    const values = processedData.map(item => item.savedCount ?? item.saved ?? item.saved_count ?? 0);
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const range = maxVal - minVal;
+    // buffer: 10% of range, or 2% of maxVal if no variation
+    const buffer = range > 0 ? Math.ceil(range * 0.1) : Math.ceil(maxVal * 0.02);
+    const yMin = Math.max(0, minVal - buffer);
+    const yMax = maxVal + buffer;
+    return [yMin, yMax];
   }, [processedData]);
 
   return (
@@ -209,10 +272,10 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                 tickFormatter={formatDate} 
                 stroke="#666"
                 tick={{ fontSize: 10 }}
-                interval="preserveStartEnd"
+                ticks={generateTickValues(processedData)}
               />
               <YAxis 
-                domain={rankingYAxisDomain} 
+                domain={rankingYAxisDomain}  // 동적 범위: 순위 변화에 따라 조정됨
                 reversed 
                 stroke="#666"
                 tick={{ fontSize: 10 }}
@@ -233,9 +296,31 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                 name="순위"
                 stroke="#8884d8"
                 strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-                connectNulls
+                connectNulls={false}
+                // Remove custom data prop; use parent LineChart data
+                // Custom dot for unique keys
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  if (payload.outOfRank) {
+                    return (
+                      <svg key={`${payload.date}-rank-out`} x={cx - 4} y={cy - 4} width={8} height={8} fill="red">
+                        <circle cx={4} cy={4} r={4} />
+                      </svg>
+                    );
+                  }
+                  if (payload.interpolated) {
+                    return (
+                      <svg key={`${payload.date}-rank-interp`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#999">
+                        <circle cx={3} cy={3} r={3} />
+                      </svg>
+                    );
+                  }
+                  return (
+                    <svg key={`${payload.date}-rank`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#8884d8">
+                      <circle cx={3} cy={3} r={3} />
+                    </svg>
+                  );
+                }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -249,7 +334,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={processedData}
-              margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
+              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
               <XAxis 
@@ -257,10 +342,10 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                 tickFormatter={formatDate} 
                 stroke="#666"
                 tick={{ fontSize: 10 }}
-                interval="preserveStartEnd"
+                ticks={generateTickValues(processedData)}
               />
               <YAxis 
-                domain={reviewYAxisDomain}
+                domain={reviewYAxisDomain}  // 동적 범위: 리뷰 수 변화에 따라 조정됨
                 stroke="#666"
                 tick={{ fontSize: 10 }}
                 tickCount={5}
@@ -279,72 +364,74 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
               <Legend />
               <Line
                 type="monotone"
-                dataKey={(d) => d.blogReviews || d.blog_review_count || 0}
+                dot={false}
+                dataKey="blog_review_count"
                 name="블로그 리뷰"
                 stroke="#1e88e5"
                 strokeWidth={2}
-                dot={{ r: 3 }}
-                connectNulls
+                connectNulls={true}
               />
               <Line
                 type="monotone"
-                dataKey={(d) => d.receiptReviews || d.receipt_review_count || 0}
+                dot={false}
+                dataKey="receipt_review_count"
                 name="영수증 리뷰"
                 stroke="#4caf50"
                 strokeWidth={2}
-                dot={{ r: 3 }}
-                connectNulls
+                connectNulls={true}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
       
-      {/* 3. 저장 수 그래프 - dataKey 수정 */}
-      <div>
-        <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">저장 수 변화</h4>
-        <div className="h-[250px] bg-white p-2 rounded-md">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={processedData}
-              margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-              <XAxis 
-                dataKey="date" 
-                tickFormatter={formatDate} 
-                stroke="#666"
-                tick={{ fontSize: 10 }}
-                interval="preserveStartEnd"
-              />
-              <YAxis 
-                domain={savedYAxisDomain}
-                stroke="#666"
-                tick={{ fontSize: 10 }}
-                tickCount={5}
-                label={{ value: '저장 수', angle: -90, position: 'insideLeft', fontSize: 12 }}
-              />
-              <Tooltip 
-                formatter={(value: number | string | number) => [value, '저장 수']}
-                labelFormatter={(label: string) => {
+      {/* 3. 저장 수 그래프 - show if restaurant keyword or saved data exists */}
+      {(isRestaurantKeyword || processedData.some(item => item.savedCount != null || item.saved != null || item.saved_count != null)) && (
+        <div>
+          <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">저장 수 변화</h4>
+          <div className="h-[250px] bg-white p-2 rounded-md">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={processedData}
+                margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="date" tickFormatter={formatDate} stroke="#666" tick={{ fontSize: 10 }} ticks={generateTickValues(processedData)}/>
+                <YAxis domain={savedYAxisDomain} stroke="#666" tick={{ fontSize: 10 }} tickCount={5} label={{ value: '저장 수', angle: -90, position: 'insideLeft', fontSize: 12 }}/>
+                <Tooltip formatter={(value) => [value, '저장 수']} labelFormatter={(label) => {
                   const date = new Date(label);
                   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-                }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="savedCount"
-                name="저장 수"
-                stroke="#ff9800"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                connectNulls
-              />
-            </LineChart>
-          </ResponsiveContainer>
+                }}/>
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="savedCount"
+                  connectNulls={true}
+                  name="저장 수"
+                  stroke="#ff9800"
+                  strokeWidth={2}
+                  dot={(props) => {
+                    const { cx, cy, payload } = props;
+                    // Add keys for each dot to avoid React warnings
+                    if (payload.interpolatedSaved) {
+                      return (
+                        <svg key={`${payload.date}-saved-interp`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#999">
+                          <circle cx={3} cy={3} r={3} />
+                        </svg>
+                      );
+                    }
+                    return (
+                      <svg key={`${payload.date}-saved`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#ff9800">
+                        <circle cx={3} cy={3} r={3} />
+                      </svg>
+                    );
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
