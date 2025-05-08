@@ -34,7 +34,7 @@ export default function DashboardPage() {
       
       return () => clearTimeout(timer);
     }
-  }, [activeBusiness?.place_id]);
+  }, [activeBusiness?.place_id, isStabilizing]);
 
   // 사용자 정보 가져오기
   const { data: userData, isError: userError } = useQuery({
@@ -292,7 +292,7 @@ export default function DashboardPage() {
               </div>
             ) : keywordRankings && Object.keys(keywordRankings).length > 0 ? (
               <div className="space-y-6">
-                {Object.entries(keywordRankings).map(([placeId, data]: [string, any]) => (
+                {(Object.entries(keywordRankings) as [string, { place_name: string; keywords: { keyword: string; ranking: number | null }[] }][]).map(([placeId, data]) => (
                   <div key={placeId} className="mb-4">
                     <h3 className="font-medium text-gray-800 mb-2 pb-1 border-b">
                       {data.place_name}

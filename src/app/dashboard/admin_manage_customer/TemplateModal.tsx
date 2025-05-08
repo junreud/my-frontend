@@ -89,8 +89,7 @@ function SortableItem({ id, item, onChange, onRemove, onSelectImage }: {
                 <div className="flex gap-1">
                   {item.content.map(name => {
                     // 이미지 경로 처리 방식 수정
-                    const cleanPath = name.trim();
-                    const imgSrc = getImagePath(name);
+                    const imgSrc = getImagePath(name.trim());
 
                     return (
                       <div 
@@ -252,10 +251,10 @@ export default function TemplateModal({ open, onClose, onSave, initialTemplate }
           setTemplate({
             ...tpl,
             items: Array.isArray(tpl.items)
-              ? tpl.items.map(item => ({
+              ? tpl.items.map((item: TemplateItem) => ({
                   ...item,
                   content: item.type === 'image' && typeof item.content === 'string'
-                    ? item.content.split(',').map(s => s.trim())
+                    ? item.content.split(',').map((s: string) => s.trim())
                     : item.content
                 }))
               : []
@@ -485,7 +484,7 @@ export default function TemplateModal({ open, onClose, onSave, initialTemplate }
                         if (selectionFolder && selectionFolder !== currentDir) return;
                         const v = e.target.value;
                         if (!selectionFolder) setSelectionFolder(currentDir);
-                        setSelectedFiles(s => s.includes(v) ? s.filter(x => x !== v) : [...s, v]);
+                        setSelectedFiles((s: string[]) => s.includes(v) ? s.filter(x => x !== v) : [...s, v]);
                       }}
                     />
                   </li>

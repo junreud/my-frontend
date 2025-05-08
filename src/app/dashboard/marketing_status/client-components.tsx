@@ -6,7 +6,15 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin, { DateClickArg } from "@fullcalendar/interaction";
 import type { EventApi, ViewApi } from "@fullcalendar/core";
 import koLocale from "@fullcalendar/core/locales/ko";
-import { useUserWorkHistories, WorkHistory as WorkHistoryType } from "@/hooks/useUserWorkHistories";
+import { useUserWorkHistories } from "@/hooks/useUserWorkHistories";
+
+// 캘린더 이벤트 타입
+type CalendarEvent = {
+  title: string;
+  start: string;
+  end?: string;
+  backgroundColor?: string;
+};
 
 interface RowData {
   no: number;
@@ -354,7 +362,7 @@ export function CalendarSkeleton() {
 // --------------------------------------------------------------------
 // 마케팅 상태 페이지의 클라이언트 컴포넌트
 // --------------------------------------------------------------------
-export function MarketingStatusClient({ initialEvents }: { initialEvents?: any[] }) {
+export function MarketingStatusClient() {
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const calendarContainerRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -384,23 +392,21 @@ export function MarketingStatusClient({ initialEvents }: { initialEvents?: any[]
   }, [workHistories]);
   
   // 작업 이력 데이터를 캘린더 이벤트로 변환
-  const calendarEvents = React.useMemo(() => {
+  const calendarEvents = React.useMemo<CalendarEvent[]>(() => {
     if (!workHistories || workHistories.length === 0) return [];
-    
-    return workHistories.map(history => {
+    const events: CalendarEvent[] = [];
+    for (const history of workHistories) {
       const startDate = history.actual_start_date || history.user_start_date;
+      if (!startDate) continue;
       const endDate = history.actual_end_date || history.user_end_date;
-      
-      // 날짜가 없는 경우 이벤트 생성 불가
-      if (!startDate) return null;
-      
-      return {
+      events.push({
         title: history.work_type,
         start: new Date(startDate).toISOString().split('T')[0],
         end: endDate ? new Date(endDate).toISOString().split('T')[0] : undefined,
         backgroundColor: JOB_COLORS[history.work_type] || "#ccc",
-      };
-    }).filter(Boolean); // null 값 제거
+      });
+    }
+    return events;
   }, [workHistories]);
   
   const handleRowClick = (row: RowData) => {
@@ -451,9 +457,9 @@ export function MarketingStatusClient({ initialEvents }: { initialEvents?: any[]
   );
 }
 
-// 데이터 유틸리티 함수 - 이벤트 데이터 생성
-export function getCalendarEvents() {
-  return allData.map((item) => ({
+// 데이터 유틸리티 함수 - 테이블 RowData를 캘린더 이벤트로 변환
+export function getCalendarEvents(data: RowData[]): CalendarEvent[] {
+  return data.map((item: RowData) => ({
     title: item.작업명,
     start: item.시작일,
     end: item.종료일,

@@ -61,7 +61,7 @@ interface NavCommonProps {
 
 export function NavCommon({ sections, currentPath }: NavCommonProps) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   return (
     <>
       {sections.map((section) => (

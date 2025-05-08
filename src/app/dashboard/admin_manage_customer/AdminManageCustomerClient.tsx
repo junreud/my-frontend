@@ -113,7 +113,7 @@ export default function AdminManageCustomerClient() {
         <DialogContent className="bg-white">
           <DialogHeader><DialogTitle>템플릿 관리</DialogTitle></DialogHeader>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {templates.map(t => (
+            {templates.map((t: Template) => (
               <div key={t.id!} className="flex items-center justify-between">
                 <span>{t.name}</span>
                 <div className="flex gap-2">
@@ -125,7 +125,7 @@ export default function AdminManageCustomerClient() {
                     });
                   }}>수정</Button>
                   <Button size="sm" onClick={async () => {
-                    const res = await apiClient.post(`/api/templates/${t.id}/copy`);
+                    await apiClient.post(`/api/templates/${t.id}/copy`);
                     refetchTemplates();
                   }}>복사</Button>
                   <Button size="sm" variant="destructive" onClick={async () => {
@@ -180,7 +180,7 @@ export default function AdminManageCustomerClient() {
         <label className="text-sm font-medium">템플릿:</label>
         <select value={selectedTemplateId ?? ''} onChange={e => setSelectedTemplateId(e.target.value ? Number(e.target.value) : undefined)} className="border rounded px-2 h-8 text-xs">
           <option value="">템플릿 선택</option>
-          {templates.map(t => <option key={t.id!} value={t.id!}>{t.name}</option>)}
+          {templates.map((t: Template) => <option key={t.id!} value={t.id!}>{t.name}</option>)}
         </select>
         <Button size="sm" onClick={() => setTemplateManagerOpen(true)}>템플릿 관리</Button>
       </div>

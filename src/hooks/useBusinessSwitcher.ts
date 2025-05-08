@@ -6,6 +6,7 @@ import { useBusinessCreation } from "./useBusinessCreation"
 import { FinalKeyword, Platform } from "@/types"
 import { toast } from "sonner"
 import { createLogger } from "@/lib/logger"
+import { Business } from "@/types/index";
 
 const logger = createLogger('BusinessSwitcher');
 
@@ -74,7 +75,7 @@ export function useBusinessSwitcher() {
   }, []);
 
   // 비즈니스 변경 시 높이 안정화 처리
-  const handleBusinessChange = useCallback((business) => {
+  const handleBusinessChange = useCallback((business: Business) => {
     // 높이 기록
     measureAndStabilizeHeight();
     

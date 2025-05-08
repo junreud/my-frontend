@@ -5,7 +5,14 @@ interface ChartDataItem {
   place_id?: string | number;
   ranking?: number | null;
   hasCrawlInfo?: boolean;
-  [key: string]: any;
+  hasBasicCrawl?: boolean;
+  blogReviews?: number | null;
+  receiptReviews?: number | null;
+  blog_review_count?: number | null;
+  receipt_review_count?: number | null;
+  savedCount?: number | null;
+  saved?: number | null;
+  saved_count?: number | null;
 }
 import { Business } from '@/types/index';
 import {
@@ -95,10 +102,13 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
       for (let i = lastIdx + 1; i < dataArr.length; i++) {
         dataArr[i].ranking = dataArr[lastIdx].ranking;
       }
-      // Forward-fill detail fields
+     // Forward-fill detail fields
+      const detailKeys = ['blogReviews','blog_review_count','receiptReviews','receipt_review_count','savedCount','saved','saved_count'] as const;
       for (let i = 1; i < dataArr.length; i++) {
-        ['blogReviews','blog_review_count','receiptReviews','receipt_review_count','savedCount','saved','saved_count'].forEach(key => {
-          if (dataArr[i][key] == null) dataArr[i][key] = dataArr[i-1][key];
+        detailKeys.forEach((key) => {
+          if (dataArr[i][key] == null) {
+            dataArr[i][key] = dataArr[i - 1][key];
+          }
         });
       }
     }
@@ -124,7 +134,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
         savedCountNormalized: savedVal ?? 0
       };
     });
-  }, [chartData]);
+  }, [chartData, activeBusiness?.place_id]);
   
   // 현재 순위를 기준으로 Y축 범위 계산
   const rankingYAxisDomain = useMemo(() => {
@@ -199,30 +209,6 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
     }
     
     return ticks;
-  };
-
-  // Utility function to calculate optimal Y-axis domain
-  const calculateOptimalYAxisDomain = (values: number[]) => {
-    if (!values.length) return [0, 10];
-    
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const range = maxValue - minValue;
-
-    const yMin = 0; // Start from 0
-    let yMax;
-
-    if (range === 0) {
-      yMax = maxValue === 0 ? 10 : maxValue * 1.5;
-    } else if (maxValue < 10) {
-      yMax = 10;
-    } else if (range < maxValue * 0.1) {
-      yMax = maxValue + (maxValue * 0.2);
-    } else {
-      yMax = maxValue + Math.ceil(range * 0.2);
-    }
-
-    return [yMin, Math.ceil(yMax)];
   };
 
   // Review graph Y-axis domain - 필드명 수정 (blogReviews -> blog_review_count)

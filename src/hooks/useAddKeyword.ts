@@ -1,5 +1,6 @@
 // hooks/useAddKeyword.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
 import apiClient from "@/lib/apiClient";
 import { toast } from "sonner";
 
@@ -15,9 +16,17 @@ export const useAddKeyword = (userId: number, placeId: number) => {
             keyword,
           });
           return response.data;
-        } catch (error: any) {
+        } catch (error: unknown) {
           // 상세 에러 메시지 추출
-          const errorMessage = error.response?.data?.message || "키워드 추가 중 오류가 발생했습니다.";
+          let errorMessage = "키워드 추가 중 오류가 발생했습니다.";
+          if (axios.isAxiosError(error) && error.response?.data) {
+            const dataObj = error.response.data as Record<string, unknown>;
+            if (typeof dataObj.message === 'string') {
+              errorMessage = dataObj.message;
+            }
+          } else if (error instanceof Error) {
+            errorMessage = error.message;
+          }
           throw new Error(errorMessage);
         }
       },

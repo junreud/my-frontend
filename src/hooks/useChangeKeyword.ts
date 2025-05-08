@@ -2,6 +2,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import { toast } from "sonner";
+import axios from "axios";
 
 export const useChangeKeyword = (userId: number, placeId: number) => {
   const queryClient = useQueryClient();
@@ -16,9 +17,17 @@ export const useChangeKeyword = (userId: number, placeId: number) => {
           newKeyword,
         });
         return response.data;
-      } catch (error: any) {
+      } catch (error: unknown) {
         // 상세 에러 메시지 추출
-        const errorMessage = error.response?.data?.message || "키워드 변경 중 오류가 발생했습니다.";
+        let errorMessage = "키워드 변경 중 오류가 발생했습니다.";
+        if (axios.isAxiosError(error) && error.response?.data) {
+          const dataObj = error.response.data as Record<string, unknown>;
+          if (typeof dataObj.message === "string") {
+            errorMessage = dataObj.message;
+          }
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
         throw new Error(errorMessage);
       }
     },

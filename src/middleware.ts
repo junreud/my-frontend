@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+console.log('▶ ㅇㅁㄴㅇㄹㅁㄴㅇㄹroot middleware 실행');
 
 export function middleware(request: NextRequest) {
   // 1. 요청에서 인증 쿠키 읽기 (!! 실제 쿠키 이름 'authToken' 확인 필요 !!)

@@ -65,7 +65,7 @@ function useWorkOptions() {
 
 // 빈 데이터 생성 함수 - 100개의 빈 행 생성
 const createEmptyRows = (count: number) => {
-  return Array(count).fill(null).map((_, index) => ({
+  return Array(count).fill(null).map((_: unknown, index: number) => ({
     id: index,
     user_id: 0,
     place_id: '',
@@ -101,7 +101,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // useWorkOptions 훅을 호출하여 workTypes와 executors 가져오기
-  const { data: workOptions, isLoading: optionsLoading, isError: optionsError } = useWorkOptions();
+  const { data: workOptions } = useWorkOptions();
   
   // workOptions에서 필요한 데이터 추출
   const workTypes = workOptions?.workTypes || [];
@@ -412,7 +412,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
           </thead>
           <tbody className={`${(isLoading || workHistories.length === 0) ? 'opacity-30' : ''}`}>
             {visibleData.map((item, index) => {
-              const userInfo = users?.find(u => u.user_id === item.user_id);
+              const userInfo = users?.find((u: UserWithPlaces) => u.user_id === item.user_id);
               const tooltipContent = userInfo ? 
                 `이름: ${userInfo.name}\n이메일: ${userInfo.email}\n업체: ${
                   userInfo.place_names && userInfo.place_names.length > 0 
@@ -433,9 +433,9 @@ const WorkTable: React.FC<WorkTableProps> = ({
                   <td className="p-2">{index + 1}</td>
                   <td className="p-2">
                     {(() => {
-                      // place_id에 해당하는 업체명 찾기
+                      // place_<id>에 해당하는 업체명 찾기
                       if (userInfo && userInfo.place_ids && userInfo.place_names) {
-                        const placeIndex = userInfo.place_ids.findIndex(id => id === item.place_id);
+                        const placeIndex = userInfo.place_ids.findIndex((id: string) => id === item.place_id);
                         if (placeIndex !== -1) {
                           return userInfo.place_names[placeIndex];
                         }

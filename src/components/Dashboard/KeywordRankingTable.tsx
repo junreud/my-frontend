@@ -4,9 +4,17 @@
 import React, { useState, useEffect } from 'react';
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 
+interface KeywordDataItem {
+  id: number;
+  keyword: string;
+  rank: number;
+  lastRank: number;
+  change: number;
+}
+
 const KeywordRankingTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [keywordData, setKeywordData] = useState<any[]>([]);
+  const [keywordData, setKeywordData] = useState<KeywordDataItem[]>([]);
   const { activeBusiness } = useBusinessSwitcher();
 
   useEffect(() => {
@@ -23,7 +31,7 @@ const KeywordRankingTable: React.FC = () => {
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Mock data for table
-        const mockKeywords = [
+        const mockKeywords: KeywordDataItem[] = [
           { id: 1, keyword: "신림헬스장", rank: 8, lastRank: 10, change: 2 },
           { id: 2, keyword: "신림PT", rank: 15, lastRank: 12, change: -3 },
           { id: 3, keyword: "신림피트니스", rank: 3, lastRank: 5, change: 2 },

@@ -6,7 +6,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -16,7 +15,6 @@ import { Loader2, Edit2, PlusCircle, Save, X, Trash2 } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
-import { Badge } from "@/components/ui/badge";
 import apiClient from '@/lib/apiClient';
 import { createLogger } from "@/lib/logger";
 import { DateRange } from "react-day-picker";
@@ -125,7 +123,6 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [selectedUserDetails, setSelectedUserDetails] = useState<UserWithPlaces | null>(null);
-  const [showUserDetails, setShowUserDetails] = useState(false);
   const [isManagingExecutors, setIsManagingExecutors] = useState(false);
   const [newExecutorName, setNewExecutorName] = useState("");
   const [executorToEdit, setExecutorToEdit] = useState<{name: string, newName: string} | null>(null);
@@ -262,7 +259,6 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
     setIsActualCalendarOpen(false);
     setIsUserCalendarOpen(false);
     setSelectedUserDetails(null);
-    setShowUserDetails(false);
     setSelectedUserPlaces([]); // 선택된 유저-업체 목록 초기화 추가
   };
 
@@ -291,7 +287,7 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
     queryFn: async () => {
       const res = await apiClient.get('/api/admin/users-with-places');
       if (res.data.success) {
-        return res.data.data.map(user => ({ ...user, place_ids: user.place_ids || [], place_names: user.place_names || [] }));
+        return res.data.data.map((user: UserWithPlaces) => ({ ...user, place_ids: user.place_ids || [], place_names: user.place_names || [] }));
       }
       throw new Error(res.data.message || '사용자 정보를 불러오는데 실패했습니다');
     },
@@ -300,7 +296,7 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
   });
 
   const selectedUserId = userId.length > 0 ? userId[0].split(':')[0] : null;
-  const { data: userDetail, isLoading: userDetailLoading, refetch: fetchUserDetail } = useQuery({
+  const { data: userDetail, refetch: fetchUserDetail } = useQuery({
     queryKey: ['admin-user-detail', selectedUserId],
     queryFn: async () => {
       const res = await apiClient.get(`/api/admin/users/${selectedUserId}`);
@@ -317,7 +313,7 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
     } else {
       setSelectedUserDetails(null);
     }
-  }, [selectedUserId]);
+  }, [selectedUserId, fetchUserDetail]);
 
   // update selectedUserDetails from fetched detail
   useEffect(() => {
@@ -336,9 +332,8 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
       return [];
     }
 
-    // 각 사용자의 모든 업체 정보를 옵션으로 변환
-    const options = [];
-    
+    const options: { value: string; label: string; userData: UserWithPlaces & { place_id: string; place_name: string } }[] = [];
+
     users.forEach(user => {
       logger.debug('Processing user:', { id: user.user_id, name: user.name, places: user.place_names });
       
@@ -351,20 +346,17 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
             const placeId = user.place_ids[index];
             
             options.push({
-              value: `${user.user_id}:${placeId}`, // 사용자 ID와 업체 ID를 콜론으로 구분
+              value: `${user.user_id}:${placeId}`,
               label: `${user.name} (${user.email}) - ${placeName}`,
               userData: {
                 ...user,
-                place_id: placeId, // 선택된 특정 업체 ID
-                place_name: placeName, // 선택된 특정 업체 이름
-                place_ids: user.place_ids || [],
-                place_names: user.place_names || []
+                place_id: placeId,
+                place_name: placeName
               }
             });
           }
         });
       }
-      // 업체가 없는 사용자는 처리하지 않음 (else 블록 제거)
     });
 
     logger.debug(`Generated ${options.length} user options`);
@@ -524,13 +516,6 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
   );
 
   // Native JS date formatter
-  const formatDateString = (dateStr: string | null) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  };
-  
-  // 날짜 범위를 문자열로 포맷팅 (without date-fns)
   const formatDateRange = (range: DateRange | undefined) => {
     if (!range?.from) return "기간 선택";
     
@@ -689,13 +674,6 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
       
       return false;
     };
-    
-    // 필터링된 props 객체 생성 (displayMonth 제거)
-    const filteredProps = (props: any) => {
-      // displayMonth prop이 있으면 제거
-      const { displayMonth, ...rest } = props;
-      return rest;
-    };
 
     // 날짜 클릭 핸들러
     const handleDayClick = (day: Date) => {
@@ -727,57 +705,20 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
             selected={tempRange}
             numberOfMonths={1}
             className="rdp-range-calendar"
-            modifiers={{ 
-              today: today,
+            modifiers={{
+              today,
               start: tempRange?.from ? [tempRange.from] : [],
               end: tempRange?.to ? [tempRange.to] : [],
-              range_middle: tempRange?.from && tempRange?.to 
-                ? { from: tempRange.from, to: tempRange.to }
-                : undefined
-            }}
-            modifiersStyles={{
-              today: {
-                backgroundColor: '#f3f4f6',
-                color: '#3b82f6',
-                fontWeight: 'bold',
-                borderRadius: '50%',
-                border: '2px solid #3b82f6',
-              },
-              start: {
-                color: 'white',
-                backgroundColor: '#3b82f6',
-              },
-              end: {
-                color: 'white',
-                backgroundColor: '#10b981',
-              },
-              range_middle: {
-                backgroundColor: 'rgba(219, 234, 254, 0.8)',
-                color: '#333',
-              }
+              range_middle: tempRange?.from && tempRange?.to ? { from: tempRange.from, to: tempRange.to } : []
             }}
             components={{
-              Day: ({ date, ...props }) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              Day: (props: any) => {
+                const { date, className, ...rest } = props;
                 const startOrEnd = isStartOrEnd(date);
-                
+                const cls = `${className || ''} ${startOrEnd === 'start' ? 'rdp-day_range_start' : startOrEnd === 'end' ? 'rdp-day_range_end' : isInRange(date) ? 'rdp-day_range_middle' : ''}`.trim();
                 return (
-                  <button 
-                    {...filteredProps(props)} 
-                    onClick={() => handleDayClick(date)}
-                    className={`${props.className || ''} ${
-                      isInRange(date) && !startOrEnd
-                        ? 'rdp-day_range_middle'
-                        : ''
-                    } ${
-                      startOrEnd === 'start'
-                        ? 'rdp-day_range_start'
-                        : ''
-                    } ${
-                      startOrEnd === 'end'
-                        ? 'rdp-day_range_end'
-                        : ''
-                    }`}
-                  >
+                  <button {...rest} onClick={() => handleDayClick(date)} className={cls}>
                     {renderDay(date)}
                   </button>
                 );
@@ -968,7 +909,7 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
                                         
                                         // 편집 중인 실행사가 현재 선택된 실행사인 경우, 선택된 실행사도 업데이트
                                         if (executor === executorToEdit.name) {
-                                          setExecutorToEdit(executorToEdit.newName.trim());
+                                          setExecutor(executorToEdit.newName.trim());
                                         }
                                       }
                                       setExecutorToEdit(null);

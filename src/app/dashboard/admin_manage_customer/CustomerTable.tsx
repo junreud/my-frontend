@@ -7,6 +7,9 @@ import { toast } from "sonner";
 import { useState, useEffect, useRef } from 'react';
 import apiClient from '@/lib/apiClient'; // apiClient 추가
 
+// 연락처에 회사명을 포함한 타입
+type ContactWithCompany = IContactInfo & { company_name: string };
+
 // TemplateItem 타입 정의 (TemplateModal과 일치시키거나 import 필요)
 interface TemplateItem {
   id: number;
@@ -244,8 +247,11 @@ export default function CustomerTable({
     }
     try {
       // 1. 선택된 고객의 모든 연락처 추출 및 회사명 매핑
-      const allContactsWithCompany = selectedCustomers.flatMap(c =>
-        (c.contacts || []).map(ct => ({ ...ct, company_name: c.company_name })) // 각 연락처에 회사명 추가
+      const allContactsWithCompany: ContactWithCompany[] = selectedCustomers.flatMap(c =>
+        (c.contacts || []).map((ct): ContactWithCompany => ({
+          ...ct,
+          company_name: c.company_name
+        }))
       );
       // 친구추가 실패 연락처는 제외하고 진행
       const failedContacts = allContactsWithCompany.filter(ct => ct.friend_add_status === 'fail');
@@ -359,7 +365,13 @@ export default function CustomerTable({
                     toast.error('체크된 고객이 없습니다. 체크를 해주세요.');
                     return;
                   }
-                  const toAdd = selectedCustomers.flatMap(c => c.contacts ?? []).map(ct => ({ company_name: ct.company_name || '', contact_person: ct.contact_person || '', phone: ct.phone_number || '' }));
+                  const toAdd = selectedCustomers.flatMap(c =>
+                    (c.contacts || []).map(ct => ({
+                      company_name: c.company_name,
+                      contact_person: ct.contact_person || '',
+                      phone: ct.phone_number || ''
+                    }))
+                  );
                   apiClient.post('/api/kakao/add-friends', { friends: toAdd }).then(() => {
                     toast.success('친구추가 요청 완료');
                     cancelSelectionMode();

@@ -274,6 +274,8 @@ export default function Page(): JSX.Element {
         place_name?: string;
         category?: string;
         savedCount?: number | null;
+        saved_count?: number | null;
+        saved?: number | null;
         blog_review_count?: number | null;
         receipt_review_count?: number | null;
         keywordList?: string[];
@@ -827,8 +829,12 @@ export default function Page(): JSX.Element {
                     apiClient.post('/keyword/search-volume', { candidateKeywords: [newKeyword] })
                       .then(() => {
                         // 갱신된 검색량 반영을 위해 키워드 목록 및 순위 갱신
-                        queryClient.invalidateQueries(['userKeywords', String(user?.id), String(activeBusiness?.place_id)]);
-                        queryClient.invalidateQueries(['keywordRankingDetails', String(activeBusiness?.place_id), String(user?.id)]);
+                        queryClient.invalidateQueries({
+                          queryKey: ['userKeywords', String(user?.id), String(activeBusiness?.place_id)],
+                        });
+                        queryClient.invalidateQueries({
+                          queryKey: ['keywordRankingDetails', String(activeBusiness?.place_id), String(user?.id)],
+                        });
                       })
                       .catch(err => console.error('검색량 업데이트 실패:', err));
                   }
@@ -895,8 +901,12 @@ export default function Page(): JSX.Element {
                       // 병렬: Naver API 호출로 검색량 업데이트
                       apiClient.post('/keyword/search-volume', { candidateKeywords: [editKeyword] })
                         .then(() => {
-                          queryClient.invalidateQueries(['userKeywords', String(user?.id), String(activeBusiness?.place_id)]);
-                          queryClient.invalidateQueries(['keywordRankingDetails', String(activeBusiness?.place_id), String(user?.id)]);
+                          queryClient.invalidateQueries({
+                            queryKey: ['userKeywords', String(user?.id), String(activeBusiness?.place_id)],
+                          });
+                          queryClient.invalidateQueries({
+                            queryKey: ['keywordRankingDetails', String(activeBusiness?.place_id), String(user?.id)],
+                          });
                         })
                         .catch(err => console.error('검색량 업데이트 실패:', err));
                     }

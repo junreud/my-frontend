@@ -10,7 +10,7 @@ interface DashboardShellProps {
 const DashboardShell: React.FC<DashboardShellProps> = ({ children }) => {
   const { 
     activeBusiness, 
-    loading: businessLoading,
+    isLoading: businessLoading,
     containerRef,
     prevHeight,
     isHeightStabilized

@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from "lucide-react"
+import { BadgeCheck, Bell, ChevronsUpDown, LogOut, Sparkles } from "lucide-react"
 
 // ui/avatar
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

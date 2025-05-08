@@ -157,7 +157,7 @@ export function useUserBusinesses(userId: string | undefined) {
     if (storedBusinessId) {
       try {
         const parsed = JSON.parse(storedBusinessId);
-        const matchedBusiness = businesses.find((b) => 
+        const matchedBusiness = businesses.find((b: Business) => 
           String(b.place_id) === String(parsed.place_id)
         );
   

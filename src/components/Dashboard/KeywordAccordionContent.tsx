@@ -1,4 +1,3 @@
-// filepath: /Users/junseok/Projects/my-frontend/src/components/Dashboard/KeywordAccordionContent.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -8,13 +7,21 @@ import {
 } from "recharts";
 import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
 
+interface ChartDataItem {
+  date: string;
+  ranking: number;
+  savedCount: number;
+  blog_review_count: number;
+  receipt_review_count: number;
+}
+
 interface KeywordAccordionContentProps {
   keyword: string;
 }
 
 export const KeywordAccordionContent: React.FC<KeywordAccordionContentProps> = ({ keyword }) => {
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
   const { activeBusiness } = useBusinessSwitcher();
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { createLogger } from "@/lib/logger";
 import WorkTable from "./WorkHistoryTable";
@@ -44,7 +44,7 @@ export default function Page() {
   const queryClient = useQueryClient();
 
   // 백엔드에서 작업 종류와 실행사 목록 가져오기
-  const { data: workOptions, isLoading: optionsLoading, isError: optionsError } = useWorkOptions();
+  const { data: workOptions, isLoading: optionsLoading } = useWorkOptions();
 
   // 관리자 권한 확인
   const isAdmin = userData?.role === "admin";
@@ -124,7 +124,7 @@ export default function Page() {
         <div className="w-64">
           <label className="text-xs font-medium mb-1 block">작업 종류 필터</label>
           <MultiSelectCombobox
-            options={workTypeOptions.map(type => ({
+            options={workTypeOptions.map((type: string) => ({
               label: type,
               value: type
             }))}
@@ -138,7 +138,7 @@ export default function Page() {
         <div className="w-64">
           <label className="text-xs font-medium mb-1 block">실행사 필터</label>
           <MultiSelectCombobox
-            options={executorOptions.map(exec => ({
+            options={executorOptions.map((exec: string) => ({
               label: exec,
               value: exec
             }))}
