@@ -540,107 +540,67 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
                      day.getDate() === tempRange.from.getDate() && 
                      day.getMonth() === tempRange.from.getMonth() && 
                      day.getFullYear() === tempRange.from.getFullYear();
-                     
       const isEnd = tempRange?.to && 
-                   day.getDate() === tempRange.to.getDate() && 
-                   day.getMonth() === tempRange.to.getMonth() && 
-                   day.getFullYear() === tempRange.to.getFullYear();
-      
-      // Only show label for the start and end dates
-      const shouldShowLabel = isStart || isEnd;
-      
+                    day.getDate() === tempRange.to.getDate() && 
+                    day.getMonth() === tempRange.to.getMonth() && 
+                    day.getFullYear() === tempRange.to.getFullYear();
+      const isTodayDate = day.getDate() === today.getDate() && day.getMonth() === today.getMonth() && day.getFullYear() === today.getFullYear();
+      // Show label for start, end, or today
+      const shouldShowLabel = isStart || isEnd || isTodayDate;
+      const labelText = isStart ? '시작일' : isEnd ? '종료일' : isTodayDate ? '오늘' : '';
+      const labelColor = isStart ? 'text-blue-600' : isEnd ? 'text-green-600' : 'text-indigo-600';
       return (
         <div className="relative">
           <div>{day.getDate()}</div>
           {shouldShowLabel && (
-            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
-              <span className={`${isStart ? "text-blue-600" : "text-green-600"}`}>
-                {isStart ? "시작일" : "종료일"}
-              </span>
+            <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-xs font-medium whitespace-nowrap">
+              <span className={labelColor}>{labelText}</span>
             </div>
           )}
         </div>
       );
     };
     
-    // Custom styles for the day picker to make room for labels and styling date range
     const customStyles = `
-      .rdp-day {
-        height: 40px;  /* Add more height to accommodate the label */
+      /* Minimal calendar styling */
+      .rdp-range-calendar {
+        font-family: inherit;
+        color: #1f2937;
+        border: none;
       }
-      .rdp-day_selected {
-        position: relative;
+      .rdp-day {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+      }
+      .rdp-day button {
+        width: 100%;
+        height: 100%;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: inherit;
+        transition: background 0.2s;
+      }
+      .rdp-day:not(.rdp-day_selected):hover button {
+        background-color: #f3f4f6;
+      }
+      .rdp-day_selected button,
+      .rdp-day_range_start button,
+      .rdp-day_range_end button {
+        background-color: #3b82f6 !important;
+        color: #fff !important;
+        font-weight: 500;
+      }
+      .rdp-day_range_middle button {
+        background-color: #bfdbfe !important;
+        color: #1f2937 !important;
+      }
+      .rdp-day_today:not(.rdp-day_selected) button {
+        border: 1px solid #3b82f6 !important;
       }
       .rdp-tbody {
-        position: relative;
-      }
-      .rdp-table {
-        margin-bottom: 8px; /* Add more bottom margin for the labels */
-      }
-      
-      /* 향상된 날짜 범위 스타일 */
-      .rdp-day_range_middle {
-        background: linear-gradient(to right, rgba(219, 234, 254, 0.8), rgba(199, 242, 255, 0.8)) !important;
-        color: #333 !important;
-        position: relative;
-        z-index: 1;
-      }
-      
-      /* 시작일과 종료일 강조 스타일 */
-      .rdp-day_range_start {
-        border-top-left-radius: 50% !important;
-        border-bottom-left-radius: 50% !important;
-        box-shadow: -1px 0 3px rgba(59, 130, 246, 0.2) !important;
-        background: #3b82f6 !important;
-        color: white !important;
-        font-weight: bold !important;
-        position: relative;
-        z-index: 2;
-      }
-      
-      .rdp-day_range_end {
-        border-top-right-radius: 50% !important;
-        border-bottom-right-radius: 50% !important;
-        box-shadow: 1px 0 3px rgba(16, 185, 129, 0.2) !important;
-        background: #10b981 !important;
-        color: white !important;
-        font-weight: bold !important;
-        position: relative;
-        z-index: 2;
-      }
-      
-      /* 날짜 호버 효과 개선 */
-      .rdp-day:not(.rdp-day_selected):hover {
-        background-color: rgba(243, 244, 246, 0.8) !important;
-        transform: scale(1.1);
-        transition: all 0.2s ease;
-        z-index: 3;
-        position: relative;
-      }
-      
-      /* 오늘 날짜 강조 */
-      .rdp-day_today:not(.rdp-day_selected) {
-        border: 2px solid #3b82f6 !important;
-        color: #3b82f6 !important;
-        font-weight: bold !important;
-      }
-      
-      /* 전체 선택된 범위에 연결선 추가 */
-      .rdp-row:has(.rdp-day_range_middle) {
-        position: relative;
-      }
-      
-      /* 선택된 범위의 배경에 그라데이션 효과 */
-      .rdp-day_range_middle:before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 0;
-        right: 0;
-        height: 60%;
-        transform: translateY(-50%);
-        background: rgba(219, 234, 254, 0.5);
-        z-index: -1;
+        margin-bottom: 4px;
       }
     `;
     
@@ -714,11 +674,21 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
             components={{
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               Day: (props: any) => {
-                const { date, className, ...rest } = props;
+                const { date, className } = props;
                 const startOrEnd = isStartOrEnd(date);
-                const cls = `${className || ''} ${startOrEnd === 'start' ? 'rdp-day_range_start' : startOrEnd === 'end' ? 'rdp-day_range_end' : isInRange(date) ? 'rdp-day_range_middle' : ''}`.trim();
+                // base classes for range
+                const rangeCls = startOrEnd === 'start'
+                  ? 'rdp-day_range_start'
+                  : startOrEnd === 'end'
+                    ? 'rdp-day_range_end'
+                    : isInRange(date)
+                      ? 'rdp-day_range_middle'
+                      : '';
+                // highlight today
+                const todayCls = date.toDateString() === today.toDateString() ? 'rdp-day_today' : '';
+                const cls = `${className || ''} ${rangeCls} ${todayCls}`.trim();
                 return (
-                  <button {...rest} onClick={() => handleDayClick(date)} className={cls}>
+                  <button onClick={() => handleDayClick(date)} className={cls}>
                     {renderDay(date)}
                   </button>
                 );

@@ -44,6 +44,8 @@ export interface Business {
   isNewlyOpened?: boolean;
   main_keyword?: string;
   isRestaurant?: boolean; // Add restaurant flag
+  blog_review_count?: number | null;   // Add optional review counts
+  receipt_review_count?: number | null;
 }
 
 export interface UserKeyword {
@@ -237,6 +239,7 @@ export interface KeywordRankingDetail extends BaseKeywordData {
   category: string;
   keywordList: string[] | null;
   crawled_at?: string;
+  isRestaurant?: boolean;  // 가게 여부 판별 속성
 }
 
 /**
@@ -266,6 +269,7 @@ export interface KeywordRankingTableProps {
   keywordData: KeywordRankingData | null;
   historicalData: KeywordHistoricalData[] | null;
   rangeValue: number;
+  isRestaurantKeyword?: boolean;  // 레스토랑 여부에 따라 저장수 컬럼 표시 여부
 }
 
 export interface ICustomerInfo {

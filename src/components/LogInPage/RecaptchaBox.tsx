@@ -14,9 +14,23 @@ export default function RecaptchaBox({ sitekey, onChange }: RecaptchaBoxProps) {
   // 컴포넌트가 마운트되면 자동 실행
   useEffect(() => {
     if (recaptchaRef.current) {
-      // invisible 모드이므로, 직접 execute() 호출
-      recaptchaRef.current.execute();
+      try {
+        recaptchaRef.current.execute();
+      } catch (error) {
+        console.error("RecaptchaBox execute error:", error);
+      }
     }
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: PromiseRejectionEvent) => {
+      if (e.reason == null) {
+        e.preventDefault();
+        console.warn("RecaptchaBox suppressed null unhandled rejection");
+      }
+    };
+    window.addEventListener('unhandledrejection', handler);
+    return () => window.removeEventListener('unhandledrejection', handler);
   }, []);
 
   return (
@@ -25,6 +39,8 @@ export default function RecaptchaBox({ sitekey, onChange }: RecaptchaBoxProps) {
       sitekey={sitekey}
       onChange={onChange}   // 토큰이 발급되면 호출
       size="invisible"      // v3와 유사하게 "보이지 않는" 형태
+      onErrored={() => console.warn("RecaptchaBox failed to load")}
+      onExpired={() => onChange(null)}
     />
   );
 }

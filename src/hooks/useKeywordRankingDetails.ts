@@ -50,6 +50,17 @@ export function useKeywordRankingDetails({
         `/api/keyword-ranking-details?placeId=${activeBusinessId}&userId=${userId}${keyword ? `&keyword=${encodeURIComponent(keyword)}` : ''}`
       );
 
+      // 디버깅을 위한 API 응답 로깅 추가
+      console.log('[Debug] Keyword API Response:', {
+        responseData: response.data,
+        firstItem: Array.isArray(response.data?.data) && response.data?.data.length > 0 
+          ? response.data?.data[0] 
+          : null,
+        hasIsRestaurantFlag: Array.isArray(response.data?.data) && response.data?.data.length > 0
+          ? 'isRestaurant' in response.data?.data[0]
+          : false
+      });
+
       const actualData = response.data?.data || response.data;
 
       if (!Array.isArray(actualData)) {

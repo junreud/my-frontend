@@ -3,8 +3,7 @@
 import * as React from "react"
 import { usePathname } from "next/navigation"
 import { Skeleton } from "@mui/material"
-import Link from "next/link"
-
+import { InstantLink } from "@/components/ui/instant-link"
 import { Home, AlertCircle, RefreshCw } from "lucide-react"
 import { useUser } from "@/hooks/useUser"  // Import useUser hook
 
@@ -50,7 +49,7 @@ const STATIC_SIDEBAR_SECTIONS = [
   {
     label: "설정",
     items: [
-      { title: "업체정보", url: "/dashboard/settings_shop", icon: "Building" },
+      { title: "내 업체", url: "/dashboard/my_shops", icon: "Building" },
       { title: "알림설정", url: "/dashboard/settings_notify", icon: "Bell" },
       { title: "팀/권한", url: "/dashboard/settings_business", icon: "Users" },
     ],
@@ -63,6 +62,8 @@ const ADMIN_SIDEBAR_SECTIONS = [
     items: [
       { title: "전체 통계", url: "/dashboard/admin_stats", icon: "BarChart" },
       { title: "유저 작업관리", url: "/dashboard/admin_users", icon: "UserCheck" },
+      { title: "키워드 분석", url: "/dashboard/analysis", icon: "ChartSpline" },
+
     ],
   },
   {
@@ -184,7 +185,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
-                <Link
+                <InstantLink
                   href="/dashboard"
                   className={`flex items-center gap-3 px-4 py-3 text-base transition-colors rounded-md ${
                     pathname === "/dashboard"
@@ -194,7 +195,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 >
                   <Home className={`shrink-0 h-5 w-5 ${pathname === "/dashboard" ? "stroke-[2px]" : ""}`} />
                   <span>대시보드 홈</span>
-                </Link>
+                </InstantLink>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -208,7 +209,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <NavSecondary
             items={[
               // { title: "도움말/지원", url: "/help", icon: "LifeBuoy" },
-              { title: "문의하기/고객센터", url: "/contact", icon: "Mail" },
+              { title: "버그신고/고객센터", url: "/dashboard/support", icon: "Mail" },
             ]}
             currentPath={pathname}
           />

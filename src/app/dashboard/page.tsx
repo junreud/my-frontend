@@ -6,20 +6,55 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import DashboardChart from "@/components/Dashboard/DashboardChart";
 import { ClientAnimatedNumber } from "@/components/animations/ClientAnimatedNumber";
 import apiClient from "@/lib/apiClient";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query'; // `useQueryClient` 추가
 import type { KeywordHistoricalData } from "@/types";
 import { useBusinessContext } from './BusinessContext';
+import { useMyShopsModal } from '@/contexts/MyShopsModalContext';
+import MyShopsModal from '@/components/ui/MyShopsModal';
 
 // CSR 컴포넌트로 변경
 export default function DashboardPage() {
   const router = useRouter();
   const { activeBusiness } = useBusinessContext();
-  
+  const queryClient = useQueryClient(); // queryClient 인스턴스 가져오기
+  const { open: showMyShopsModal, setOpen: setShowMyShopsModal } = useMyShopsModal();
+
   // 컴포넌트 레이아웃 쉬프트 방지를 위한 상태
   const [contentHeight, setContentHeight] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isStabilizing, setIsStabilizing] = useState(false);
   
+  // 사용자 정보 쿼리 무효화 추가
+  useEffect(() => {
+    // 대시보드 페이지가 마운트되거나 포커스될 때 사용자 쿼리를 무효화하여 최신 상태로 유지
+    queryClient.invalidateQueries({ queryKey: ['user'] });
+  }, [queryClient]); // queryClient는 일반적으로 안정적이므로 마운트 시 실행
+
+  // 페이지 전환 즉시 반응하도록 로딩 상태 추가
+  const [isPageLoaded, setIsPageLoaded] = useState(false);
+  
+  useEffect(() => {
+    // 컴포넌트 마운트 시 페이지 로드 완료 표시
+    setIsPageLoaded(true);
+    
+    // 네비게이션 이벤트에 대한 핸들러
+    const handleNavigation = () => {
+      setIsPageLoaded(false); // 페이지 전환 시 로딩 상태로 변경
+    };
+    
+    // 다른 경로로 이동 시 표시할 이벤트 리스너 등록
+    const links = document.querySelectorAll('a[href^="/"]');
+    links.forEach(link => {
+      link.addEventListener('click', handleNavigation);
+    });
+    
+    return () => {
+      links.forEach(link => {
+        link.removeEventListener('click', handleNavigation);
+      });
+    };
+  }, []);
+
   // 비즈니스 ID 변경 감지 및 높이 안정화
   useEffect(() => {
     if (contentRef.current && !isStabilizing) {
@@ -175,167 +210,172 @@ export default function DashboardPage() {
   }
 
   return (
-    <div 
-      ref={contentRef}
-      className="transition-all duration-300 ease-in-out"
-      style={isStabilizing && contentHeight ? { minHeight: `${contentHeight}px` } : {}}
-    >
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* 카드 1: Main Keyword Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Main Keyword</CardTitle>
-            <CardDescription>
+    <>
+      {/* 내 업체 관리 모달 (사이드바에서만 제어) */}
+      <MyShopsModal open={showMyShopsModal} onClose={() => setShowMyShopsModal(false)} />
+
+      <div 
+        ref={contentRef}
+        className={`transition-all duration-300 ease-in-out ${isPageLoaded ? 'opacity-100' : 'opacity-0'}`}
+        style={isStabilizing && contentHeight ? { minHeight: `${contentHeight}px` } : {}}
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          {/* 카드 1: Main Keyword Status */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Main Keyword</CardTitle>
+              <CardDescription>
+                {isKeywordLoading ? (
+                  <div className="h-4 bg-gray-200 animate-pulse rounded w-24"></div>
+                ) : mainKeywordStatus ? (
+                  `${mainKeywordStatus.diff > 0 ? '+' : ''}${mainKeywordStatus.diff}위 변동`
+                ) : '데이터 없음'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-4xl font-bold text-indigo-600">
               {isKeywordLoading ? (
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-24"></div>
+                <div className="h-10 bg-gray-200 animate-pulse rounded w-20"></div>
               ) : mainKeywordStatus ? (
-                `${mainKeywordStatus.diff > 0 ? '+' : ''}${mainKeywordStatus.diff}위 변동`
-              ) : '데이터 없음'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-4xl font-bold text-indigo-600">
-            {isKeywordLoading ? (
-              <div className="h-10 bg-gray-200 animate-pulse rounded w-20"></div>
-            ) : mainKeywordStatus ? (
-              `${mainKeywordStatus.currentRank}위`
-            ) : 'N/A'}
-            {mainKeywordStatus && (
-              <div className="text-sm text-gray-500 mt-1">{mainKeywordStatus.keyword}</div>
-            )}
-          </CardContent>
-        </Card>
+                `${mainKeywordStatus.currentRank}위`
+              ) : 'N/A'}
+              {mainKeywordStatus && (
+                <div className="text-sm text-gray-500 mt-1">{mainKeywordStatus.keyword}</div>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* 카드 2: Today's Users */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Today&apos;s Users</CardTitle>
-            <CardDescription>
+          {/* 카드 2: Today's Users */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Today&apos;s Users</CardTitle>
+              <CardDescription>
+                {isStatsLoading ? (
+                  <div className="h-4 bg-gray-200 animate-pulse rounded w-36"></div>
+                ) : dailyStats.todayUsers.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-4xl font-bold text-blue-600">
               {isStatsLoading ? (
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-36"></div>
-              ) : dailyStats.todayUsers.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-4xl font-bold text-blue-600">
-            {isStatsLoading ? (
-              <div className="h-10 bg-gray-200 animate-pulse rounded w-16"></div>
-            ) : (
-              <ClientAnimatedNumber to={dailyStats.todayUsers.count} duration={1.5} />
-            )}
-          </CardContent>
-        </Card>
+                <div className="h-10 bg-gray-200 animate-pulse rounded w-16"></div>
+              ) : (
+                <ClientAnimatedNumber to={dailyStats.todayUsers.count} duration={1.5} />
+              )}
+            </CardContent>
+          </Card>
 
-        {/* 카드 3: New Clients */}
-        <Card>
-          <CardHeader>
-            <CardTitle>New Clients</CardTitle>
-            <CardDescription>
+          {/* 카드 3: New Clients */}
+          <Card>
+            <CardHeader>
+              <CardTitle>New Clients</CardTitle>
+              <CardDescription>
+                {isStatsLoading ? (
+                  <div className="h-4 bg-gray-200 animate-pulse rounded w-32"></div>
+                ) : dailyStats.newClients.description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="text-4xl font-bold text-orange-600">
               {isStatsLoading ? (
-                <div className="h-4 bg-gray-200 animate-pulse rounded w-32"></div>
-              ) : dailyStats.newClients.description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-4xl font-bold text-orange-600">
-            {isStatsLoading ? (
-              <div className="h-10 bg-gray-200 animate-pulse rounded w-16"></div>
-            ) : (
-              <ClientAnimatedNumber to={dailyStats.newClients.count} duration={1.5} />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 아래쪽: 그래프 + 키워드 테이블 영역 */}
-      <div className="grid gap-4 md:grid-cols-2 mt-4">
-        {/* 그래프 */}
-        <div className="h-full min-h-[300px]">
-          {isChartLoading ? (
-            <div className="bg-white p-4 rounded-xl h-full">
-              <div className="h-6 bg-gray-200 animate-pulse rounded w-40 mb-4"></div>
-              <div className="h-[250px] bg-gray-100 animate-pulse rounded w-full"></div>
-            </div>
-          ) : (
-            <DashboardChart initialData={chartData} />
-          )}
+                <div className="h-10 bg-gray-200 animate-pulse rounded w-16"></div>
+              ) : (
+                <ClientAnimatedNumber to={dailyStats.newClients.count} duration={1.5} />
+              )}
+            </CardContent>
+          </Card>
         </div>
 
-        {/* 키워드 순위 테이블 */}
-        <Card className="rounded-xl p-4">
-          <h2 className="mb-2 text-lg font-semibold text-center">내 키워드 현재 순위</h2>
-          <div className="w-full max-w-3xl mx-auto px-4 py-2 overflow-y-auto max-h-[400px]">
-            {isRankingsLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 2 }).map((_, idx) => (
-                  <div key={`skeleton-group-${idx}`}>
-                    <div className="h-5 bg-gray-200 animate-pulse rounded w-32 mb-2"></div>
-                    <table className="w-full table-auto text-left text-sm mb-4">
-                      <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="p-2 font-medium text-gray-600">키워드</th>
-                          <th className="p-2 font-medium text-gray-600">현재순위</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from({ length: 3 }).map((_, idx) => (
-                          <tr key={`skeleton-row-${idx}`} className="border-b">
-                            <td className="p-2">
-                              <div className="h-4 bg-gray-200 animate-pulse rounded w-20"></div>
-                            </td>
-                            <td className="p-2">
-                              <div className="h-4 bg-gray-200 animate-pulse rounded w-12"></div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
-              </div>
-            ) : keywordRankings && Object.keys(keywordRankings).length > 0 ? (
-              <div className="space-y-6">
-                {(Object.entries(keywordRankings) as [string, { place_name: string; keywords: { keyword: string; ranking: number | null }[] }][]).map(([placeId, data]) => (
-                  <div key={placeId} className="mb-4">
-                    <h3 className="font-medium text-gray-800 mb-2 pb-1 border-b">
-                      {data.place_name}
-                    </h3>
-                    <table className="w-full table-auto text-left text-sm">
-                      <thead>
-                        <tr className="bg-gray-50">
-                          <th className="p-2 font-medium text-gray-600">키워드</th>
-                          <th className="p-2 font-medium text-gray-600">현재순위</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.keywords && data.keywords.length > 0 ? (
-                          data.keywords.map((keyword: { keyword: string; ranking: number | null; }) => (
-                            <tr key={`${placeId}-${keyword.keyword}`} className="hover:bg-gray-50 border-b">
-                              <td className="p-2">{keyword.keyword}</td>
-                              <td className="p-2">
-                                {keyword.ranking !== null 
-                                  ? <span className="font-semibold">{keyword.ranking}위</span> 
-                                  : <span className="text-gray-400">-</span>}
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={2} className="p-2 text-center text-gray-500">
-                              등록된 키워드가 없습니다.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                ))}
+        {/* 아래쪽: 그래프 + 키워드 테이블 영역 */}
+        <div className="grid gap-4 md:grid-cols-2 mt-4">
+          {/* 그래프 */}
+          <div className="h-full min-h-[300px]">
+            {isChartLoading ? (
+              <div className="bg-white p-4 rounded-xl h-full">
+                <div className="h-6 bg-gray-200 animate-pulse rounded w-40 mb-4"></div>
+                <div className="h-[250px] bg-gray-100 animate-pulse rounded w-full"></div>
               </div>
             ) : (
-              <div className="p-4 text-center text-gray-500">
-                등록된 키워드가 없거나 순위 데이터를 가져오지 못했습니다.
-              </div>
+              <DashboardChart initialData={chartData} />
             )}
           </div>
-        </Card>
+
+          {/* 키워드 순위 테이블 */}
+          <Card className="rounded-xl p-4">
+            <h2 className="mb-2 text-lg font-semibold text-center">내 키워드 현재 순위</h2>
+            <div className="w-full max-w-3xl mx-auto px-4 py-2 overflow-y-auto max-h-[400px]">
+              {isRankingsLoading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 2 }).map((_, idx) => (
+                    <div key={`skeleton-group-${idx}`}>
+                      <div className="h-5 bg-gray-200 animate-pulse rounded w-32 mb-2"></div>
+                      <table className="w-full table-auto text-left text-sm mb-4">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="p-2 font-medium text-gray-600">키워드</th>
+                            <th className="p-2 font-medium text-gray-600">현재순위</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: 3 }).map((_, idx) => (
+                            <tr key={`skeleton-row-${idx}`} className="border-b">
+                              <td className="p-2">
+                                <div className="h-4 bg-gray-200 animate-pulse rounded w-20"></div>
+                              </td>
+                              <td className="p-2">
+                                <div className="h-4 bg-gray-200 animate-pulse rounded w-12"></div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              ) : keywordRankings && Object.keys(keywordRankings).length > 0 ? (
+                <div className="space-y-6">
+                  {(Object.entries(keywordRankings) as [string, { place_name: string; keywords: { keyword: string; ranking: number | null }[] }][]).map(([placeId, data]) => (
+                    <div key={placeId} className="mb-4">
+                      <h3 className="font-medium text-gray-800 mb-2 pb-1 border-b">
+                        {data.place_name}
+                      </h3>
+                      <table className="w-full table-auto text-left text-sm">
+                        <thead>
+                          <tr className="bg-gray-50">
+                            <th className="p-2 font-medium text-gray-600">키워드</th>
+                            <th className="p-2 font-medium text-gray-600">현재순위</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {data.keywords && data.keywords.length > 0 ? (
+                            data.keywords.map((keyword: { keyword: string; ranking: number | null; }) => (
+                              <tr key={`${placeId}-${keyword.keyword}`} className="hover:bg-gray-50 border-b">
+                                <td className="p-2">{keyword.keyword}</td>
+                                <td className="p-2">
+                                  {keyword.ranking !== null 
+                                    ? <span className="font-semibold">{keyword.ranking}위</span> 
+                                    : <span className="text-gray-400">-</span>}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={2} className="p-2 text-center text-gray-500">
+                                등록된 키워드가 없습니다.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-4 text-center text-gray-500">
+                  등록된 키워드가 없거나 순위 데이터를 가져오지 못했습니다.
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

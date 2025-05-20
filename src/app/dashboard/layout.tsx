@@ -1,8 +1,8 @@
 "use client"
 
-import React, { Suspense } from 'react'
+import React, { Suspense, useState, useEffect } from 'react'
 import { ReactQueryProvider } from "@/lib/reactQueryProvider"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { AppSidebar } from "@/components/Dashboard/app-sidebar"
 import {
   SidebarProvider,
@@ -13,13 +13,15 @@ import { Separator } from "@/components/ui/separator"
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { InstantLink } from "@/components/ui/instant-link"
 import { Toaster } from "@/components/ui/sonner"
 import { BusinessProvider } from './BusinessContext'
+import { MyShopsModalProvider, useMyShopsModal } from '@/contexts/MyShopsModalContext'
+import MyShopsModal from '@/components/ui/MyShopsModal'
 
 // 스켈레톤 컴포넌트 불러오기
 import {
@@ -46,6 +48,7 @@ function getKoreanName(segment: string): string {
     admin_users: '유저 작업관리',
     admin_customer: '크롤링하기',
     admin_manage_customer: '영업하기',
+    support: '버그신고/고객센터',
   }
 
   return pathMap[segment] || segment
@@ -107,79 +110,176 @@ const getSkeletonForPath = (path: string) => {
   );
 };
 
+// 새로운 라우트 변경 감지 컴포넌트
+function NavigationEvents() {
+  const pathname = usePathname();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [targetPath, setTargetPath] = useState<string | null>(null);
+  const router = useRouter();
+
+  // 라우트 변경 이벤트 감지
+  useEffect(() => {
+    // 네비게이션이 완료되면 상태 초기화
+    if (targetPath === pathname && isNavigating) {
+      setTimeout(() => setIsNavigating(false), 100);
+    }
+  }, [pathname, targetPath, isNavigating]);
+
+  // 전역 네비게이션 이벤트 핸들러 설정
+  useEffect(() => {
+
+    // 라우트 변경 시작 이벤트를 감지하기 위한 클릭 이벤트 핸들러
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const link = target.closest('a');
+      if (link && link.getAttribute('href')?.startsWith('/')) {
+        const href = link.getAttribute('href') as string;
+        if (href !== pathname) {
+          setTargetPath(href);
+          setIsNavigating(true);
+        }
+      }
+    };
+
+    // 클릭 이벤트 감지 설정
+    document.addEventListener('click', handleLinkClick);
+    
+    return () => {
+      document.removeEventListener('click', handleLinkClick);
+    };
+  }, [pathname, router]);
+
+  return isNavigating ? (
+    <div 
+      className="fixed top-0 left-0 w-full h-1 bg-primary z-50"
+      style={{ 
+        animation: 'progressAnimation 2s ease-in-out infinite',
+      }}
+    />
+  ) : null;
+}
+
+// Renders the shops modal and can only call hook under MyShopsModalProvider
+function ModalRenderer() {
+  const { open, setOpen } = useMyShopsModal();
+  return <MyShopsModal open={open} onClose={() => setOpen(false)} />;
+}
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // Modal context hook must be inside provider, use wrapper component below
   // (A) Breadcrumb을 위한 경로 분해 (optional)
   const pathname = usePathname()
+  // 분할된 URL 경로 세그먼트
   const segments = pathname.split("/").filter(Boolean)
+  const [isChangingRoute, setIsChangingRoute] = useState(false);
+  
+  // 이전 path 저장
+  const [prevPathname, setPrevPathname] = useState<string | null>(null);
+
+  // pathname이 바뀌면 라우트 변경 상태 감지
+  useEffect(() => {
+    if (prevPathname && prevPathname !== pathname) {
+      setIsChangingRoute(true);
+      // 라우트 변경 후 짧은 시간 뒤 상태 리셋
+      const timeout = setTimeout(() => {
+        setIsChangingRoute(false);
+      }, 500); // 애니메이션 완료 시간에 맞춰 조정
+      return () => clearTimeout(timeout);
+    }
+    setPrevPathname(pathname);
+  }, [pathname, prevPathname]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-100 [--header-height:calc(theme(spacing.14))]">
       <ReactQueryProvider>
         <BusinessProvider>
-          <SidebarProvider className="flex flex-1">
-            {/* (B) 사이드바 */}
-            <AppSidebar />
-
-            {/* (C) 메인 콘텐츠 영역 */}
-            <SidebarInset className="flex flex-1 flex-col bg-white">
-              {/* 상단 헤더 (Breadcrumb 등) */}
-              <header className="flex h-16 shrink-0 items-center gap-2 border-b">
-                <div className="flex items-center gap-2 px-4">
-                  <SidebarTrigger className="-ml-1" />
-                  <Separator orientation="vertical" className="mr-2 h-4" />
-
-                  {/* Breadcrumb */}
-                  <Breadcrumb>
-                    <BreadcrumbList>
-                      {segments.map((seg, index) => {
-                        const href = "/" + segments.slice(0, index + 1).join("/")
-                        const isLast = index === segments.length - 1
-                        // 한글 이름 가져오기
-                        const title = getKoreanName(seg)
-
-                        return (
-                          <BreadcrumbItem key={href}>
-                            {index > 0 && (
-                              <BreadcrumbSeparator className="mx-1" />
-                            )}
-
-                            {isLast ? (
-                              <BreadcrumbPage>{title}</BreadcrumbPage>
-                            ) : (
-                              <BreadcrumbLink href={href}>{title}</BreadcrumbLink>
-                            )}
-                          </BreadcrumbItem>
-                        )
-                      })}
-                    </BreadcrumbList>
-                  </Breadcrumb>
-                </div>
-              </header>
-
-              <main className="flex-1 p-4">
-                <Suspense fallback={getSkeletonForPath(pathname)}>
-                  {children}
-                </Suspense>
-              </main>
-            </SidebarInset>
-          </SidebarProvider>
-
-          {/* 
-            (D) Toaster: 화면 우측 아래로 배치, 기본 4초 후 닫힘.
-                closeButton(=X)도 자동 노출되도록 세팅 
-          */}
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              duration: 4000,
-            }}
-          />
-        </BusinessProvider>
-      </ReactQueryProvider>
-    </div>
-  )
-}
+          <MyShopsModalProvider>
+            {/* 네비게이션 로딩 인디케이터 추가 */}
+            <NavigationEvents />
+            {/* 글로벌 CSS 추가 */}
+            <style jsx global>{`
+              @keyframes progressAnimation {
+                0% {
+                  width: 0%;
+                  opacity: 1;
+                }
+                50% {
+                  width: 70%;
+                  opacity: 1;
+                }
+                90% {
+                  width: 90%;
+                  opacity: 1;
+                }
+                100% {
+                  width: 100%;
+                  opacity: 0;
+                }
+              }
+              .fade-in {
+                animation: fadeIn 0.3s ease-in;
+              }
+              @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+              }
+            `}</style>
+            <SidebarProvider className="flex flex-1">
+              {/* (B) 사이드바 */}
+              <AppSidebar />
+              {/* (C) 메인 콘텐츠 영역 */}
+              <SidebarInset className="flex flex-1 flex-col bg-white">
+                {/* 상단 헤더 (Breadcrumb 등) */}
+                <header className="flex h-16 shrink-0 items-center gap-2 border-b">
+                  <div className="flex items-center gap-2 px-4">
+                    <SidebarTrigger className="-ml-1" />
+                    <Separator orientation="vertical" className="mr-2 h-4" />
+                    {/* Breadcrumb */}
+                    <Breadcrumb>
+                      <BreadcrumbList>
+                        {segments.map((seg: string, index: number) => {
+                          const href = "/" + segments.slice(0, index + 1).join("/")
+                          const isLast = index === segments.length - 1
+                          // 한글 이름 가져오기
+                          const title = getKoreanName(seg)
+                          return (
+                            <BreadcrumbItem key={href}>
+                              {index > 0 && <BreadcrumbSeparator className="mx-1" />}
+                              {isLast ? (
+                                <BreadcrumbPage>{title}</BreadcrumbPage>
+                              ) : (
+                                <InstantLink href={href}>{title}</InstantLink>
+                              )}
+                            </BreadcrumbItem>
+                          )
+                        })}
+                      </BreadcrumbList>
+                    </Breadcrumb>
+                  </div>
+                </header>
+                <main className={`flex-1 p-4 ${isChangingRoute ? 'fade-in' : ''}`}>
+                  <Suspense fallback={getSkeletonForPath(pathname)}>
+                    {children}
+                  </Suspense>
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+            {/* 모든 대시보드 경로에서 모달 렌더링 */}
+            <ModalRenderer />
+            {/* (D) Toaster: 화면 우측 아래로 배치, 기본 4초 후 닫힘. closeButton(=X)도 자동 노출되도록 세팅 */}
+            <Toaster
+              position="bottom-right"
+              toastOptions={{
+                duration: 4000,
+              }}
+            />
+          </MyShopsModalProvider>
+         </BusinessProvider>
+       </ReactQueryProvider>
+     </div>
+   )
+ }

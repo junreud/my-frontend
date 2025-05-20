@@ -134,7 +134,6 @@ export default function Page(): JSX.Element {
   const { data: userData } = useUser();
   const queryClient = useQueryClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isKeywordsUpdating, setIsKeywordsUpdating] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedAccordionKeyword, setSelectedAccordionKeyword] = useState<string>("");
@@ -280,6 +279,7 @@ export default function Page(): JSX.Element {
         receipt_review_count?: number | null;
         keywordList?: string[];
         date_key?: string;
+        isRestaurant?: boolean; // Added isRestaurant field
       };
       
       return {
@@ -298,6 +298,7 @@ export default function Page(): JSX.Element {
         receipt_review_count: detailAny.receipt_review_count ?? null,
         keywordList: detailAny.keywordList || [],
         date_key: detailAny.date_key || '',
+        isRestaurant: detailAny.isRestaurant, // Added isRestaurant field
       };
     });
 
@@ -309,10 +310,17 @@ export default function Page(): JSX.Element {
 
       if (keywordDetails.length > 0) {
         const chartData = formatChartDataForKeywordMap(keywordDetails, placeId);
-        // determine if this keyword corresponds to a restaurant based on category field
-        const activeDetail = keywordDetails.find(detail => String(detail.place_id) === String(placeId));
-        const category = activeDetail?.category || '';
-        const isRestaurant = category.includes('음식점') || category.includes('레스토랑');
+        
+        // Get the isRestaurant property from the first keyword detail
+        const keywordRecord = keywordDetails[0];
+        
+        // First check if the isRestaurant flag exists in the response
+        // If not, fall back to category-based detection
+        const isRestaurant = keywordRecord.isRestaurant !== undefined 
+          ? Boolean(keywordRecord.isRestaurant)
+          : ((keywordRecord.category || '').includes('음식점') || 
+             (keywordRecord.category || '').includes('레스토랑'));
+        
         result[keyword] = {
           rankingDetails: keywordDetails,
           chartData,
@@ -593,7 +601,7 @@ export default function Page(): JSX.Element {
                 <KeywordRankingChart
                   chartData={keywordRankingsMap[keyword]?.chartData.map(d => ({ ...d, place_id: d.place_id ?? '' })) || []}
                   activeBusiness={activeBusiness}
-                  isRestaurantKeyword={activeBusiness?.isRestaurant || false}  // always show for restaurant businesses
+                  isRestaurantKeyword={keywordRankingsMap[keyword]?.isRestaurant || false}  // always show for restaurant businesses
                 />
               </AccordionContent>
             </AccordionItem>
@@ -770,6 +778,7 @@ export default function Page(): JSX.Element {
           keywordData={formatKeywordDataForTable(selectedKeywordData)}
           historicalData={formatHistoricalData(historicalData)}
           rangeValue={rangeValue}
+          isRestaurantKeyword={selectedKeywordData?.isRestaurant || false}  // 레스토랑 여부에 따라 저장수 컬럼 표시
         />
       </div>
 

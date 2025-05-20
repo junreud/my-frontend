@@ -44,7 +44,7 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // (3) /auth/refresh로 POST
+        // (3) /auth/refresh 호출
         const res = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
           {},

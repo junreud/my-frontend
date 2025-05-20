@@ -10,6 +10,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
   keywordData,
   historicalData,
   rangeValue,
+  isRestaurantKeyword = false,  // 레스토랑 여부 제어
 }) => {
   const [visibleItems, setVisibleItems] = useState(100); // 처음에 100개 항목만 표시
   const loaderRef = useRef<HTMLDivElement>(null); // 로더 요소에 대한 참조
@@ -89,26 +90,71 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
     
     console.log('실제 최대 순위:', actualMaxRank);
     
-    // 실제 데이터에 있는 최대 랭킹까지만 배열 생성
-    const rankingArray: number[] = actualMaxRank > 0
-      ? Array.from({ length: actualMaxRank }, (_, i) => i + 1)
+    // 최대 300위까지만 표시하도록 제한 (기본값은 데이터의 최대 순위)
+    const maxRankToShow = Math.min(actualMaxRank, 300);
+    
+    // 1부터 최대 순위까지 연속된 순위 배열 생성
+    const rankingArray: number[] = maxRankToShow > 0
+      ? Array.from({ length: maxRankToShow }, (_, i) => i + 1)
       : [];
     
-    // 데이터의 순위 집합 생성
-    const rankingsInData = new Set(dataToUse.map((item: KeywordRankingDetail) => item.ranking));
+    // 데이터의 순위 집합 생성 (자료구조를 Map으로 변경하여 빠르게 데이터 lookup 가능)
+    const rankingDataMap = new Map<number, KeywordRankingDetail>();
+    dataToUse.forEach((item: KeywordRankingDetail) => {
+      if (item.ranking && item.ranking <= maxRankToShow) {
+        rankingDataMap.set(item.ranking, item);
+      }
+    });
     
-    // 디버깅: 누락된 순위 확인
-    const allRanks = new Set(rankingArray);
-    const missingRanks = [...allRanks].filter((r: number) => !rankingsInData.has(r));
+    // 디버깅: 데이터 통계 확인
+    console.log('데이터 최대 순위:', maxRankToShow);
+    console.log('기존 데이터 수:', dataToUse.length);
+    console.log('매핑된 순위 수:', rankingDataMap.size);
+    
+    // 비어있는 순위 개수
+    const missingRanks = rankingArray.filter(rank => !rankingDataMap.has(rank));
     console.log('비어있는 순위 개수:', missingRanks.length);
-    console.log('비어있는 순위 샘플:', missingRanks.slice(0, 10));
+    
+    // 연속된 비어있는 순위 범위 찾기 (100개 이상 연속 누락 확인용)
+    let missingRangeStart = -1;
+    const significantMissingRanges = [];
+    
+    for (let rank = 1; rank <= maxRankToShow; rank++) {
+      if (!rankingDataMap.has(rank)) {
+        if (missingRangeStart === -1) {
+          missingRangeStart = rank;
+        }
+      } else if (missingRangeStart !== -1) {
+        const rangeSize = rank - missingRangeStart;
+        if (rangeSize >= 20) { // 20위 이상 연속으로 비어있는 경우 기록
+          significantMissingRanges.push({
+            start: missingRangeStart,
+            end: rank - 1,
+            size: rangeSize
+          });
+        }
+        missingRangeStart = -1;
+      }
+    }
+    
+    // 마지막 범위 확인
+    if (missingRangeStart !== -1) {
+      const rangeSize = maxRankToShow + 1 - missingRangeStart;
+      if (rangeSize >= 20) {
+        significantMissingRanges.push({
+          start: missingRangeStart,
+          end: maxRankToShow,
+          size: rangeSize
+        });
+      }
+    }
+    
+    console.log('큰 누락 범위:', significantMissingRanges);
 
     // 각 순위에 데이터 매핑
     return rankingArray.map((rank: number) => {
-      // 현재 순위에 데이터가 있는지 확인
-      const dataForRank = dataToUse.find(
-        (item: KeywordRankingDetail) => item.ranking === rank
-      );
+      // 현재 순위에 데이터가 있는지 확인 (이제 Map을 사용하여 O(1) 시간에 검색)
+      const dataForRank = rankingDataMap.get(rank);
 
       // 순위에 데이터가 없는 경우
       if (!dataForRank) {
@@ -275,11 +321,11 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                 <th className="w-[22%]">업종</th>
                 <th className="w-[14%]">블로그리뷰</th>
                 <th className="w-[14%]">영수증리뷰</th>
-                <th className="w-[12%]">저장수</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleData.map((item: KeywordRankingDetail) => {
+                {isRestaurantKeyword && <th className="w-[12%]">저장수</th>}
+               </tr>
+             </thead>
+             <tbody>
+               {visibleData.map((item: KeywordRankingDetail) => {
                 // 빈 순위인지 확인 (타입 단언 추가)
                 const isEmpty = typeof item.place_id === 'string' && 
                                (item.place_id as string).startsWith('empty-');
@@ -370,27 +416,26 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                               if (val === null || val === undefined) return '';
                               return val.toString(); // 리뷰 변화량 숫자 표시
                             }}
-                            hideWhenNoChange={true} // 변화 없을 때 표시 안함
+                            hideWhenNoChange={true}
                           />
                         </div>
                       )}
                     </td>
-                    <td className="w-[12%]">
-                      {isEmpty ? '-' : (
-                        <div className="flex items-center">
-                          <span className="min-w-[24px] text-center">{item.savedCount === null || item.savedCount === undefined ? '-' : item.savedCount}</span>
-                          <NumberChangeIndicator 
-                            current={item.savedCount} 
-                            past={pastData?.savedCount}
-                            formatter={(val: number | null | undefined): string => {
-                              if (val === null || val === undefined) return '';
-                              return val.toString(); // 리뷰 변화량 숫자 표시
-                            }}
-                            hideWhenNoChange={true} // 변화 없을 때 표시 안함
-                          />
-                        </div>
-                      )}
-                    </td>
+                    {isRestaurantKeyword && (
+                      <td className="w-[12%]">
+                        {isEmpty ? '-' : (
+                          <div className="flex items-center">
+                            <span className="min-w-[24px] text-center">{item.savedCount === null || item.savedCount === undefined ? '-' : item.savedCount}</span>
+                            <NumberChangeIndicator 
+                              current={item.savedCount} 
+                              past={pastData?.savedCount}
+                              formatter={(val: number | null | undefined): string => val != null ? val.toString() : ''}
+                              hideWhenNoChange={true}
+                            />
+                          </div>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

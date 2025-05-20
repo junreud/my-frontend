@@ -8,8 +8,9 @@ import type { EventApi, ViewApi } from "@fullcalendar/core";
 import koLocale from "@fullcalendar/core/locales/ko";
 import { useUserWorkHistories } from "@/hooks/useUserWorkHistories";
 
-// 캘린더 이벤트 타입
+// 캘린더 이벤트 타입 (id 추가)
 type CalendarEvent = {
+  id: string;
   title: string;
   start: string;
   end?: string;
@@ -46,15 +47,12 @@ export function MyCalendar({
   events,
   goToDate,
   onDateSelect,
+  selectedEventId,
 }: {
-  events: {
-    title: string;
-    start: string;
-    end?: string;
-    backgroundColor?: string;
-  }[];
+  events: CalendarEvent[];
   goToDate?: string;
   onDateSelect?: (date: string) => void;
+  selectedEventId?: string | number;
 }) {
   const calendarRef = useRef<FullCalendar>(null);
 
@@ -82,47 +80,68 @@ export function MyCalendar({
     <>
       <style jsx global>{`
         .fc {
-          font-size: clamp(1rem, 2vw, 1.2rem) !important;
+          max-width: 100%;
+          font-size: clamp(0.9rem, 1.5vw, 1rem) !important;
         }
-        .fc .fc-day-sun .fc-daygrid-day-number {
-          color: red !important;
+        .fc .fc-daygrid-day {
+          border: 1px solid #e2e8f0;
+          background-color: #f9fafb;
+        }
+        .fc .fc-col-header-cell-cushion {
+          color: #4a5568;
+          font-weight: 600;
         }
         .fc .fc-button {
-          background-color: #fff !important;
-          border: 1px solid #ccc !important;
-          color: black !important;
-          border-radius: 3rem !important;
+          background-color: transparent !important;
+          border: 1px solid #cbd5e0 !important;
+          color: #4a5568 !important;
+          border-radius: 0.375rem !important;
         }
         .fc .fc-button:hover {
-          background-color: #eee !important;
+          background-color: #edf2f7 !important;
         }
         .fc .fc-button .fc-icon {
-          color: black !important;
+          color: #4a5568 !important;
+        }
+        .fc .fc-daygrid-event {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+          border: none !important;
+          color: #000 !important;
+          border-radius: 0.5rem !important;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+          padding: 2px 6px !important;
+          font-size: 0.75rem !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          white-space: nowrap !important;
+        }
+        /* 선택된 이벤트 강조 스타일 */
+        .fc .selected-event {
+          box-shadow: 0 0 0 3px #f59e0b !important;
+        }
+        /* 이벤트 텍스트 색상 강제 검은색 */
+        .fc .fc-daygrid-event * {
+          color: #000 !important;
         }
       `}</style>
-      <div className="w-full px-4 mb-4 bg-white p-4 rounded">
+      <div className="w-full p-4 bg-white rounded shadow" style={{ height: '85vh' }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
-          headerToolbar={{
-            left: "prev,next today",
-            center: "",
-            right: "title",
-          }}
+          headerToolbar={{ left: "prev,next today", center: "", right: "title" }}
           locales={[koLocale]}
           locale="ko"
           selectable
-          editable
+          editable={false}
+          height="100%"
+          eventClassNames={(args) =>
+            args.event.id === selectedEventId?.toString() ? ['selected-event'] : []
+          }
           events={events}
           dateClick={handleDateClick}
           eventClick={handleEventClick}
-          dayCellContent={(args) => {
-            const dayText = args.dayNumberText.replace("일", "");
-            return {
-              html: `<span style="font-size: clamp(1rem, 2vw, 1.2rem);">${dayText}</span>`,
-            };
-          }}
+          dayCellContent={(args) => ({ html: args.dayNumberText.replace("일", "") })}
         />
       </div>
     </>
@@ -365,8 +384,7 @@ export function CalendarSkeleton() {
 export function MarketingStatusClient() {
   const [selectedRow, setSelectedRow] = useState<RowData | null>(null);
   const calendarContainerRef = useRef<HTMLDivElement>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  
+
   // 실제 작업 이력 데이터 로드
   const { data: workHistories, isLoading, error } = useUserWorkHistories();
   
@@ -375,8 +393,9 @@ export function MarketingStatusClient() {
     if (!workHistories || workHistories.length === 0) return [];
     
     return workHistories.map((history, index) => {
-      const startDate = history.actual_start_date || history.user_start_date;
-      const endDate = history.actual_end_date || history.user_end_date;
+      // prioritize user 작업기간 over actual 기간
+      const startDate = history.user_start_date || history.actual_start_date;
+      const endDate = history.user_end_date || history.actual_end_date;
       
       return {
         no: index + 1,
@@ -396,10 +415,12 @@ export function MarketingStatusClient() {
     if (!workHistories || workHistories.length === 0) return [];
     const events: CalendarEvent[] = [];
     for (const history of workHistories) {
-      const startDate = history.actual_start_date || history.user_start_date;
+      // prioritize user 작업기간 for calendar display
+      const startDate = history.user_start_date || history.actual_start_date;
       if (!startDate) continue;
-      const endDate = history.actual_end_date || history.user_end_date;
+      const endDate = history.user_end_date || history.actual_end_date;
       events.push({
+        id: history.id.toString(),
         title: history.work_type,
         start: new Date(startDate).toISOString().split('T')[0],
         end: endDate ? new Date(endDate).toISOString().split('T')[0] : undefined,
@@ -410,15 +431,19 @@ export function MarketingStatusClient() {
   }, [workHistories]);
   
   const handleRowClick = (row: RowData) => {
-    setSelectedRow(row);
-
-    // 달력이 위치한 부분으로 스크롤
-    setTimeout(() => {
-      calendarContainerRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 0);
+    const isSame = selectedRow?.id === row.id;
+    if (isSame) {
+      setSelectedRow(null);
+    } else {
+      setSelectedRow(row);
+      // 달력이 위치한 부분으로 스크롤
+      setTimeout(() => {
+        calendarContainerRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 0);
+    }
   };
 
   // 로딩 중일 때 달력 스켈레톤 표시
@@ -442,15 +467,10 @@ export function MarketingStatusClient() {
         <MyCalendar
           events={calendarEvents}
           goToDate={selectedRow?.시작일}
-          onDateSelect={setSelectedDate}
+          selectedEventId={selectedRow?.id}
         />
       </div>
 
-      {selectedDate && (
-        <div className="mt-4 text-center text-sm text-gray-600">
-          선택한 날짜: {selectedDate}
-        </div>
-      )}
 
       <DataTable onRowClick={handleRowClick} selectedRow={selectedRow || undefined} data={tableData} />
     </>
@@ -460,6 +480,7 @@ export function MarketingStatusClient() {
 // 데이터 유틸리티 함수 - 테이블 RowData를 캘린더 이벤트로 변환
 export function getCalendarEvents(data: RowData[]): CalendarEvent[] {
   return data.map((item: RowData) => ({
+    id: item.id.toString(),
     title: item.작업명,
     start: item.시작일,
     end: item.종료일,

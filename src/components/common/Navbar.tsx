@@ -40,6 +40,18 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
   const isLoggedIn = !!user;
   const userRole = user?.role;
 
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {}
+    localStorage.removeItem("accessToken");
+    window.location.href = "/login";
+  };
+
   // 링크 URL/문구 (초기값: 비로그인)
   let linkUrl = "/login";
   let linkText = "로그인";
@@ -54,7 +66,7 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
       linkText = "내업체";
     } else if (userRole === "plus") {
       linkUrl = "/dashboard";
-      linkText = "플러스 계정";
+      linkText = "내업체";
     } else if (userRole === "pending") {
       linkUrl = "/pending";
       linkText = "심사중";
@@ -224,6 +236,14 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
                   견적받기
                 </button>
               </Link>
+            )}
+            {isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className="btn btn-neutral rounded-full text-white"
+              >
+                로그아웃
+              </button>
             )}
           </div>
           {/* /navbar-end */}

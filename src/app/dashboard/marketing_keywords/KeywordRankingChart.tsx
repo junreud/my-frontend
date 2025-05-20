@@ -27,15 +27,34 @@ interface KeywordRankingChartProps {
 }
 
 const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, activeBusiness, isRestaurantKeyword = false }) => {
-  // 데이터 디버깅 로그 추가
+  // 데이터 디버깅 로그 추가 - 더 자세한 로깅으로 개선
   console.log('[Debug] KeywordRankingChart 입력 데이터:', {
     chartDataLength: chartData?.length || 0,
     sampleItem: chartData && chartData.length > 0 ? chartData[0] : null,
     activeBusiness,
+    isRestaurantKeyword, // 명시적으로 isRestaurantKeyword 값 로깅
     availableSavedFields: chartData && chartData.length > 0 ? 
       Object.keys(chartData[0]).filter(key => 
         key.toLowerCase().includes('save') || key.toLowerCase().includes('count')
       ) : []
+  });
+
+  // 저장 수 값이 있는지 확인하는 로직 추가
+  const hasSavedCountData = useMemo(() => {
+    if (!chartData || chartData.length === 0) return false;
+    
+    // 배열 내 아이템 중 하나라도 저장 수 값이 있는지 확인
+    return chartData.some(item => {
+      const savedValue = item.savedCount ?? item.saved ?? item.saved_count ?? null;
+      return savedValue !== null && savedValue !== undefined && savedValue > 0;
+    });
+  }, [chartData]);
+
+  // 조건이 모두 맞는지 확인하는 로그 추가
+  console.log('[Debug] 저장 수 차트 표시 조건:', {
+    isRestaurantKeyword,
+    hasSavedCountData,
+    shouldShowChart: isRestaurantKeyword && hasSavedCountData
   });
 
   // 날짜별로 데이터 처리 (중복 제거)
@@ -283,8 +302,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                 stroke="#8884d8"
                 strokeWidth={2}
                 connectNulls={false}
-                // Remove custom data prop; use parent LineChart data
-                // Custom dot for unique keys
+                isAnimationActive={false}  // disable animation for faster rendering
                 dot={(props) => {
                   const { cx, cy, payload } = props;
                   if (payload.outOfRank) {
@@ -296,14 +314,14 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                   }
                   if (payload.interpolated) {
                     return (
-                      <svg key={`${payload.date}-rank-interp`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#999">
-                        <circle cx={3} cy={3} r={3} />
+                      <svg key={`${payload.date}-rank-interp`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#999">
+                        <circle cx={4} cy={4} r={4} />
                       </svg>
                     );
                   }
                   return (
-                    <svg key={`${payload.date}-rank`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#8884d8">
-                      <circle cx={3} cy={3} r={3} />
+                    <svg key={`${payload.date}-rank`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#8884d8">
+                      <circle cx={4} cy={4} r={4} />
                     </svg>
                   );
                 }}
@@ -350,29 +368,45 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
               <Legend />
               <Line
                 type="monotone"
-                dot={false}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  return (
+                    <svg key={`${payload.date}-blog-dot`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#1e88e5">
+                      <circle cx={4} cy={4} r={4} />
+                    </svg>
+                  );
+                }}
                 dataKey="blog_review_count"
                 name="블로그 리뷰"
                 stroke="#1e88e5"
                 strokeWidth={2}
                 connectNulls={true}
+                isAnimationActive={false}  // disable animation for faster rendering
               />
               <Line
                 type="monotone"
-                dot={false}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  return (
+                    <svg key={`${payload.date}-receipt-dot`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#4caf50">
+                      <circle cx={4} cy={4} r={4} />
+                    </svg>
+                  );
+                }}
                 dataKey="receipt_review_count"
                 name="영수증 리뷰"
                 stroke="#4caf50"
                 strokeWidth={2}
                 connectNulls={true}
+                isAnimationActive={false}  // disable animation for faster rendering
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
       
-      {/* 3. 저장 수 그래프 - show if restaurant keyword or saved data exists */}
-      {(isRestaurantKeyword || processedData.some(item => item.savedCount != null || item.saved != null || item.saved_count != null)) && (
+      {/* 3. 저장 수 그래프 - show if restaurant keyword */}
+      {isRestaurantKeyword && (
         <div>
           <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">저장 수 변화</h4>
           <div className="h-[250px] bg-white p-2 rounded-md">
@@ -396,19 +430,20 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                   name="저장 수"
                   stroke="#ff9800"
                   strokeWidth={2}
+                  isAnimationActive={false}  // disable animation for faster rendering
                   dot={(props) => {
                     const { cx, cy, payload } = props;
                     // Add keys for each dot to avoid React warnings
                     if (payload.interpolatedSaved) {
                       return (
-                        <svg key={`${payload.date}-saved-interp`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#999">
-                          <circle cx={3} cy={3} r={3} />
+                        <svg key={`${payload.date}-saved-interp`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#999">
+                          <circle cx={4} cy={4} r={4} />
                         </svg>
                       );
                     }
                     return (
-                      <svg key={`${payload.date}-saved`} x={cx - 3} y={cy - 3} width={6} height={6} fill="#ff9800">
-                        <circle cx={3} cy={3} r={3} />
+                      <svg key={`${payload.date}-saved`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#ff9800">
+                        <circle cx={4} cy={4} r={4} />
                       </svg>
                     );
                   }}

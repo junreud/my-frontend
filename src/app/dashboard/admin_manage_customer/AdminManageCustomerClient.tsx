@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useMemo, useTransition } from 'react';
+import React, { useState, useEffect, useMemo, useTransition, useCallback } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import CustomerTable from './CustomerTable';
 import TemplateModal, { Template } from './TemplateModal';
 import apiClient from '@/lib/apiClient';
+
+// 디바운스 유틸리티 함수 추가
+function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
+  let timer: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  };
+}
 
 export default function AdminManageCustomerClient() {
   const router = useRouter();
@@ -37,7 +48,8 @@ export default function AdminManageCustomerClient() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    refetch
+    refetch,
+    isLoading
   } = useInfiniteQuery({
     queryKey: ['customers', filters.search, filters.sortBy, pageSize],
     queryFn: async ({ pageParam = 1 }) => {
@@ -61,6 +73,9 @@ export default function AdminManageCustomerClient() {
   const [modalOpen, setModalOpen] = useState(false);
   const [templateDraft, setTemplateDraft] = useState<Template>({ id: undefined, name: '', description: '', items: [] });
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | undefined>();
+  
+  // 스크롤 이벤트 처리를 위한 상태
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // load parsing options from customer data
   useEffect(() => {
@@ -87,17 +102,38 @@ export default function AdminManageCustomerClient() {
     });
   }, [searchParams]);
 
-  // infinite scroll at window level
-  useEffect(() => {
-    const onScroll = () => {
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 50
-          && hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
+  // 최적화된 무한 스크롤 핸들러
+  const handleScroll = useCallback(() => {
+    // 현재 화면의 높이, 스크롤 위치 및 문서 전체 높이 계산
+    const windowHeight = window.innerHeight;
+    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    const docHeight = document.documentElement.scrollHeight;
+    
+    // 스크롤이 하단에서 200px 이내에 도달했을 때 추가 데이터 로드
+    // 이를 통해 사용자가 페이지 끝에 도달하기 전에 미리 데이터를 로드
+    if (windowHeight + scrollTop >= docHeight - 200) {
+      if (hasNextPage && !isFetchingNextPage && !loadingMore) {
+        setLoadingMore(true);
+        fetchNextPage().finally(() => {
+          setLoadingMore(false);
+        });
       }
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, loadingMore]);
+  
+  // 디바운스된 스크롤 핸들러 생성
+  const debouncedHandleScroll = useMemo(
+    () => debounce(handleScroll, 100), 
+    [handleScroll]
+  );
+  
+  // 스크롤 이벤트 리스너 등록
+  useEffect(() => {
+    window.addEventListener('scroll', debouncedHandleScroll);
+    return () => {
+      window.removeEventListener('scroll', debouncedHandleScroll);
     };
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [debouncedHandleScroll]);
 
   const handlePageSizeChange = (newSize: number) => setPageSize(newSize);
 
@@ -201,6 +237,14 @@ export default function AdminManageCustomerClient() {
         selectedTemplateId={selectedTemplateId}
         templates={templates}
       />
+      
+      {/* 로딩 인디케이터 추가 */}
+      {(isFetchingNextPage || isLoading) && (
+        <div className="flex justify-center items-center py-4">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+          <span className="ml-2 text-gray-500">데이터 로딩 중...</span>
+        </div>
+      )}
     </div>
   );
 }
