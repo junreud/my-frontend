@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 // Define chart data item type
-interface ChartDataItem {
+export interface ChartDataItem { // Exporting ChartDataItem
   date: string;
   place_id?: string | number;
   ranking?: number | null;
@@ -13,6 +13,12 @@ interface ChartDataItem {
   savedCount?: number | null;
   saved?: number | null;
   saved_count?: number | null;
+  // Add keyword field if it's used by the chart and provided by transformToChartData
+  keyword?: string; 
+  // Add interpolated and outOfRank if these are actual data properties used for dot rendering
+  interpolated?: boolean;
+  outOfRank?: boolean;
+  interpolatedSaved?: boolean;
 }
 import { Business } from '@/types/index';
 import {
@@ -20,19 +26,19 @@ import {
   Tooltip, Legend
 } from "recharts";
 
-interface KeywordRankingChartProps {
+export interface KeywordRankingChartProps { // Exporting KeywordRankingChartProps
   chartData: ChartDataItem[] | null;
-  activeBusiness: Business | null;
-  isRestaurantKeyword?: boolean;
+  activeBusiness: Business | null; 
+  // isRestaurantKeyword removed
 }
 
-const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, activeBusiness, isRestaurantKeyword = false }) => {
+const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, activeBusiness }) => { // Removed isRestaurantKeyword from destructuring
   // 데이터 디버깅 로그 추가 - 더 자세한 로깅으로 개선
   console.log('[Debug] KeywordRankingChart 입력 데이터:', {
     chartDataLength: chartData?.length || 0,
     sampleItem: chartData && chartData.length > 0 ? chartData[0] : null,
     activeBusiness,
-    isRestaurantKeyword, // 명시적으로 isRestaurantKeyword 값 로깅
+    // isRestaurantKeyword removed from log
     availableSavedFields: chartData && chartData.length > 0 ? 
       Object.keys(chartData[0]).filter(key => 
         key.toLowerCase().includes('save') || key.toLowerCase().includes('count')
@@ -52,9 +58,9 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
 
   // 조건이 모두 맞는지 확인하는 로그 추가
   console.log('[Debug] 저장 수 차트 표시 조건:', {
-    isRestaurantKeyword,
+    // isRestaurantKeyword removed
     hasSavedCountData,
-    shouldShowChart: isRestaurantKeyword && hasSavedCountData
+    shouldShowChart: hasSavedCountData // Logic simplified: show if saved data exists
   });
 
   // 날짜별로 데이터 처리 (중복 제거)
@@ -81,11 +87,10 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
         return {
           date,
           ranking: null,
-          blogReviews: null,
-          receiptReviews: null,
+          blog_review_count: null, // Corrected key
+          receipt_review_count: null, // Corrected key
           savedCount: null,
-          blog_review_count: null,
-          receipt_review_count: null,
+          // Remove blogReviews and receiptReviews if they were here
           saved: null,
           saved_count: null,
           place_id: activeBusiness?.place_id || '',
@@ -122,7 +127,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
         dataArr[i].ranking = dataArr[lastIdx].ranking;
       }
      // Forward-fill detail fields
-      const detailKeys = ['blogReviews','blog_review_count','receiptReviews','receipt_review_count','savedCount','saved','saved_count'] as const;
+      const detailKeys = ['blog_review_count','receipt_review_count','savedCount','saved','saved_count'] as const; // Corrected keys
       for (let i = 1; i < dataArr.length; i++) {
         detailKeys.forEach((key) => {
           if (dataArr[i][key] == null) {
@@ -234,8 +239,8 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
   const reviewYAxisDomain = useMemo(() => {
     if (!processedData || processedData.length === 0) return [0, 10];
     // collect all review values
-    const values = processedData.map(item => item.blog_review_count ?? 0).concat(
-      processedData.map(item => item.receipt_review_count ?? 0)
+    const values = processedData.map(item => item.blog_review_count ?? 0).concat( // Ensure correct key
+      processedData.map(item => item.receipt_review_count ?? 0) // Ensure correct key
     );
     const minVal = Math.min(...values);
     const maxVal = Math.max(...values);
@@ -279,7 +284,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                 tick={{ fontSize: 10 }}
                 ticks={generateTickValues(processedData)}
               />
-              <YAxis 
+              <YAxis  
                 domain={rankingYAxisDomain}  // 동적 범위: 순위 변화에 따라 조정됨
                 reversed 
                 stroke="#666"
@@ -358,7 +363,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
               <Tooltip 
                 formatter={(value: number | string, name: string | number) => [
                   value, 
-                  name === 'blogReviews' || name === 'blog_review_count' ? '블로그 리뷰' : '영수증 리뷰'
+                  name === 'blog_review_count' ? '블로그 리뷰' : '영수증 리뷰' // Ensure correct key for name check
                 ]}
                 labelFormatter={(label: string) => {
                   const date = new Date(label);
@@ -406,7 +411,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
       </div>
       
       {/* 3. 저장 수 그래프 - show if restaurant keyword */}
-      {isRestaurantKeyword && (
+      {activeBusiness?.category === 'restaurant' && (
         <div>
           <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">저장 수 변화</h4>
           <div className="h-[250px] bg-white p-2 rounded-md">

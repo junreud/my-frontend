@@ -13,7 +13,6 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
-import { useMyShopsModal } from '@/contexts/MyShopsModalContext';
 
 import type { LucideProps } from "lucide-react"
 import * as Icons from "lucide-react"
@@ -63,7 +62,6 @@ interface NavCommonProps {
 export function NavCommon({ sections, currentPath }: NavCommonProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const { setOpen: setShowMyShopsModal } = useMyShopsModal();
   return (
     <>
       {sections.map((section) => (
@@ -78,28 +76,6 @@ export function NavCommon({ sections, currentPath }: NavCommonProps) {
               const IconComponent = getIconByName(item.icon);
               const hasSubItems = item.items && item.items.length > 0;
               const isActiveParent = currentPath.startsWith(item.url);
-
-              // 내 업체 메뉴만 모달로 동작
-              if (item.url === '/dashboard/my_shops') {
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <button
-                        type="button"
-                        onClick={() => setShowMyShopsModal(true)}
-                        className={`flex items-center gap-3 px-4 py-3 text-base transition-colors rounded-md ${
-                          isActiveParent
-                            ? 'bg-gray-200 text-black font-bold'
-                            : 'text-gray-500 hover:bg-gray-100 hover:text-black'
-                        }`}
-                      >
-                        <IconComponent className="shrink-0 h-5 w-5" />
-                        <span>{item.title}</span>
-                      </button>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              }
 
               return (
                 <div key={item.title}>

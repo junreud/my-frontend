@@ -6,18 +6,41 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import DashboardChart from "@/components/Dashboard/DashboardChart";
 import { ClientAnimatedNumber } from "@/components/animations/ClientAnimatedNumber";
 import apiClient from "@/lib/apiClient";
-import { useQuery, useQueryClient } from '@tanstack/react-query'; // `useQueryClient` 추가
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { KeywordHistoricalData } from "@/types";
-import { useBusinessContext } from './BusinessContext';
-import { useMyShopsModal } from '@/contexts/MyShopsModalContext';
-import MyShopsModal from '@/components/ui/MyShopsModal';
+import { useUser } from '@/hooks/useUser';
+import { useUserBusinesses } from '@/hooks/useUserBusinesses';
 
 // CSR 컴포넌트로 변경
 export default function DashboardPage() {
   const router = useRouter();
-  const { activeBusiness } = useBusinessContext();
-  const queryClient = useQueryClient(); // queryClient 인스턴스 가져오기
-  const { open: showMyShopsModal, setOpen: setShowMyShopsModal } = useMyShopsModal();
+  const queryClient = useQueryClient();
+
+  // 사용자 정보 가져오기
+  const { data: user, isLoading: isLoadingUser, isError: userError } = useUser();
+  const userId = user?.id;
+
+  // 비즈니스 정보 가져오기
+  const { businesses: userBusinesses, isLoading: isLoadingBusinesses } = useUserBusinesses(userId ? String(userId) : undefined);
+  
+  // 선택된 비즈니스 상태 관리
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+
+
+  // 컴포넌트 마운트 시 첫 번째 비즈니스 선택
+  useEffect(() => {
+    if (userBusinesses && userBusinesses.length > 0 && !selectedBusinessId) {
+      setSelectedBusinessId(userBusinesses[0].place_id);
+      
+      // 로컬 스토리지에 저장
+      try {
+        localStorage.setItem('activeBusiness', JSON.stringify(userBusinesses[0]));
+      } catch (error) {
+        console.error("Failed to save active business to localStorage:", error);
+      }
+    }
+  }, [userBusinesses, selectedBusinessId]);
+
 
   // 컴포넌트 레이아웃 쉬프트 방지를 위한 상태
   const [contentHeight, setContentHeight] = useState<number | null>(null);
@@ -69,30 +92,16 @@ export default function DashboardPage() {
       
       return () => clearTimeout(timer);
     }
-  }, [activeBusiness?.place_id, isStabilizing]);
-
-  // 사용자 정보 가져오기
-  const { data: userData, isError: userError } = useQuery({
-    queryKey: ['user'],
-    queryFn: async () => {
-      try {
-        const response = await apiClient.get('/api/user/me');
-        return response.data?.user || null;
-      } catch (error) {
-        console.error('User data fetch failed:', error);
-        return null;
-      }
-    }
-  });
+  }, [selectedBusinessId, isStabilizing]);
 
   // 메인 키워드 상태 가져오기
   const { data: mainKeywordStatus, isLoading: isKeywordLoading } = useQuery({
-    queryKey: ['mainKeywordStatus', activeBusiness?.place_id],
-    enabled: !!activeBusiness?.place_id,
+    queryKey: ['mainKeywordStatus', selectedBusinessId],
+    enabled: !!selectedBusinessId,
     queryFn: async () => {
       try {
         // place_id를 쿼리 파라미터로 전달
-        const response = await apiClient.get(`/keyword/main-status?place_id=${activeBusiness?.place_id}`);
+        const response = await apiClient.get(`/keyword/main-status?place_id=${selectedBusinessId}`);
         console.log('메인 키워드 응답:', response.data);
         return response.data?.data || null;
       } catch (error) {
@@ -107,8 +116,8 @@ export default function DashboardPage() {
     todayUsers: { count: 0, description: '데이터 로딩 중...' }, 
     newClients: { count: 0, description: '데이터 로딩 중...' } 
   }, isLoading: isStatsLoading } = useQuery({
-    queryKey: ['dailyStats', activeBusiness?.place_id],
-    enabled: !!activeBusiness?.place_id,
+    queryKey: ['dailyStats', selectedBusinessId],
+    enabled: !!selectedBusinessId,
     queryFn: async () => {
       try {
         const response = await apiClient.get('/stats/daily-summary');
@@ -134,17 +143,17 @@ export default function DashboardPage() {
 
   // 키워드 랭킹 가져오기
   const { data: keywordRankings = {}, isLoading: isRankingsLoading } = useQuery({
-    queryKey: ['keywordRankings', userData?.id, activeBusiness?.place_id],
-    enabled: !!userData?.id && !!activeBusiness?.place_id,
+    queryKey: ['keywordRankings', userId, selectedBusinessId],
+    enabled: !!userId && !!selectedBusinessId,
     queryFn: async () => {
       try {
-        const placeId = activeBusiness?.place_id;
-        if (!userData?.id || !placeId) return {};
+        const placeId = selectedBusinessId;
+        if (!userId || !placeId) return {};
         
         // 사용자의 모든 업체와 연결된 키워드 데이터를 가져옵니다
         // 백엔드 경로 수정: /api/keyword-rankings-by-business -> /keyword/keyword-rankings-by-business
         const response = await apiClient.get(
-          `/keyword/keyword-rankings-by-business?userId=${userData.id}`
+          `/keyword/keyword-rankings-by-business?userId=${userId}`
         );
         
         // 업체별로 그룹화된 키워드 데이터
@@ -159,8 +168,8 @@ export default function DashboardPage() {
 
   // 차트 데이터 가져오기
   const { data: chartData = null, isLoading: isChartLoading } = useQuery({
-    queryKey: ['chartData', userData?.id, mainKeywordStatus?.keyword, activeBusiness?.place_id],
-    enabled: !!userData?.id && !!mainKeywordStatus?.keyword && !!activeBusiness?.place_id,
+    queryKey: ['chartData', userId, mainKeywordStatus?.keyword, selectedBusinessId],
+    enabled: !!userId && !!mainKeywordStatus?.keyword && !!selectedBusinessId,
     queryFn: async () => {
       try {
         const mainKeyword = mainKeywordStatus?.keyword;
@@ -169,10 +178,10 @@ export default function DashboardPage() {
           return null;
         }
         
-        const placeId = activeBusiness?.place_id;
-        if (!userData?.id || !placeId) return null;
+        const placeId = selectedBusinessId;
+        if (!userId || !placeId) return null;
         
-        const query = `?userId=${userData.id}&placeId=${placeId}&keyword=${encodeURIComponent(mainKeyword)}`;
+        const query = `?userId=${userId}&placeId=${placeId}&keyword=${encodeURIComponent(mainKeyword)}`;
         const response = await apiClient.get(`/api/keyword-ranking-details${query}`);
         return (response.data?.data as KeywordHistoricalData[]) || null;
       } catch (error) {
@@ -183,7 +192,7 @@ export default function DashboardPage() {
   });
 
   // 로딩 상태 통합
-  const isLoading = isKeywordLoading || isStatsLoading || isRankingsLoading || isChartLoading;
+  const isLoading = isLoadingUser || isLoadingBusinesses || isKeywordLoading || isStatsLoading || isRankingsLoading || isChartLoading;
   
   // 최종 로딩 완료 후 높이 안정화 해제
   useEffect(() => {
@@ -205,15 +214,12 @@ export default function DashboardPage() {
   }, [userError, router]);
 
   // 사용자 정보가 없으면 로딩 화면 표시
-  if (!userData) {
+  if (!user) {
     return <div className="p-10 text-center">로딩 중...</div>;
   }
 
   return (
     <>
-      {/* 내 업체 관리 모달 (사이드바에서만 제어) */}
-      <MyShopsModal open={showMyShopsModal} onClose={() => setShowMyShopsModal(false)} />
-
       <div 
         ref={contentRef}
         className={`transition-all duration-300 ease-in-out ${isPageLoaded ? 'opacity-100' : 'opacity-0'}`}

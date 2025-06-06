@@ -35,16 +35,16 @@ function getKoreanName(segment: string): string {
   const pathMap: Record<string, string> = {
     dashboard: '대시보드',
     'marketing-keywords': '키워드 순위',
-    marketing_status: '작업 현황',
-    review_receipt: '방문자',
-    review_blog: '블로그',
-    settings_shop: '업체정보',
-    settings_notify: '알림설정',
-    settings_business: '팀/권한',
-    admin_stats: '전체 통계',
-    admin_users: '유저 작업관리',
-    admin_customer: '크롤링하기',
-    admin_manage_customer: '영업하기',
+    'marketing-status': '작업 현황',
+    'review-receipt': '방문자',
+    'review-blog': '블로그',
+    'settings-shop': '업체정보',
+    'settings-notify': '알림설정',
+    'settings-business': '팀/권한',
+    'admin-stats': '전체 통계',
+    'admin-users': '유저 작업관리',
+    'admin-customer': '크롤링하기',
+    'admin-manage-customer': '영업하기',
     support: '버그신고/고객센터',
   }
 
@@ -53,7 +53,7 @@ function getKoreanName(segment: string): string {
 
 // 현재 경로에 따라 다른 스켈레톤 컴포넌트를 반환하는 함수
 const getSkeletonForPath = (path: string) => {
-  if (path.includes('marketing_status')) {
+  if (path.includes('marketing-status')) {
     return (
       <div className="space-y-6">
         <CalendarSkeleton />
@@ -62,7 +62,7 @@ const getSkeletonForPath = (path: string) => {
     );
   } 
   
-  if (path.includes('marketing_keywords')) {
+  if (path.includes('marketing-keywords')) {
     return (
       <div className="space-y-6">
         <StatCardSkeleton count={3} />
@@ -70,8 +70,8 @@ const getSkeletonForPath = (path: string) => {
       </div>
     );
   }
-  
-  if (path.includes('review_receipt') || path.includes('review_blog')) {
+
+  if (path.includes('review-receipt') || path.includes('review-blog')) {
     return (
       <div className="space-y-6">
         <TextSkeleton lines={2} size="lg" />
@@ -81,7 +81,7 @@ const getSkeletonForPath = (path: string) => {
     );
   }
 
-  if (path.includes('admin_stats')) {
+  if (path.includes('admin-stats')) {
     return (
       <div className="space-y-6">
         <StatCardSkeleton count={4} />
@@ -89,8 +89,8 @@ const getSkeletonForPath = (path: string) => {
       </div>
     );
   }
-  
-  if (path.includes('admin_customer') || path.includes('admin_manage_customer')) {
+
+  if (path.includes('admin-customer') || path.includes('admin-manage-customer')) {
     return (
       <div className="space-y-6">
         <TableSkeleton rows={10} columns={6} showHeader={true} />

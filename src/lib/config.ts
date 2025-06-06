@@ -27,10 +27,3 @@ export const getApiBaseUrl = () => {
 };
 
 export const API_BASE_URL = getApiBaseUrl();
-
-// 상수값 등 추가 설정 추가 가능
-export const APP_CONFIG = {
-  apiUrl: API_BASE_URL,
-  maxItemsPerPage: 100,
-  // 추가 설정...
-};
