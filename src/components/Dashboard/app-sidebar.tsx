@@ -29,14 +29,14 @@ const STATIC_SIDEBAR_SECTIONS = [
     label: "마케팅",
     items: [
       { title: "키워드 & 순위", url: "/dashboard/marketing-keywords", icon: "BarChart2" },
-      { title: "작업 현황", url: "/dashboard/marketing_status", icon: "Activity" },
+      { title: "작업 현황", url: "/dashboard/marketing-status", icon: "Activity" },
     ],
   },
   {
     label: "리뷰 관리",
     items: [
-      { title: "방문자", url: "/dashboard/review_receipt", icon: "Receipt" },
-      { title: "블로그", url: "/dashboard/review_blog", icon: "FileText" },
+      { title: "방문자", url: "/dashboard/review-receipt", icon: "Receipt" },
+      { title: "블로그", url: "/dashboard/review-blog", icon: "FileText" },
     ],
   },
 ]
@@ -45,23 +45,23 @@ const ADMIN_SIDEBAR_SECTIONS = [
   {
     label: "관리자 대시보드",
     items: [
-      { title: "전체 통계", url: "/dashboard/admin_stats", icon: "BarChart" },
-      { title: "유저 작업관리", url: "/dashboard/admin_users", icon: "UserCheck" },
+      { title: "전체 통계", url: "/dashboard/admin-stats", icon: "BarChart" },
+      { title: "유저 작업관리", url: "/dashboard/admin-users", icon: "UserCheck" },
       { title: "키워드 분석", url: "/dashboard/analysis", icon: "ChartSpline" },
     ],
   },
   {
     label: "마케팅 (Admin)",
     items: [
-      { title: "키워드 & 순위", url: "/dashboard/marketing_keywords", icon: "BarChart2" },
-      { title: "작업 현황", url: "/dashboard/marketing_status", icon: "Activity" },
+      { title: "키워드 & 순위", url: "/dashboard/marketing-keywords", icon: "BarChart2" },
+      { title: "작업 현황", url: "/dashboard/marketing-status", icon: "Activity" },
     ],
   },
   {
     label: "고객 영업 관리",
     items: [
-      { title: "크롤링하기", url: "/dashboard/admin_customer", icon: "Computer" },
-      { title: "영업하기", url: "/dashboard/admin_manage_customer", icon: "Mail" },
+      { title: "크롤링하기", url: "/dashboard/admin-customer", icon: "Computer" },
+      { title: "영업하기", url: "/dashboard/admin-manage-customer", icon: "Mail" },
     ],
   },
 ]

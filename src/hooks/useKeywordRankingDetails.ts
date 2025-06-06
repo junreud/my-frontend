@@ -34,12 +34,13 @@ export function useKeywordRankingDetails({
 
   const result = useQuery<KeywordRankingDetail[], Error, TransformedKeywordData>({
     queryKey: [
-      'keywordRankingDetails', 
-      activeBusinessId ? String(activeBusinessId) : 'no-business', 
+      'keywordRankingDetails',
+      activeBusinessId ? String(activeBusinessId) : 'no-business',
       userId ? String(userId) : 'no-user',
       keyword || 'no-keyword'
     ],
     enabled: Boolean(activeBusinessId) && Boolean(userId),
+    placeholderData: (previousData) => previousData, // Keep previous data while refetching
     queryFn: async () => {
       if (!activeBusinessId || !userId) {
         logger.warn('activeBusinessId 또는 userId가 없습니다.');
@@ -51,15 +52,15 @@ export function useKeywordRankingDetails({
       );
 
       // 디버깅을 위한 API 응답 로깅 추가
-      console.log('[Debug] Keyword API Response:', {
-        responseData: response.data,
-        firstItem: Array.isArray(response.data?.data) && response.data?.data.length > 0 
-          ? response.data?.data[0] 
-          : null,
-        hasIsRestaurantFlag: Array.isArray(response.data?.data) && response.data?.data.length > 0
-          ? 'isRestaurant' in response.data?.data[0]
-          : false
-      });
+      // console.log('[Debug] Keyword API Response:', {
+      //   responseData: response.data,
+      //   firstItem: Array.isArray(response.data?.data) && response.data?.data.length > 0 
+      //     ? response.data?.data[0] 
+      //     : null,
+      //   hasIsRestaurantFlag: Array.isArray(response.data?.data) && response.data?.data.length > 0
+      //     ? 'isRestaurant' in response.data?.data[0]
+      //     : false
+      // });
 
       const actualData = response.data?.data || response.data;
 

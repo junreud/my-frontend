@@ -1,10 +1,10 @@
 // hooks/useUserBusinesses.ts
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useEffect, useState, useCallback } from "react"
-import apiClient from "@/lib/apiClient"
-import { Business } from "@/types"
-import { useUser } from "@/hooks/useUser" // Import useUser hook
-
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, useCallback } from "react";
+import apiClient from "@/lib/apiClient";
+import { Business } from "@/types";
+import { useUser } from "@/hooks/useUser";
+import { AxiosError } from 'axios'; // Import AxiosError from axios
 
 // Business limits by role
 const BUSINESS_LIMITS = {
@@ -14,13 +14,10 @@ const BUSINESS_LIMITS = {
 } as const;
 
 export function useUserBusinesses(userId: string | undefined) {
-  const [activeBusiness, setActiveBusinessState] = useState<Business | null>(null)
-  const [userRole, setUserRole] = useState<string>("user") // Default to 'user' role
-  
-  // Use the useUser hook instead of direct API call
+  const [activeBusiness, setActiveBusinessState] = useState<Business | null>(null);
+  const [userRole, setUserRole] = useState<string>("user");
   const { data: userData } = useUser();
 
-  // Load active business from localStorage on mount
   useEffect(() => {
     try {
       const storedBusiness = localStorage.getItem('activeBusiness');
@@ -33,7 +30,6 @@ export function useUserBusinesses(userId: string | undefined) {
     }
   }, []);
 
-  // Get user role from useUser hook
   useEffect(() => {
     if (userData?.role) {
       setUserRole(userData.role);
@@ -44,8 +40,9 @@ export function useUserBusinesses(userId: string | undefined) {
     data: businesses,
     isLoading,
     isError,
+    error: queryError, // Capture the error object from useQuery
     refetch,
-  } = useQuery({
+  } = useQuery<Business[], Error>({
     queryKey: ["userBusinesses", userId],
     queryFn: async () => {
       if (!userId) {
@@ -54,47 +51,62 @@ export function useUserBusinesses(userId: string | undefined) {
       }
       console.log("userId에 대한 비즈니스 데이터 조회:", userId);
       try {
-        const response = await apiClient.get(`/api/place?userId=${userId}`);
-        console.log("비즈니스 API 응답:", response.data);
-        
-        // 문제가 여기에 있을 수 있음 - response.data의 실제 구조를 확인하고
-        // 비즈니스 배열을 정확하게 추출합니다
-        
-        // 정확한 구조를 확인하기 위한 상세 로깅 추가
-        
-        console.log("API 응답 구조:", {
-          hasBusinessesProperty: 'businesses' in response.data,
-          dataType: typeof response.data,
-          isArray: Array.isArray(response.data),
-          topLevelKeys: Object.keys(response.data)
+        const response = await apiClient.get('/api/place?userId=' + userId);
+        const apiResponsePayload = response.data;
+
+        console.log("비즈니스 API 응답 (axios response.data):", apiResponsePayload);
+
+        console.log("API 응답 구조 (apiResponsePayload):", {
+          hasDataProperty: apiResponsePayload && typeof apiResponsePayload === 'object' ? 'data' in apiResponsePayload : 'payload not an object',
+          dataTypeOfPayload: typeof apiResponsePayload,
+          isPayloadArray: Array.isArray(apiResponsePayload),
+          topLevelKeysInPayload: apiResponsePayload && typeof apiResponsePayload === 'object' && apiResponsePayload !== null ? Object.keys(apiResponsePayload) : "payload is not a non-null object",
+          isDataPropertyArray: apiResponsePayload && typeof apiResponsePayload === 'object' && apiResponsePayload !== null && apiResponsePayload.data ? Array.isArray(apiResponsePayload.data) : "payload.data is not accessible or payload not an object"
         });
-        
-        // 다양한 가능한 응답 구조를 처리하는 로직
-        if (Array.isArray(response.data)) {
-          // response.data가 이미 비즈니스 배열인 경우
-          return response.data;
-        } else if (response.data.businesses && Array.isArray(response.data.businesses)) {
-          // response.data에 businesses 속성이 배열인 경우
-          return response.data.businesses;
-        } else if (response.data && Array.isArray(response.data)) {
-          // API가 데이터를 data 속성으로 감싸는 경우
-          return response.data;
-        } else if (response.data && response.data.businesses && Array.isArray(response.data.businesses)) {
-          // API가 data.businesses와 같은 중첩 구조를 사용하는 경우
-          return response.data.businesses;
-        } else {
-          // 인식 가능한 구조가 없는 경우, 로그 기록 후 빈 배열 반환
-          console.error("예상치 못한 API 응답 구조:", response.data);
-          return [];
+
+        let businessesArray: Business[] = [];
+
+        if (apiResponsePayload && typeof apiResponsePayload === 'object' && apiResponsePayload !== null && Array.isArray(apiResponsePayload.data)) {
+          businessesArray = apiResponsePayload.data;
+        } 
+        else if (Array.isArray(apiResponsePayload)) {
+          console.warn("API 응답이 직접 배열입니다. 이는 현재 백엔드 설계와 다릅니다. 확인이 필요합니다.", apiResponsePayload);
+          businessesArray = apiResponsePayload as Business[];
+        } 
+        else {
+          console.error("예상치 못한 API 응답 구조입니다. 'data' 속성에서 배열을 찾을 수 없거나, 페이로드가 올바르지 않습니다:", apiResponsePayload);
+          throw new Error("예상치 못한 API 응답 구조"); 
         }
-      } catch (error) {
-        console.error("비즈니스 데이터 조회 오류:", error);
-        return [];
+        
+        return businessesArray.map((business) => {
+          const displayName = business.place_name || "내 업체 " + String(business.place_id).slice(-4);
+          
+          return {
+            ...business,
+            display_name: displayName, 
+            place_name: business.place_name || "이름 없음"
+          };
+        });
+      } catch (err) { // Changed variable name to err to avoid conflict with queryError
+        console.error("비즈니스 데이터 조회 오류:", err);
+        if (err instanceof AxiosError && err.response) {
+          console.error("서버 오류 응답:", err.response.data);
+        } else if (err instanceof Error) {
+          console.error("일반 오류 메시지:", err.message);
+        }
+        throw err; 
       }
     },
-    enabled: !!userId,
-    staleTime: 1000 * 60 * 5,
-  })
+    enabled: !!userId, 
+    staleTime: 1000 * 60 * 5, 
+  });
+
+  // Log query error if it exists
+  useEffect(() => {
+    if (queryError) {
+      console.error("Query Error in useUserBusinesses:", queryError);
+    }
+  }, [queryError]);
 
   // Helper functions for business limit checks
   const getBusinessLimit = (role: string) => {
@@ -113,16 +125,13 @@ export function useUserBusinesses(userId: string | undefined) {
     return Math.max(0, limit - businesses.length);
   };
 
-  // Updated setActiveBusiness function
   const queryClient = useQueryClient();
   
-  const setActiveBusiness = useCallback(async (business: Business | null) => {
-    // 1. 동일한 business면 아무것도 안함 - 현재 구현과 동일
+  const setActiveBusinessOptimistic = useCallback(async (business: Business | null) => {
     if (activeBusiness?.place_id === business?.place_id) {
-      return; // 같은 비즈니스면 아무 작업도 하지 않음
+      return;
     }
     
-    // 2. 상태 업데이트와 localStorage 저장
     setActiveBusinessState(business);
     
     if (business) {
@@ -131,9 +140,7 @@ export function useUserBusinesses(userId: string | undefined) {
       localStorage.removeItem('activeBusiness');
     }
     
-    // 3. 상태 업데이트 후 별도 실행으로 무한 루프 방지
     if (business && userId) {
-      // 상태 업데이트 로직과 쿼리 무효화를 분리하기 위해 setTimeout 사용
       setTimeout(() => {
         const placeIdStr = String(business.place_id);
         const userIdStr = String(userId);
@@ -150,7 +157,6 @@ export function useUserBusinesses(userId: string | undefined) {
   }, [queryClient, userId, activeBusiness?.place_id]);
 
   useEffect(() => {
-    // 이미 activeBusiness가 설정되어 있으면 작업 중지
     if (activeBusiness || !businesses?.length) return;
     
     const storedBusinessId = localStorage.getItem('activeBusiness');
@@ -162,7 +168,7 @@ export function useUserBusinesses(userId: string | undefined) {
         );
   
         if (matchedBusiness) {
-          setActiveBusinessState(matchedBusiness); // 직접 상태 설정으로 변경
+          setActiveBusinessState(matchedBusiness);
           return;
         }
       } catch (e) {
@@ -170,23 +176,24 @@ export function useUserBusinesses(userId: string | undefined) {
       }
     }
   
-    // localStorage에 맞는게 없으면 기본 첫번째 업체로 설정
-    setActiveBusinessState(businesses[0]); // 직접 상태 설정으로 변경
-    localStorage.setItem('activeBusiness', JSON.stringify(businesses[0]));
+    if (businesses[0]) {
+      setActiveBusinessState(businesses[0]);
+      localStorage.setItem('activeBusiness', JSON.stringify(businesses[0]));
+    }
     
-  }, [businesses, activeBusiness, setActiveBusiness]); // 누락된 의존성 추가
+  }, [businesses, activeBusiness]);
 
   return {
     businesses,
     activeBusiness,
-    setActiveBusiness,
+    setActiveBusiness: setActiveBusinessOptimistic, // Use the renamed function
     isLoading,
     isError,
+    error: queryError, // Expose the error from useQuery
     refetch,
-    // Add new properties
     businessLimit: getBusinessLimit(userRole),
     canAddMoreBusinesses: canAddMoreBusinesses(),
     remainingBusinessCount: getRemainingBusinessCount(),
     userRole,
-  }
+  };
 }

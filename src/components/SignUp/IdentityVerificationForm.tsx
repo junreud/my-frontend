@@ -4,10 +4,31 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { checkEmailAvailability as apiCheckEmailAvailability } from "@/services/api";
 
 // API 기본 URL 환경 변수에서 가져오기
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000';
+
+// 이메일 중복 체크 함수 (api.ts에서 가져오던 것 직접 정의)
+async function checkEmailAvailability(email: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/check-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      console.error("checkEmailAvailability Error:", response.status);
+      return false;
+    }
+
+    const data = await response.json();
+    return data.available;
+  } catch (err) {
+    console.error("checkEmailAvailability Exception:", err);
+    return false;
+  }
+}
 
 export default function IdentityVerificationForm() {
   // -------------------------------------------------
@@ -41,7 +62,7 @@ export default function IdentityVerificationForm() {
     }
 
     // (2) 중복확인 API
-    const available = await apiCheckEmailAvailability(value);
+    const available = await checkEmailAvailability(value);
     if (!available) {
       setEmailError("이미 가입된 이메일입니다.");
       return;

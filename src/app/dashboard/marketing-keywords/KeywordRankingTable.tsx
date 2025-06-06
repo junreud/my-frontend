@@ -10,7 +10,6 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
   keywordData,
   historicalData,
   rangeValue,
-  isRestaurantKeyword = false,  // 레스토랑 여부 제어
 }) => {
   const [visibleItems, setVisibleItems] = useState(100); // 처음에 100개 항목만 표시
   const loaderRef = useRef<HTMLDivElement>(null); // 로더 요소에 대한 참조
@@ -321,11 +320,10 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                 <th className="w-[22%]">업종</th>
                 <th className="w-[14%]">블로그리뷰</th>
                 <th className="w-[14%]">영수증리뷰</th>
-                {isRestaurantKeyword && <th className="w-[12%]">저장수</th>}
                </tr>
              </thead>
              <tbody>
-               {visibleData.map((item: KeywordRankingDetail) => {
+               {visibleData.map((item: KeywordRankingDetail, index: number) => {
                 // 빈 순위인지 확인 (타입 단언 추가)
                 const isEmpty = typeof item.place_id === 'string' && 
                                (item.place_id as string).startsWith('empty-');
@@ -342,7 +340,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                   
                 return (
                     <tr
-                    key={item.place_id}
+                    key={item.place_id || item.id || `${item.keyword_id}-${item.ranking}` || index}
                     className={`
                       hover:bg-gray-100
                       ${isEmpty ? "bg-gray-50 text-gray-300"
@@ -421,21 +419,6 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                         </div>
                       )}
                     </td>
-                    {isRestaurantKeyword && (
-                      <td className="w-[12%]">
-                        {isEmpty ? '-' : (
-                          <div className="flex items-center">
-                            <span className="min-w-[24px] text-center">{item.savedCount === null || item.savedCount === undefined ? '-' : item.savedCount}</span>
-                            <NumberChangeIndicator 
-                              current={item.savedCount} 
-                              past={pastData?.savedCount}
-                              formatter={(val: number | null | undefined): string => val != null ? val.toString() : ''}
-                              hideWhenNoChange={true}
-                            />
-                          </div>
-                        )}
-                      </td>
-                    )}
                   </tr>
                 );
               })}

@@ -307,3 +307,9 @@ export interface MainKeywordStatus {
   currentRank: number;
   diff: number;
 }
+
+export interface UserBusiness {
+  place_id: string; // 업체의 고유 ID (예: Google Place ID)
+  display_name: string; // 업체 표시 이름
+  // 필요에 따라 다른 업체 관련 속성 추가 가능
+}
