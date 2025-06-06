@@ -21,37 +21,22 @@ import {
 import { NavCommon } from "@/components/Dashboard/nav-common"
 import { NavSecondary } from "@/components/Dashboard/nav-secondary"
 import { NavUser } from "@/components/Dashboard/nav-user"
-import { BusinessSwitcher } from "@/components/Dashboard/business-switcher"
+import { BusinessSelector } from "@/components/Dashboard/business-selector"
 
 /** (A) 일반/관리자용 사이드바 섹션 구분 */
 const STATIC_SIDEBAR_SECTIONS = [
   {
     label: "마케팅",
     items: [
-      { title: "키워드 & 순위", url: "/dashboard/marketing_keywords", icon: "BarChart2" },
+      { title: "키워드 & 순위", url: "/dashboard/marketing-keywords", icon: "BarChart2" },
       { title: "작업 현황", url: "/dashboard/marketing_status", icon: "Activity" },
     ],
   },
   {
     label: "리뷰 관리",
     items: [
-      { title: "영수증리뷰", url: "/dashboard/review_receipt", icon: "Receipt" },
-      { title: "블로그리뷰", url: "/dashboard/review_blog", icon: "FileText" },
-    ],
-  },
-  // {
-  //   label: "결제/요금",
-  //   items: [
-  //     { title: "Introduction", url: "/dashboard/payment_intro", icon: "BookOpen" },
-  //     { title: "Get Started", url: "/dashboard/payment_started", icon: "PlayCircle" },
-  //   ],
-  // },
-  {
-    label: "설정",
-    items: [
-      { title: "내 업체", url: "/dashboard/my_shops", icon: "Building" },
-      { title: "알림설정", url: "/dashboard/settings_notify", icon: "Bell" },
-      { title: "팀/권한", url: "/dashboard/settings_business", icon: "Users" },
+      { title: "방문자", url: "/dashboard/review_receipt", icon: "Receipt" },
+      { title: "블로그", url: "/dashboard/review_blog", icon: "FileText" },
     ],
   },
 ]
@@ -63,7 +48,6 @@ const ADMIN_SIDEBAR_SECTIONS = [
       { title: "전체 통계", url: "/dashboard/admin_stats", icon: "BarChart" },
       { title: "유저 작업관리", url: "/dashboard/admin_users", icon: "UserCheck" },
       { title: "키워드 분석", url: "/dashboard/analysis", icon: "ChartSpline" },
-
     ],
   },
   {
@@ -100,7 +84,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return (
       <Sidebar variant="inset" {...props}>
         <SidebarHeader>
-          <BusinessSwitcher />
+          {/* Add the BusinessSelector for loading state */}
+          <BusinessSelector />
         </SidebarHeader>
         <SidebarContent>
           {/* "대시보드 홈" 스켈레톤 */}
@@ -147,7 +132,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return (
       <Sidebar variant="inset" {...props}>
         <SidebarHeader>
-          <BusinessSwitcher />
+          {/* Add the BusinessSelector for error state */}
+          <BusinessSelector />
         </SidebarHeader>
         <SidebarContent className="flex flex-col items-center justify-center p-4">
           <div className="text-center p-6 bg-red-50 rounded-lg border border-red-100 w-[90%] shadow-sm">
@@ -160,7 +146,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               onClick={() => window.location.reload()}
               className="flex items-center gap-2 mx-auto px-4 py-2 bg-white border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
             >
-              <RefreshCw className="h-2 w-" />
+              <RefreshCw className="h-4 w-4" />
               <span>새로고침</span>
             </button>
           </div>
@@ -176,7 +162,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
-        <BusinessSwitcher />
+        {/* Add the new BusinessSelector component */}
+        <BusinessSelector />
       </SidebarHeader>
 
       <SidebarContent>
