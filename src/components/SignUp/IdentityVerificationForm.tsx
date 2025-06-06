@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +38,10 @@ export default function IdentityVerificationForm() {
   const [emailError, setEmailError] = useState("");
   const [isEmailValid, setIsEmailValid] = useState(false);
   const [isEmailFocused, setIsEmailFocused] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  
+  // 디바운싱을 위한 ref
+  const emailTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const emailInputClass = () => {
     if (email && isEmailValid && !emailError) {
@@ -46,36 +50,98 @@ export default function IdentityVerificationForm() {
     if (emailError) {
       return "border-red-500 focus:ring-red-200";
     }
+    if (isCheckingEmail) {
+      return "border-blue-500 focus:ring-blue-200";
+    }
     return "border-gray-300 focus:ring-blue-200";
   };
 
-  const validateEmail = async (value: string) => {
-    setEmail(value);
-    setEmailError("");
-    setIsEmailValid(false);
+  const validateEmail = useCallback(async (value: string) => {
+    if (!value) {
+      setEmailError("");
+      setIsEmailValid(false);
+      setIsCheckingEmail(false);
+      return;
+    }
 
     // (1) 이메일 형식 체크
     const regex = /\S+@\S+\.\S+/;
     if (!regex.test(value)) {
       setEmailError("이메일 형식이 올바르지 않습니다.");
+      setIsEmailValid(false);
+      setIsCheckingEmail(false);
       return;
     }
 
-    // (2) 중복확인 API
-    const available = await checkEmailAvailability(value);
-    if (!available) {
-      setEmailError("이미 가입된 이메일입니다.");
-      return;
+    setIsCheckingEmail(true);
+    setEmailError("");
+
+    try {
+      // (2) 중복확인 API
+      const available = await checkEmailAvailability(value);
+      if (!available) {
+        setEmailError("이미 가입된 이메일입니다.");
+        setIsEmailValid(false);
+      } else {
+        setEmailError("");
+        setIsEmailValid(true);
+      }
+    } catch (error) {
+      console.error("이메일 중복 체크 오류:", error);
+      setEmailError("이메일 확인 중 오류가 발생했습니다.");
+      setIsEmailValid(false);
+    } finally {
+      setIsCheckingEmail(false);
     }
-    setIsEmailValid(true);
+  }, []);
+
+  // 디바운싱된 이메일 검증
+  const debouncedValidateEmail = useCallback((value: string) => {
+    // 기존 타이머 클리어
+    if (emailTimeoutRef.current) {
+      clearTimeout(emailTimeoutRef.current);
+    }
+
+    // 새로운 타이머 설정 (500ms 후 실행)
+    emailTimeoutRef.current = setTimeout(() => {
+      validateEmail(value);
+    }, 500);
+  }, [validateEmail]);
+
+  // 이메일 입력 핸들러
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    setEmailError("");
+    setIsEmailValid(false);
+    
+    // 값이 있을 때만 디바운싱된 검증 실행
+    if (value.trim()) {
+      debouncedValidateEmail(value);
+    } else {
+      // 값이 없으면 타이머 클리어하고 상태 초기화
+      if (emailTimeoutRef.current) {
+        clearTimeout(emailTimeoutRef.current);
+      }
+      setIsCheckingEmail(false);
+    }
   };
 
   const handleEmailBlur = () => {
-    if (!email) {
-      setIsEmailFocused(false);
+    setIsEmailFocused(false);
+    // blur 시에는 즉시 검증 (디바운싱 없이)
+    if (email.trim()) {
+      validateEmail(email);
     }
-    validateEmail(email);
   };
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (emailTimeoutRef.current) {
+        clearTimeout(emailTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // -------------------------------------------------
   // [B] 비밀번호 관련 상태 & 로직
@@ -286,10 +352,14 @@ export default function IdentityVerificationForm() {
               value={email}
               onFocus={() => setIsEmailFocused(true)}
               onBlur={handleEmailBlur}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => handleEmailChange(e.target.value)}
             />
           </div>
           {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+          {isCheckingEmail && <p className="text-blue-500 text-sm mt-1">이메일 확인 중...</p>}
+          {email && isEmailValid && !emailError && !isCheckingEmail && (
+            <p className="text-green-500 text-sm mt-1">사용 가능한 이메일입니다.</p>
+          )}
         </div>
 
         {/* 비밀번호 입력 */}
