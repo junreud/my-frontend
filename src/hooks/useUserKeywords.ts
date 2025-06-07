@@ -4,7 +4,7 @@ import { UserKeyword, ApiKeywordResponse } from '@/types/index';
 import apiClient from '@/lib/apiClient';
 import { useEffect } from 'react';
 
-export function useUserKeywords(userId?: number | string, activeBusinessId?: number | string) {
+export function useUserKeywords(userId?: number | string, activeBusinessId?: number | string, options?: { enabled?: boolean }) {
   const queryKey = ['userKeywords', String(userId), String(activeBusinessId)];
 
   const fetchKeywords = async () => {
@@ -42,7 +42,7 @@ export function useUserKeywords(userId?: number | string, activeBusinessId?: num
   const result = useQuery<UserKeyword[], Error>({
     queryKey,
     queryFn: fetchKeywords,
-    enabled: !!userId && !!activeBusinessId,
+    enabled: !!userId && !!activeBusinessId && (options?.enabled !== false),
     staleTime: 5 * 60 * 1000,
     placeholderData: (previousData) => previousData,
   });

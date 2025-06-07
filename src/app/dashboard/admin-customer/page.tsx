@@ -598,7 +598,7 @@ interface ParsingTableProps {
   isLoading?: boolean;
 }
  
-export const ParsingTable: React.FC<ParsingTableProps> = ({ 
+const ParsingTable: React.FC<ParsingTableProps> = ({ 
   businesses,
   onParseStart,
   onCancel,

@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-// Define chart data item type
+// Define chart data item type - now compatible with KeywordHistoricalData
 export interface ChartDataItem { // Exporting ChartDataItem
   date: string;
-  place_id?: string | number;
+  date_key: string; // Required field for compatibility with KeywordHistoricalData
+  place_id?: string | number | null; // Allow null for compatibility
   ranking?: number | null;
   hasCrawlInfo?: boolean;
   hasBasicCrawl?: boolean;
@@ -81,11 +82,12 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
     const dataArr: ChartDataItem[] = recentDates.map(date => {
       const rec = chartMap.get(date);
       if (rec) {
-        return { ...rec, date, hasBasicCrawl: rec.ranking !== null };
+        return { ...rec, date, date_key: rec.date_key || date, hasBasicCrawl: rec.ranking !== null };
       } else {
         // no record this date
         return {
           date,
+          date_key: date, // Include required date_key field
           ranking: null,
           blog_review_count: null, // Corrected key
           receipt_review_count: null, // Corrected key
@@ -149,6 +151,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
       const savedVal = normSaved <= 100000 ? normSaved : null;
       return {
         ...item,
+        date_key: item.date_key || item.date, // Ensure date_key is always present
         ranking: rankingVal,
         blog_review_count: blogRev,
         receipt_review_count: receiptRev,

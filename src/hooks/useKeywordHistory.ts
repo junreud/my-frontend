@@ -8,7 +8,8 @@ import apiClient from '@/lib/apiClient';
 export function useKeywordHistory(
   placeId?: string | null,
   keywordId?: number | null,
-  days: number = 30
+  days: number = 30,
+  options?: { enabled?: boolean }
 ) {
   return useQuery<ChartDataItem[], Error>({
     queryKey: ['keywordHistory', placeId, keywordId, days],
@@ -26,6 +27,7 @@ export function useKeywordHistory(
         // Map raw history data to ChartDataItem shape
         return rawHistory.map(item => ({
           date: item.last_crawled_at || item.created_at || '',
+          date_key: item.last_crawled_at || item.created_at || '', // Include required date_key field
           place_id: item.place_id,
           ranking: item.ranking,
           blog_review_count: item.blog_review_count ?? null,
@@ -39,7 +41,7 @@ export function useKeywordHistory(
           : new Error('키워드 히스토리 조회 중 알 수 없는 오류');
       }
     },
-    enabled: !!placeId && !!keywordId,
+    enabled: !!placeId && !!keywordId && (options?.enabled !== false),
     staleTime: 1000 * 60 * 5, // 5분
   });
 }

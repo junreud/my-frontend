@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { NumberChangeIndicator } from '@/components/ui/NumberChangeIndicator';
 import { KeywordRankingTableProps, KeywordRankingDetail } from '@/types/index';
 
@@ -12,6 +12,35 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
   rangeValue,
 }) => {
   const [usingFallbackData, setUsingFallbackData] = useState(false); // 어제 데이터 사용 여부
+  const [visibleItems, setVisibleItems] = useState(50); // 처음에 표시할 항목 수
+  const loaderRef = useRef<HTMLDivElement>(null);
+
+  // 무한 스크롤 구현을 위한 Intersection Observer
+  const loadMoreItems = useCallback(() => {
+    setVisibleItems(prev => prev + 50);
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreItems();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    const currentLoaderRef = loaderRef.current;
+    if (currentLoaderRef) {
+      observer.observe(currentLoaderRef);
+    }
+
+    return () => {
+      if (currentLoaderRef) {
+        observer.unobserve(currentLoaderRef);
+      }
+    };
+  }, [loadMoreItems]);
 
   // 최신 날짜의 데이터만 필터링하고 최대 순위까지만 순위 생성
   const latestData = React.useMemo(() => {

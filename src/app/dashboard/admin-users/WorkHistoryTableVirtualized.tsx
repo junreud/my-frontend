@@ -4,7 +4,7 @@ import { Loader2, Plus, Trash2, FileSpreadsheet, AlertTriangle } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { createLogger } from "@/lib/logger";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import WorkHistoryModal from './WorkHistoryModal';
 import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/apiClient';

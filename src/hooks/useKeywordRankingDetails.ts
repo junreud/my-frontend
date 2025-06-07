@@ -11,6 +11,7 @@ interface UseKeywordRankingDetailsProps {
   activeBusinessId?: number | string; // activeBusinessId로 변경 (필수!)
   keyword?: string;
   userId?: number | string;
+  options?: { enabled?: boolean };
 }
 
 interface TransformedKeywordData {
@@ -23,7 +24,8 @@ interface TransformedKeywordData {
 export function useKeywordRankingDetails({ 
   activeBusinessId,
   keyword,
-  userId: explicitUserId
+  userId: explicitUserId,
+  options
 }: UseKeywordRankingDetailsProps) {
 
   const { data: userData } = useUser({ 
@@ -39,7 +41,7 @@ export function useKeywordRankingDetails({
       userId ? String(userId) : 'no-user',
       keyword || 'no-keyword'
     ],
-    enabled: Boolean(activeBusinessId) && Boolean(userId),
+    enabled: Boolean(activeBusinessId) && Boolean(userId) && (options?.enabled !== false),
     placeholderData: (previousData) => previousData, // Keep previous data while refetching
     queryFn: async () => {
       if (!activeBusinessId || !userId) {
@@ -48,7 +50,7 @@ export function useKeywordRankingDetails({
       }
 
       const response = await apiClient.get(
-        `/api/keyword-ranking-details?placeId=${activeBusinessId}&userId=${userId}${keyword ? `&keyword=${encodeURIComponent(keyword)}` : ''}`
+        `/keyword/keyword-rankings-by-business?placeId=${activeBusinessId}`
       );
 
       // 디버깅을 위한 API 응답 로깅 추가

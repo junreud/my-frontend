@@ -13,6 +13,7 @@ export function transformToChartData(rankingDetails: KeywordRankingDetail[]) {
 
   return sortedData.map(item => ({
     date: item.date_key,
+    date_key: item.date_key, // Include required date_key field for compatibility
     ranking: item.ranking ?? null,  // ✅ ranking은 null 허용
     uv: item.ranking != null ? 300 - item.ranking : null,  // ✅ 명확히 처리
     blog_review_count: item.blog_review_count ?? null,     // ✅ null처리 명확히

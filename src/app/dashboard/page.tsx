@@ -30,13 +30,16 @@ export default function DashboardPage() {
   // 컴포넌트 마운트 시 첫 번째 비즈니스 선택
   useEffect(() => {
     if (userBusinesses && userBusinesses.length > 0 && !selectedBusinessId) {
-      setSelectedBusinessId(userBusinesses[0].place_id);
-      
-      // 로컬 스토리지에 저장
-      try {
-        localStorage.setItem('activeBusiness', JSON.stringify(userBusinesses[0]));
-      } catch (error) {
-        console.error("Failed to save active business to localStorage:", error);
+      const placeId = userBusinesses[0].place_id;
+      if (placeId) {
+        setSelectedBusinessId(placeId);
+        
+        // 로컬 스토리지에 저장
+        try {
+          localStorage.setItem('activeBusiness', JSON.stringify(userBusinesses[0]));
+        } catch (error) {
+          console.error("Failed to save active business to localStorage:", error);
+        }
       }
     }
   }, [userBusinesses, selectedBusinessId]);
@@ -151,7 +154,6 @@ export default function DashboardPage() {
         if (!userId || !placeId) return {};
         
         // 사용자의 모든 업체와 연결된 키워드 데이터를 가져옵니다
-        // 백엔드 경로 수정: /api/keyword-rankings-by-business -> /keyword/keyword-rankings-by-business
         const response = await apiClient.get(
           `/keyword/keyword-rankings-by-business?userId=${userId}`
         );

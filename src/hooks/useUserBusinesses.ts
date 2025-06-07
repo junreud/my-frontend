@@ -13,7 +13,7 @@ const BUSINESS_LIMITS = {
   admin: 999, // Admins can create virtually unlimited businesses
 } as const;
 
-export function useUserBusinesses(userId: string | undefined) {
+export function useUserBusinesses(userId: string | undefined, options?: { enabled?: boolean }) {
   const [activeBusiness, setActiveBusinessState] = useState<Business | null>(null);
   const [userRole, setUserRole] = useState<string>("user");
   const { data: userData } = useUser();
@@ -95,7 +95,7 @@ export function useUserBusinesses(userId: string | undefined) {
         throw err; 
       }
     },
-    enabled: !!userId, 
+    enabled: !!userId && (options?.enabled !== false), 
     staleTime: 1000 * 60 * 5,
     retry: (failureCount, error) => {
       // 401, 403 오류는 재시도하지 않음
