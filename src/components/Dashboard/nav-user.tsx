@@ -90,12 +90,29 @@ export function NavUser() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={async () => {
-                  // 로그아웃 API 호출 (optional)
+                  // 로그아웃 API 호출
                   try {
-                    await fetch('/auth/logout', { method: 'POST', credentials: 'include' });
-                  } catch {}
-                  // 토큰 삭제 및 리다이렉션
+                    const response = await fetch('https://localhost:4000/auth/logout', { 
+                      method: 'POST', 
+                      credentials: 'include',
+                      headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                        'Content-Type': 'application/json'
+                      }
+                    });
+                    
+                    if (!response.ok) {
+                      console.warn('로그아웃 API 응답 오류:', response.status, response.statusText);
+                    } else {
+                      console.log('로그아웃 API 성공');
+                    }
+                  } catch (error) {
+                    console.error('로그아웃 API 호출 중 오류:', error);
+                  }
+                  // 토큰 삭제 및 리다이렉션 (API 실패해도 클라이언트 측 정리는 수행)
                   localStorage.removeItem('accessToken');
+                  // refreshToken 쿠키도 클라이언트에서 삭제 시도
+                  document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=none';
                   window.location.href = '/login';
                 }}
               >

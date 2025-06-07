@@ -13,6 +13,9 @@ apiClient.interceptors.request.use(
     const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log('[API_CLIENT] 토큰 헤더 추가:', token.substring(0, 20) + '...');
+    } else {
+      console.log('[API_CLIENT] 토큰이 없음');
     }
     return config;
   },
@@ -45,12 +48,14 @@ apiClient.interceptors.response.use(
 
       try {
         // (3) /auth/refresh 호출
+        console.log('[API_CLIENT] 토큰 갱신 시도...');
         const res = await axios.post(
           `${API_BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
         const newAccessToken = res.data.accessToken;
+        console.log('[API_CLIENT] 새 토큰 받음:', newAccessToken.substring(0, 20) + '...');
       
         // (4) localStorage에 토큰 갱신
         localStorage.setItem("accessToken", newAccessToken);
