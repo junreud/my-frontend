@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ICustomerInfo, IContactInfo } from '@/types/index';
 import { Trash2, Copy, Star, Ban, UserPlus, UserCheck, UserX } from 'lucide-react';
 import { toast } from "sonner";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import apiClient from '@/lib/apiClient'; // apiClient 추가
 
 // 연락처에 회사명을 포함한 타입

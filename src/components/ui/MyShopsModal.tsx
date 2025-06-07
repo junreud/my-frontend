@@ -1,13 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { useUserBusinesses } from '@/hooks/useUserBusinesses';
 import { useQueries } from '@tanstack/react-query';
 import apiClient from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { X } from 'lucide-react';
 import { ApiKeywordResponse, Business } from '@/types';
 import {
   Dialog,
@@ -26,10 +24,8 @@ interface MyShopsModalProps {
 
 export default function MyShopsModal({ open, onClose }: MyShopsModalProps) {
   const { data: user } = useUser();
-  const { businesses = [], isLoading: loadingBusinesses } = useUserBusinesses(String(user?.id));
-  const [isDirty, setIsDirty] = useState(false);
+  const { businesses = [] } = useUserBusinesses(String(user?.id));
   const [localKeywords, setLocalKeywords] = useState<Record<string, string[]>>({});
-  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // fetch keywords for each business in parallel
   const keywordQueries = useQueries({
@@ -61,37 +57,6 @@ export default function MyShopsModal({ open, onClose }: MyShopsModalProps) {
       setLocalKeywords(init);
     }
   }, [businesses, keywordQueries, localKeywords]);
-
-  // handle close with unsaved warning
-  const handleClose = () => {
-    if (isDirty && !confirm('변경사항이 저장되지 않았습니다. 정말 닫으시겠습니까?')) {
-      return;
-    }
-    onClose();
-  };
-
-  // save all changes
-  const handleSave = async () => {
-    try {
-      for (const placeId of Object.keys(localKeywords)) {
-        await apiClient.post('/keyword/save-selected', {
-          placeId,
-          keywords: localKeywords[placeId],
-        });
-      }
-      setIsDirty(false);
-      alert('변경사항이 저장되었습니다.');
-    } catch (err) {
-      console.error(err);
-      alert('저장 중 오류가 발생했습니다.');
-    }
-  };
-
-  // State for expanded business cards
-  const [expandedBusinessId, setExpandedBusinessId] = useState<string | null>(null);
-  const toggleExpand = (businessId: string) => {
-    setExpandedBusinessId(expandedBusinessId === businessId ? null : businessId);
-  };
 
   if (!open) return null;
 

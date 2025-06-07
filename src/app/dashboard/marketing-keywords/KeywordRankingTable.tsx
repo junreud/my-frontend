@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NumberChangeIndicator } from '@/components/ui/NumberChangeIndicator';
 import { KeywordRankingTableProps, KeywordRankingDetail } from '@/types/index';
 
@@ -11,8 +11,6 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
   historicalData,
   rangeValue,
 }) => {
-  const [visibleItems, setVisibleItems] = useState(100); // 처음에 100개 항목만 표시
-  const loaderRef = useRef<HTMLDivElement>(null); // 로더 요소에 대한 참조
   const [usingFallbackData, setUsingFallbackData] = useState(false); // 어제 데이터 사용 여부
 
   // 최신 날짜의 데이터만 필터링하고 최대 순위까지만 순위 생성
@@ -233,30 +231,6 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
     
     console.log('빈 구간:', emptyRanges);
   }, [latestData, usingFallbackData]);
-
-  // Intersection Observer 설정 (스크롤 감지용)
-  useEffect(() => {
-    const currentLoaderRef = loaderRef.current;
-    const observer = new IntersectionObserver(
-      (entries: IntersectionObserverEntry[]) => {
-        if (entries[0].isIntersecting && visibleItems < latestData.length) {
-          // 더 많은 항목 로드 (최대 100개씩)
-          setVisibleItems(prev => Math.min(prev + 100, latestData.length));
-        }
-      },
-      { threshold: 0.1 }
-    );
-    
-    if (currentLoaderRef) {
-      observer.observe(currentLoaderRef);
-    }
-    
-    return () => {
-      if (currentLoaderRef) {
-        observer.unobserve(currentLoaderRef);
-      }
-    };
-  }, [visibleItems, latestData]);
 
   // 추가된 useEffect
   useEffect(() => {

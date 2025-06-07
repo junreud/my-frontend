@@ -43,6 +43,8 @@
     "@tanstack/react-query": "^5.67.2",
     "@tanstack/react-query-devtools": "^5.67.2",
     "@tanstack/react-query-persist-client": "^5.67.3",
+    "@types/react-window": "^1.8.8",
+    "@types/xlsx": "^0.0.35",
     "axios": "^1.8.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -64,12 +66,15 @@
     "react-icons": "^5.5.0",
     "react-is": "^18.2.0",
     "react-router-dom": "^7.3.0",
+    "react-window": "^1.8.11",
+    "react-window-infinite-loader": "^1.0.10",
     "recharts": "^2.15.1",
     "socket.io-client": "^4.8.1",
     "sonner": "^2.0.1",
     "swiper": "^11.2.5",
     "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

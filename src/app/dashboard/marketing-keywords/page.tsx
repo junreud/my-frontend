@@ -9,7 +9,7 @@ import { useAddKeyword } from "@/hooks/useAddKeyword";
 import { useKeywordHistory } from '@/hooks/useKeywordHistory';
 
 import KeywordRankingChart, { ChartDataItem } from "./KeywordRankingChart";
-import KeywordRankingTable from "./KeywordRankingTable";
+import KeywordRankingTable from "./KeywordRankingTableVirtualized";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

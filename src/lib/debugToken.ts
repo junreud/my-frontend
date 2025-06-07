@@ -30,5 +30,5 @@ export function debugToken() {
 
 // 전역에서 사용할 수 있도록 window에 추가
 if (typeof window !== 'undefined') {
-  (window as any).debugToken = debugToken;
+  (window as unknown as { debugToken: typeof debugToken }).debugToken = debugToken;
 }

@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CustomerTable from './CustomerTable';
+import CustomerTableVirtualized from './CustomerTableVirtualized';
 import TemplateModal, { Template } from './TemplateModal';
 import apiClient from '@/lib/apiClient';
 
 // 디바운스 유틸리티 함수 추가
-function debounce<T extends (...args: any[]) => any>(fn: T, delay: number): (...args: Parameters<T>) => void {
+function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): (...args: Parameters<T>) => void {
   let timer: NodeJS.Timeout;
   return (...args: Parameters<T>) => {
     clearTimeout(timer);
@@ -73,6 +74,7 @@ export default function AdminManageCustomerClient() {
   const [modalOpen, setModalOpen] = useState(false);
   const [templateDraft, setTemplateDraft] = useState<Template>({ id: undefined, name: '', description: '', items: [] });
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | undefined>();
+  const [useVirtualization, setUseVirtualization] = useState(false);
   
   // 스크롤 이벤트 처리를 위한 상태
   const [loadingMore, setLoadingMore] = useState(false);
@@ -219,24 +221,51 @@ export default function AdminManageCustomerClient() {
           {templates.map((t: Template) => <option key={t.id!} value={t.id!}>{t.name}</option>)}
         </select>
         <Button size="sm" onClick={() => setTemplateManagerOpen(true)}>템플릿 관리</Button>
+        
+        {/* 가상화 토글 */}
+        <div className="ml-4 flex items-center gap-2">
+          <label className="text-sm font-medium">성능 모드:</label>
+          <Button
+            variant={useVirtualization ? "default" : "outline"}
+            size="sm"
+            onClick={() => setUseVirtualization(!useVirtualization)}
+          >
+            {useVirtualization ? "가상화 ON" : "가상화 OFF"}
+          </Button>
+        </div>
       </div>
 
       <TemplateManagerModal open={templateManagerOpen} onClose={() => setTemplateManagerOpen(false)} />
       <TemplateModal open={modalOpen} onClose={() => setModalOpen(false)} onSave={async tpl => { await (tpl.id ? apiClient.put(`/api/templates/${tpl.id}`, tpl) : apiClient.post('/api/templates', tpl)); refetchTemplates(); setModalOpen(false); }} initialTemplate={templateDraft} />
 
       {/* Customer table */}
-      <CustomerTable
-        customers={filteredCustomers}
-        currentPage={1}
-        pageSize={pageSize}
-        onPageSizeChange={handlePageSizeChange}
-        onRefresh={refetch}
-        parsingFilters={parsingFilters}
-        showFavoritesOnly={showFavoritesOnly}
-        excludeBlacklist={excludeBlacklist}
-        selectedTemplateId={selectedTemplateId}
-        templates={templates}
-      />
+      {useVirtualization ? (
+        <CustomerTableVirtualized
+          customers={filteredCustomers}
+          currentPage={1}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
+          onRefresh={refetch}
+          parsingFilters={parsingFilters}
+          showFavoritesOnly={showFavoritesOnly}
+          excludeBlacklist={excludeBlacklist}
+          selectedTemplateId={selectedTemplateId}
+          templates={templates}
+        />
+      ) : (
+        <CustomerTable
+          customers={filteredCustomers}
+          currentPage={1}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
+          onRefresh={refetch}
+          parsingFilters={parsingFilters}
+          showFavoritesOnly={showFavoritesOnly}
+          excludeBlacklist={excludeBlacklist}
+          selectedTemplateId={selectedTemplateId}
+          templates={templates}
+        />
+      )}
       
       {/* 로딩 인디케이터 추가 */}
       {(isFetchingNextPage || isLoading) && (

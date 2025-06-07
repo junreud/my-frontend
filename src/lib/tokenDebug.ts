@@ -35,6 +35,6 @@ export function testTokenRefresh() {
 
 // 전역에서 사용할 수 있도록 window에 추가
 if (typeof window !== 'undefined') {
-  (window as any).testTokenRefresh = testTokenRefresh;
-  (window as any).createExpiredToken = createExpiredToken;
+  (window as unknown as { testTokenRefresh: typeof testTokenRefresh; createExpiredToken: typeof createExpiredToken }).testTokenRefresh = testTokenRefresh;
+  (window as unknown as { testTokenRefresh: typeof testTokenRefresh; createExpiredToken: typeof createExpiredToken }).createExpiredToken = createExpiredToken;
 }
