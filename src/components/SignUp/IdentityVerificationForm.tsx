@@ -11,19 +11,25 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000'
 // 이메일 중복 체크 함수 (api.ts에서 가져오던 것 직접 정의)
 async function checkEmailAvailability(email: string): Promise<boolean> {
   try {
+    console.log(`[DEBUG] Checking email availability for: ${email}`);
     const response = await fetch(`${API_BASE_URL}/auth/check-email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
 
+    console.log(`[DEBUG] Response status: ${response.status}`);
+    
     if (!response.ok) {
       console.error("checkEmailAvailability Error:", response.status);
       return false;
     }
 
     const data = await response.json();
-    return data.available;
+    console.log(`[DEBUG] API Response:`, data);
+    
+    // API 응답 구조: { success: true, data: { available: true }, message: "" }
+    return data.data?.available || false;
   } catch (err) {
     console.error("checkEmailAvailability Exception:", err);
     return false;
