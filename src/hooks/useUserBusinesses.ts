@@ -89,8 +89,16 @@ export function useUserBusinesses(userId: string | undefined) {
         });
       } catch (err) { // Changed variable name to err to avoid conflict with queryError
         console.error("비즈니스 데이터 조회 오류:", err);
-        if (err instanceof AxiosError && err.response) {
-          console.error("서버 오류 응답:", err.response.data);
+        if (err instanceof AxiosError) {
+          console.error("서버 오류 응답:", err.response?.data);
+          const status = err.response?.status;
+          if (status === 401) {
+            throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+          } else if (status === 403) {
+            throw new Error('업체 정보에 접근할 권한이 없습니다.');
+          } else if (status && status >= 500) {
+            throw new Error('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+          }
         } else if (err instanceof Error) {
           console.error("일반 오류 메시지:", err.message);
         }
@@ -98,7 +106,18 @@ export function useUserBusinesses(userId: string | undefined) {
       }
     },
     enabled: !!userId, 
-    staleTime: 1000 * 60 * 5, 
+    staleTime: 1000 * 60 * 5,
+    retry: (failureCount, error) => {
+      // 401, 403 오류는 재시도하지 않음
+      if (error instanceof AxiosError) {
+        const status = error.response?.status;
+        if (status === 401 || status === 403) {
+          return false;
+        }
+      }
+      // 다른 오류는 최대 2번까지 재시도
+      return failureCount < 2;
+    },
   });
 
   // Log query error if it exists

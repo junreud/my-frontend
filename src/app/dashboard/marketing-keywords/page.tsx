@@ -249,17 +249,18 @@ export default function MarketingKeywordsPage() {
     userBusinesses
   });
 
-  if (isLoadingUser || isLoadingBusinesses || (userId && !userBusinesses && !isErrorBusinesses)) { // Added isLoadingUser
+  // 로딩 상태 처리
+  if (isLoadingUser || isLoadingBusinesses || (userId && !userBusinesses && !isErrorBusinesses)) {
     return (
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
-        <Skeleton className="h-8 w-1/4 mb-8" /> {/* Skeleton for title */}
-        <Skeleton className="h-10 w-full sm:w-96 mb-8" /> {/* Skeleton for Combobox */}
+        <Skeleton className="h-8 w-1/4 mb-8" />
+        <Skeleton className="h-10 w-full sm:w-96 mb-8" />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div>
-            <Skeleton className="h-64 w-full" /> {/* Skeleton for chart area */}
+            <Skeleton className="h-64 w-full" />
           </div>
           <div>
-            <Skeleton className="h-64 w-full" /> {/* Skeleton for table area */}
+            <Skeleton className="h-64 w-full" />
           </div>
         </div>
       </div>
@@ -275,8 +276,64 @@ export default function MarketingKeywordsPage() {
     userBusinesses
   });
 
-  if (isErrorUser || isErrorBusinesses || !userId) { // Added isErrorUser
-    return <div className="text-center mt-20 p-4">업체 정보를 불러오는데 실패했습니다. 사용자 ID가 없거나 네트워크 오류일 수 있습니다. 페이지를 새로고침하거나 다시 로그인해주세요.</div>;
+  // 더 세밀한 오류 처리
+  if (!userId) {
+    return (
+      <div className="text-center mt-20 p-4 max-w-md mx-auto">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-yellow-800 mb-2">로그인이 필요합니다</h2>
+          <p className="text-yellow-700 mb-4">마케팅 키워드 기능을 사용하려면 로그인이 필요합니다.</p>
+          <button 
+            onClick={() => window.location.href = '/login'}
+            className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700 transition-colors"
+          >
+            로그인하기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (isErrorUser) {
+    return (
+      <div className="text-center mt-20 p-4 max-w-md mx-auto">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">사용자 정보 오류</h2>
+          <p className="text-red-700 mb-4">사용자 정보를 불러올 수 없습니다. 네트워크 연결을 확인하거나 다시 로그인해주세요.</p>
+          <div className="space-x-2">
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
+            >
+              새로고침
+            </button>
+            <button 
+              onClick={() => window.location.href = '/login'}
+              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors"
+            >
+              다시 로그인
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isErrorBusinesses) {
+    return (
+      <div className="text-center mt-20 p-4 max-w-md mx-auto">
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-orange-800 mb-2">업체 정보 오류</h2>
+          <p className="text-orange-700 mb-4">업체 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700 transition-colors"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
   }
   
   if (userBusinesses && userBusinesses.length === 0 && userId) {
