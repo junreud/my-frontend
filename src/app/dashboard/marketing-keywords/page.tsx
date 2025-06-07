@@ -21,18 +21,6 @@ import { UserKeyword, KeywordRankingDetail, KeywordHistoricalData, KeywordRankin
 import { toast } from "sonner";
 import { transformToChartData } from "@/utils/dataTransformers";
 
-// Helper function to get current ranking
-const getKeywordCurrentRanking = (
-  keyword: string,
-  details: KeywordRankingDetail[] | undefined
-): number | null => {
-  if (!details) return null;
-  const keywordDetails = details
-    .filter(d => d.keyword === keyword)
-    .sort((a, b) => new Date(b.date_key).getTime() - new Date(a.date_key).getTime());
-  return keywordDetails.length > 0 ? keywordDetails[0].ranking ?? null : null;
-};
-
 export default function MarketingKeywordsPage() {
   const { data: user, isLoading: isLoadingUser, isError: isErrorUser } = useUser(); 
   const userId = user?.id;
@@ -49,18 +37,11 @@ export default function MarketingKeywordsPage() {
   useEffect(() => {
     console.log('userBusinesses:', userBusinesses); // 디버깅: userBusinesses 데이터 확인
     if (userBusinesses && userBusinesses.length > 0 && !selectedBusinessId) {
-      const firstBusinessPlaceId = userBusinesses[0].place_id;
-      if (firstBusinessPlaceId) {
-        setSelectedBusinessId(firstBusinessPlaceId);
-      }
+      setSelectedBusinessId(String(userBusinesses[0].place_id));
     }
   }, [userBusinesses, selectedBusinessId]);
 
-  const selectedBusiness = useMemo(() => {
-    return userBusinesses?.find((business) => business.place_id === selectedBusinessId) || null;
-  }, [userBusinesses, selectedBusinessId]);
-
-
+  // 디버깅: 사용자 및 키워드 데이터 로그
   const { 
     keywords: userKeywordsData, 
     loading: isLoadingKeywords, 
@@ -74,7 +55,7 @@ export default function MarketingKeywordsPage() {
   const activeKeyword = expandedKeywordIndex !== null ? userKeywords[expandedKeywordIndex] : null;
   const { data: historyData, isLoading: loadingHistory } = useKeywordHistory(
     selectedBusinessId,
-    activeKeyword?.id ?? null,
+    activeKeyword?.keywordId ?? null,
     30
   );
 
@@ -83,12 +64,21 @@ export default function MarketingKeywordsPage() {
     if (selectedBusinessId && userKeywords.length > 0) {
       console.log('[Debug] Processed userKeywords for UI:', userKeywords);
       userKeywords.forEach((kw, idx) => {
-        console.log(`[Debug] Keyword ${idx}:`, kw.keyword, kw.id);
+        console.log(`[Debug] Keyword ${idx}:`, kw.keyword, `id=${kw.id}, keywordId=${kw.keywordId}`);
       });
     } else if (selectedBusinessId) {
       console.log('[Debug] Processed userKeywords is empty or not yet loaded for selected business.');
     }
   }, [userKeywords, selectedBusinessId]);
+
+  // 디버깅: activeKeyword 확인
+  useEffect(() => {
+    console.log('[DEBUG] Current activeKeyword:', activeKeyword);
+    if (activeKeyword) {
+      console.log('[DEBUG] activeKeyword.keywordId (being sent to useKeywordHistory):', activeKeyword.keywordId);
+      console.log('[DEBUG] activeKeyword.id (user_place_keywords table ID):', activeKeyword.id);
+    }
+  }, [activeKeyword]);
 
   const {
     data: allKeywordsRankingData,
@@ -134,6 +124,12 @@ export default function MarketingKeywordsPage() {
     userId!, 
     numericSelectedBusinessId!
   );
+
+  // Get selected business object
+  const selectedBusiness = useMemo(() => {
+    if (!selectedBusinessId || !userBusinesses) return null;
+    return userBusinesses.find(business => business.place_id === selectedBusinessId) || null;
+  }, [selectedBusinessId, userBusinesses]);
   
   // const changeKeywordMutation = useChangeKeyword(
   //   userId!, 
@@ -179,7 +175,10 @@ export default function MarketingKeywordsPage() {
     const options = userKeywords.map((uk) => { 
       const keyword = uk.keyword || "N/A";
       const rankingData = keywordRankingsMap.get(keyword);
-      const currentRanking = getKeywordCurrentRanking(keyword, rankingData?.details);
+      // Use historical chart data to determine current ranking
+      const currentRanking = rankingData?.historical && rankingData.historical.length > 0
+        ? rankingData.historical[rankingData.historical.length - 1].ranking
+        : null;
       
       // 순위 정보 표시 형식 개선
       let rankingDisplay;
@@ -206,7 +205,7 @@ export default function MarketingKeywordsPage() {
       // 둘 다 순위 정보가 있으면 순위 순서대로
       if (a.hasRanking && b.hasRanking) {
         if (a.ranking !== null && b.ranking !== null) {
-          return a.ranking - b.ranking;
+          return a.ranking! - b.ranking!;
         }
       }
       
@@ -463,9 +462,13 @@ export default function MarketingKeywordsPage() {
                     {userKeywords.map((keyword, index) => {
                       const isExpanded = expandedKeywordIndex === index;
                       
-                      // use top-level historyData and loadingHistory for expanded accordion
-                       
-                       return (
+                      // Compute current ranking for header from historical data
+                      const rankingDataForHeader = keywordRankingsMap.get(keyword.keyword || "");
+                      const currentRankingForHeader = rankingDataForHeader?.historical && rankingDataForHeader.historical.length > 0
+                        ? rankingDataForHeader.historical[rankingDataForHeader.historical.length - 1].ranking
+                        : null;
+
+                      return (
                          <div key={`${keyword.id}-${index}`} className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
                           <button
                             onClick={() => toggleAccordionByIndex(index)}
@@ -473,7 +476,9 @@ export default function MarketingKeywordsPage() {
                           >
                             <h3 className="text-md font-semibold text-slate-800">
                               {keyword.keyword || "키워드 없음"} 
-                              <span className="text-sm font-normal text-slate-500 ml-2">(현재 {getKeywordCurrentRanking(keyword.keyword || "", keywordRankingsMap.get(keyword.keyword || "")?.details)}위)</span>
+                              <span className="text-sm font-normal text-slate-500 ml-2">
+                                (현재 {currentRankingForHeader !== null ? `${currentRankingForHeader}위` : '순위 정보 없음'})
+                              </span>
                             </h3>
                           </button>
 

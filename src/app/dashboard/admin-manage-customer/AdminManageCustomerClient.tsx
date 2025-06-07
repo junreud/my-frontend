@@ -90,7 +90,7 @@ export default function AdminManageCustomerClient() {
         const params = new URLSearchParams();
         if (filters.search) params.set('search', filters.search);
         if (filters.sortBy !== 'recent') params.set('sortBy', filters.sortBy);
-        router.push(`/dashboard/admin_manage_customer?${params.toString()}`);
+        router.push(`/dashboard/admin-manage-customer?${params.toString()}`);
       });
     }, 500);
     return () => clearTimeout(handler);
@@ -207,7 +207,7 @@ export default function AdminManageCustomerClient() {
           </div>
           <Button variant={showFavoritesOnly ? 'default' : 'outline'} size="sm" onClick={() => setShowFavoritesOnly(v => !v)}>즐겨찾기만 보기</Button>
           <Button variant={excludeBlacklist ? 'default' : 'outline'} size="sm" onClick={() => setExcludeBlacklist(v => !v)}>블랙리스트 제외</Button>
-          <Button size="sm" onClick={() => startTransition(() => { setFilters({ search: '', sortBy: 'recent' }); router.push('/dashboard/admin_manage_customer'); })} disabled={isPending}>초기화</Button>
+          <Button size="sm" onClick={() => startTransition(() => { setFilters({ search: '', sortBy: 'recent' }); router.push('/dashboard/admin-manage-customer'); })} disabled={isPending}>초기화</Button>
         </form>
       </div>
 

@@ -27,7 +27,10 @@ export function useUser(options: Partial<UseQueryOptions<User>> = {}) {
     queryFn: async () => {
       try {
         const res = await apiClient.get("/api/user/me")
-        return res.data
+        console.log('[useUser] API response (auto-unwrapped):', res.data);
+        
+        // API 클라이언트에서 이미 unwrap된 데이터가 옴
+        return res.data;
       } catch (error) {
         console.error('사용자 정보 조회 실패:', error);
         // 401 오류의 경우 더 구체적인 에러 메시지

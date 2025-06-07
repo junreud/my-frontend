@@ -54,15 +54,12 @@ export function Combobox({
   const open = isControlled ? controlledOpen : internalOpen;
   const setOpen = isControlled ? setControlledOpen : setInternalOpen;
 
-  // 디버깅 로그 추가
+  // 디버깅 로그 추가 (개발 환경에서만)
   React.useEffect(() => {
-    console.log('Combobox rendered with:', {
-      optionsCount: options.length,
-      options: options,
-      value,
-      isOpen: open
-    });
-  }, [options, value, open]);
+    if (process.env.NODE_ENV === 'development') {
+      // Reduced logging to prevent spam
+    }
+  }, [options.length, value, open]);
 
   // No need for special handling - we want outside clicks to close the popover
   // Let the parent decide what to do when the popover closes
@@ -90,41 +87,37 @@ export function Combobox({
           <CommandList>
             <CommandGroup>
               {options && options.length > 0 ? (
-                options.map((option, index) => {
-                  console.log('Rendering option:', option, 'at index:', index);
-                  return (
-                    <CommandItem
-                      key={`${option}-${index}`}
-                      value={option}
-                      onSelect={(currentValue) => {
-                        console.log('Selected option:', currentValue);
-                        // Always call onChange
-                        onChange(currentValue);
-                        
-                        // Only close if not using custom renderer
-                        if (!renderOption) {
-                          setOpen(false);
-                        }
-                        // When using custom renderer, let parent component decide
-                      }}
-                      className="w-full"
-                    >
-                      {renderOption ? (
-                        renderOption(option)
-                      ) : (
-                        <>
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              value === option ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {option}
-                        </>
-                      )}
-                    </CommandItem>
-                  );
-                })
+                options.map((option, index) => (
+                  <CommandItem
+                    key={`${option}-${index}`}
+                    value={option}
+                    onSelect={(currentValue) => {
+                      // Always call onChange
+                      onChange(currentValue);
+                      
+                      // Only close if not using custom renderer
+                      if (!renderOption) {
+                        setOpen(false);
+                      }
+                      // When using custom renderer, let parent component decide
+                    }}
+                    className="w-full"
+                  >
+                    {renderOption ? (
+                      renderOption(option)
+                    ) : (
+                      <>
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            value === option ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {option}
+                      </>
+                    )}
+                  </CommandItem>
+                ))
               ) : (
                 <div className="px-2 py-1.5 text-sm text-muted-foreground">
                   표시할 항목이 없습니다

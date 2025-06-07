@@ -410,8 +410,8 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
         </div>
       </div>
       
-      {/* 3. 저장 수 그래프 - show if restaurant keyword */}
-      {activeBusiness?.category === 'restaurant' && (
+      {/* 3. 저장 수 그래프 - show if savedCount data exists */}
+      {hasSavedCountData && (
         <div>
           <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">저장 수 변화</h4>
           <div className="h-[250px] bg-white p-2 rounded-md">

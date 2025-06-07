@@ -78,7 +78,7 @@ export function useKeywordRankingDetails({
           rankingDetails: [],
           chartData: [],
           currentRanking: null,
-          rankingList: []
+          rankingList: null
         };
       }
 

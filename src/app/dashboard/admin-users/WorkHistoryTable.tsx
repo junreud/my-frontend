@@ -49,14 +49,11 @@ function useWorkOptions() {
     queryFn: async () => {
       try {
         const response = await apiClient.get('/api/admin/work-histories/options');
-        if (response.data.success) {
-          return response.data.data;
-        } else {
-          throw new Error(response.data.message || '작업 옵션을 가져오는데 실패했습니다.');
-        }
+        // Response interceptor unwraps {success, data}, so response.data is the options object
+        return response.data;
       } catch (error) {
         logger.error('작업 옵션 조회 오류:', error);
-        throw error;
+        throw new Error('작업 옵션을 가져오는데 실패했습니다.');
       }
     },
     staleTime: 10 * 60 * 1000, // 10분 동안 캐시 유지
@@ -112,15 +109,13 @@ const WorkTable: React.FC<WorkTableProps> = ({
     queryKey: ['admin-users-with-places'],
     queryFn: async () => {
       try {
-        const res = await apiClient.get('/api/admin/users-with-places');
-        if (res.data.success) {
-          return res.data.data.map((user: UserWithPlaces) => ({
-            ...user,
-            place_ids: user.place_ids || [],
-            place_names: user.place_names || []
-          }));
-        }
-        return [];
+        const response = await apiClient.get('/api/admin/users-with-places');
+        // Response interceptor unwraps data, so response.data is the array of users
+        return response.data.map((user: UserWithPlaces) => ({
+          ...user,
+          place_ids: user.place_ids || [],
+          place_names: user.place_names || []
+        }));
       } catch (error) {
         logger.error('사용자 정보 불러오기 오류:', error);
         return [];

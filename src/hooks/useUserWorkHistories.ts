@@ -29,19 +29,16 @@ export interface WorkHistory {
  * 현재 로그인한 사용자의 작업 이력을 조회하는 커스텀 훅
  */
 export function useUserWorkHistories() {
-  return useQuery({
+  return useQuery<WorkHistory[]>({
     queryKey: ['user-work-histories'],
     queryFn: async (): Promise<WorkHistory[]> => {
       try {
         logger.info('사용자 작업 이력 조회 요청');
-        const response = await apiClient.get('/api/user/work-histories');
-        
-        if (response.data.success) {
-          logger.info(`사용자 작업 이력 ${response.data.data.length}개 로드됨`);
-          return response.data.data;
-        } else {
-          throw new Error(response.data.message || '작업 이력을 가져오는데 실패했습니다');
-        }
+        // API returns unwrapped array of work histories
+        const response = await apiClient.get<WorkHistory[]>('/api/user/work-histories');
+        const data = response.data;
+        logger.info(`사용자 작업 이력 ${data.length}개 로드됨`);
+        return data;
       } catch (error) {
         logger.error('작업 이력 로드 중 오류:', error);
         throw error;

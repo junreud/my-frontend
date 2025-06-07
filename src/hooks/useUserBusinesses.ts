@@ -46,35 +46,25 @@ export function useUserBusinesses(userId: string | undefined) {
     queryKey: ["userBusinesses", userId],
     queryFn: async () => {
       if (!userId) {
-        console.log("useUserBusinesses에 userId가 제공되지 않았습니다");
-        return [];
+        throw new Error('userId가 제공되지 않았습니다');
       }
-      console.log("userId에 대한 비즈니스 데이터 조회:", userId);
       try {
-        const response = await apiClient.get('/api/place?userId=' + userId);
+        const response = await apiClient.get(`/api/place?userId=${userId}`);
         const apiResponsePayload = response.data;
 
-        console.log("비즈니스 API 응답 (axios response.data):", apiResponsePayload);
-
-        console.log("API 응답 구조 (apiResponsePayload):", {
-          hasDataProperty: apiResponsePayload && typeof apiResponsePayload === 'object' ? 'data' in apiResponsePayload : 'payload not an object',
-          dataTypeOfPayload: typeof apiResponsePayload,
-          isPayloadArray: Array.isArray(apiResponsePayload),
-          topLevelKeysInPayload: apiResponsePayload && typeof apiResponsePayload === 'object' && apiResponsePayload !== null ? Object.keys(apiResponsePayload) : "payload is not a non-null object",
-          isDataPropertyArray: apiResponsePayload && typeof apiResponsePayload === 'object' && apiResponsePayload !== null && apiResponsePayload.data ? Array.isArray(apiResponsePayload.data) : "payload.data is not accessible or payload not an object"
-        });
-
+        // API 응답에서 data 프로퍼티를 추출합니다
+         
         let businessesArray: Business[] = [];
 
         if (apiResponsePayload && typeof apiResponsePayload === 'object' && apiResponsePayload !== null && Array.isArray(apiResponsePayload.data)) {
           businessesArray = apiResponsePayload.data;
         } 
         else if (Array.isArray(apiResponsePayload)) {
-          console.warn("API 응답이 직접 배열입니다. 이는 현재 백엔드 설계와 다릅니다. 확인이 필요합니다.", apiResponsePayload);
+          // 호환성을 위해 직접 배열 응답도 처리
           businessesArray = apiResponsePayload as Business[];
         } 
         else {
-          console.error("예상치 못한 API 응답 구조입니다. 'data' 속성에서 배열을 찾을 수 없거나, 페이로드가 올바르지 않습니다:", apiResponsePayload);
+          console.error("예상치 못한 API 응답 구조입니다:", apiResponsePayload);
           throw new Error("예상치 못한 API 응답 구조"); 
         }
         
@@ -87,8 +77,8 @@ export function useUserBusinesses(userId: string | undefined) {
             place_name: business.place_name || "이름 없음"
           };
         });
-      } catch (err) { // Changed variable name to err to avoid conflict with queryError
-        console.error("비즈니스 데이터 조회 오류:", err);
+      } catch (err) {
+        console.error("[useUserBusinesses] 비즈니스 데이터 조회 오류:", err);
         if (err instanceof AxiosError) {
           console.error("서버 오류 응답:", err.response?.data);
           const status = err.response?.status;

@@ -22,14 +22,11 @@ function useWorkOptions() {
     queryFn: async () => {
       try {
         const response = await apiClient.get('/api/admin/work-histories/options');
-        if (response.data.success) {
-          return response.data.data;
-        } else {
-          throw new Error(response.data.message || '작업 옵션을 가져오는데 실패했습니다.');
-        }
+        // After unwrapping interceptor, response.data is the options object
+        return response.data;
       } catch (error) {
         logger.error('작업 옵션 조회 오류:', error);
-        throw error;
+        throw new Error('작업 옵션을 가져오는데 실패했습니다.');
       }
     },
     staleTime: 10 * 60 * 1000, // 10분 동안 캐시 유지

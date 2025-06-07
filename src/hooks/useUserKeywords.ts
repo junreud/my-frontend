@@ -2,38 +2,39 @@
 import { useQuery } from '@tanstack/react-query';
 import { UserKeyword, ApiKeywordResponse } from '@/types/index';
 import apiClient from '@/lib/apiClient';
-import { useEffect, useMemo } from 'react'; // Add useMemo
+import { useEffect } from 'react';
 
 export function useUserKeywords(userId?: number | string, activeBusinessId?: number | string) {
-  const queryKey = useMemo(() => ['userKeywords', String(userId), String(activeBusinessId)], [userId, activeBusinessId]);
+  const queryKey = ['userKeywords', String(userId), String(activeBusinessId)];
 
   const fetchKeywords = async () => {
-    console.log('[useUserKeywords] fetchKeywords attempting with:', { userId, activeBusinessId });
     if (!userId || !activeBusinessId) {
-      console.log('[useUserKeywords] fetchKeywords: IDs missing (userId or activeBusinessId is falsy), returning [].');
-      return [];
+      throw new Error('userId 또는 activeBusinessId가 유효하지 않습니다');
     }
     try {
-      console.log(`[useUserKeywords] Fetching /api/user-keywords?userId=${userId}&placeId=${activeBusinessId}`);
       const response = await apiClient.get<ApiKeywordResponse[]>(
         `/api/user-keywords?userId=${userId}&placeId=${activeBusinessId}`
       );
-      console.log('[useUserKeywords] Raw API response.data:', response.data);
-      console.log('[useUserKeywords] response.data[0] keys:', response.data.length > 0 ? Object.keys(response.data[0]) : []);
-      console.log('[useUserKeywords] response.data keywords:', response.data.map(item => item.keyword));
-      const rawData = response.data;
-      const mappedData = rawData
-        .map(item => {
+      const rawData: ApiKeywordResponse[] = response.data;
+
+      const mappedData: UserKeyword[] = rawData
+        .map((item: ApiKeywordResponse) => {
           // Handle possible casing and ensure keyword field
-          const raw = (item as Record<string, any>).keyword ?? (item as Record<string, any>).Keyword;
+          const raw = item.keyword ?? (item as unknown as Record<string, unknown>).Keyword;
           const kw = typeof raw === 'string' ? raw.trim() : '';
-          return { id: item.id, keyword: kw, keywordId: item.keyword_id };
+          return { 
+            id: item.id, 
+            keyword: kw, 
+            keywordId: item.keyword_id,
+            user_id: item.user_id,
+            place_id: item.place_id,
+            created_at: item.created_at
+          };
         })
-        .filter(k => k.keyword.length > 0);
-      console.log('[useUserKeywords] Mapped data:', mappedData);
+        .filter((k: UserKeyword) => k.keyword && k.keyword.length > 0);
       return mappedData;
     } catch (err) {
-      console.error('[useUserKeywords] fetchKeywords API error:', err);
+      console.error('[useUserKeywords] fetchKeywords 오류:', err);
       throw err instanceof Error ? err : new Error(String(err));
     }
   };
@@ -48,17 +49,12 @@ export function useUserKeywords(userId?: number | string, activeBusinessId?: num
 
   // Log query state changes
   useEffect(() => {
-    console.log('[useUserKeywords] Query state changed:', {
-      queryKey,
+    console.log('[useUserKeywords] 상태:', {
       enabled: !!userId && !!activeBusinessId,
       isLoading: result.isLoading,
-      isFetching: result.isFetching,
-      isSuccess: result.isSuccess,
       isError: result.isError,
-      data: result.data,
-      error: result.error,
     });
-  }, [userId, activeBusinessId, result.isLoading, result.isFetching, result.isSuccess, result.isError, result.data, result.error, queryKey]);
+  }, [userId, activeBusinessId, result.isLoading, result.isError]);
 
   return {
     keywords: result.data || [],
