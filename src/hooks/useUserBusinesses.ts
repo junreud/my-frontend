@@ -68,15 +68,21 @@ export function useUserBusinesses(userId: string | undefined, options?: { enable
           throw new Error("예상치 못한 API 응답 구조"); 
         }
         
-        return businessesArray.map((business) => {
-          const displayName = business.place_name || "내 업체 " + String(business.place_id).slice(-4);
-          
-          return {
-            ...business,
-            display_name: displayName, 
-            place_name: business.place_name || "이름 없음"
-          };
-        });
+        return businessesArray
+          .filter((business) => business != null) // null/undefined 필터링
+          .map((business) => {
+            const displayName = business.place_name || "내 업체 " + String(business.place_id).slice(-4);
+            
+            return {
+              ...business,
+              display_name: displayName,
+              place_name: business.place_name || "이름 없음",
+              is_favorite: business.is_favorite, // Favorite flag from API
+              platform: business.platform || 'naver', // 기본값 설정
+              category: business.category, // category 명시적으로 전달
+              isNewlyOpened: Boolean(business.isNewlyOpened) // 숫자를 boolean으로 변환
+            };
+          });
       } catch (err) {
         console.error("[useUserBusinesses] 비즈니스 데이터 조회 오류:", err);
         if (err instanceof AxiosError) {

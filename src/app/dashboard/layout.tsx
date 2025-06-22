@@ -19,6 +19,14 @@ import {
 } from "@/components/ui/breadcrumb"
 import { InstantLink } from "@/components/ui/instant-link"
 import { Toaster } from "@/components/ui/sonner"
+import { Bell, Cog } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { NotificationsModal } from '@/components/Dashboard/notifications-modal';
+import { SettingsModal } from '@/components/Dashboard/settings-modal';
+import { DashboardFooter } from '@/components/Dashboard/dashboard-footer';
+import { useUser } from '@/hooks/useUser';
+import { BusinessProvider } from '@/app/dashboard/BusinessContext';
+import apiClient from '@/lib/apiClient'
 
 // 스켈레톤 컴포넌트 불러오기
 import {
@@ -37,7 +45,7 @@ function getKoreanName(segment: string): string {
     'marketing-keywords': '키워드 순위',
     'marketing-status': '작업 현황',
     'review-receipt': '방문자',
-    'review-blog': '블로그',
+    'blog-reviews': '블로그',
     'settings-shop': '업체정보',
     'settings-notify': '알림설정',
     'settings-business': '팀/권한',
@@ -71,7 +79,7 @@ const getSkeletonForPath = (path: string) => {
     );
   }
 
-  if (path.includes('review-receipt') || path.includes('review-blog')) {
+  if (path.includes('review-receipt') || path.includes('blog-reviews')) {
     return (
       <div className="space-y-6">
         <TextSkeleton lines={2} size="lg" />
@@ -161,6 +169,19 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  // notification/settings state
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const { data: user } = useUser();
+
+  // Fetch unread notifications count
+  useEffect(() => {
+    if (!user) return;
+    apiClient.get('/api/notifications', { params: { unread: true } })
+      .then(res => Array.isArray(res.data) && setUnreadCount(res.data.length))
+      .catch(err => console.error('Unread notifications fetch failed:', err));
+  }, [user]);
   // (A) Breadcrumb을 위한 경로 분해 (optional)
   const pathname = usePathname()
   // 분할된 URL 경로 세그먼트
@@ -217,12 +238,13 @@ export default function DashboardLayout({
             }
           `}</style>
           <SidebarProvider className="flex flex-1">
-            {/* (B) 사이드바 */}
-            <AppSidebar />
-            {/* (C) 메인 콘텐츠 영역 */}
-            <SidebarInset className="flex flex-1 flex-col bg-white">
+            <BusinessProvider>
+              {/* (B) 사이드바 */}
+              <AppSidebar />
+              {/* (C) 메인 콘텐츠 영역 */}
+              <SidebarInset className="flex flex-1 flex-col bg-white">
               {/* 상단 헤더 (Breadcrumb 등) */}
-              <header className="flex h-16 shrink-0 items-center gap-2 border-b">
+              <header className="flex h-16 shrink-0 items-center border-b">
                 <div className="flex items-center gap-2 px-4">
                   <SidebarTrigger className="-ml-1" />
                   <Separator orientation="vertical" className="mr-2 h-4" />
@@ -248,14 +270,47 @@ export default function DashboardLayout({
                     </BreadcrumbList>
                   </Breadcrumb>
                 </div>
+                {/* Notification and Settings */}
+                <div className="flex items-center ml-auto gap-2 px-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {setIsNotificationsOpen(true); setUnreadCount(0);}}
+                    title="알림"
+                    className="h-7 w-7 rounded-full hover:bg-gray-200 relative"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-4 h-4 text-xs text-white bg-red-500 rounded-full">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsSettingsOpen(true)}
+                    title="설정"
+                    className="h-7 w-7 rounded-full hover:bg-gray-200"
+                  >
+                    <Cog className="h-4 w-4" />
+                  </Button>
+                </div>
               </header>
-              <main className={`flex-1 p-4 ${isChangingRoute ? 'fade-in' : ''}`}>
-                <Suspense fallback={getSkeletonForPath(pathname)}>
+              <main className={`flex-1 ${isChangingRoute ? 'fade-in' : ''}`}>
+                <Suspense fallback={<div className="p-4">{getSkeletonForPath(pathname)}</div>}>
                   {children}
                 </Suspense>
               </main>
+              
+              {/* 푸터 추가 */}
+              <DashboardFooter />
             </SidebarInset>
+            </BusinessProvider>
           </SidebarProvider>
+          {/* Modals */}
+          <NotificationsModal open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen} />
+          <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
           {/* (D) Toaster: 화면 우측 아래로 배치, 기본 4초 후 닫힘. closeButton(=X)도 자동 노출되도록 세팅 */}
           <Toaster
             position="bottom-right"

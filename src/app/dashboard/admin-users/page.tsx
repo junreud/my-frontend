@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { createLogger } from "@/lib/logger";
 import WorkTable from "./WorkHistoryTable";
-import WorkHistoryTableVirtualized from "./WorkHistoryTableVirtualized";
 import { MultiSelectCombobox } from "@/components/ui/multi-select-combobox";
 import { useWorkHistories } from "@/hooks/useWorkHistories";
 import { Card } from "@/components/ui/card";
@@ -39,7 +38,6 @@ export default function Page() {
   // Changed from array to string for single selection
   const [workType, setWorkType] = useState<string>("");
   const [executor, setExecutor] = useState<string>("");
-  const [useVirtualization, setUseVirtualization] = useState(false);
   const queryClient = useQueryClient();
 
   // 백엔드에서 작업 종류와 실행사 목록 가져오기
@@ -158,37 +156,18 @@ export default function Page() {
           >
             필터 초기화
           </Button>
-          
-          {/* 가상화 토글 */}
-          <Button
-            variant={useVirtualization ? "default" : "outline"}
-            onClick={() => setUseVirtualization(!useVirtualization)}
-          >
-            {useVirtualization ? "가상화 ON" : "가상화 OFF"}
-          </Button>
         </div>
       </div>
 
       <Card className="p-4">
-        {useVirtualization ? (
-          <WorkHistoryTableVirtualized
-            workHistories={workHistories || []}
-            isLoading={isLoading}
-            isError={isError}
-            refreshData={async () => {
-              await refreshWorkHistories();
-            }}        
-          />
-        ) : (
-          <WorkTable
-            workHistories={workHistories || []}
-            isLoading={isLoading}
-            isError={isError}
-            refreshData={async () => {
-              await refreshWorkHistories();
-            }}        
-          />
-        )}
+        <WorkTable
+          workHistories={workHistories || []}
+          isLoading={isLoading}
+          isError={isError}
+          refreshData={async () => {
+            await refreshWorkHistories();
+          }}        
+        />
       </Card>
     </div>
   );

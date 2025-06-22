@@ -30,10 +30,10 @@ import {
 export interface KeywordRankingChartProps { // Exporting KeywordRankingChartProps
   chartData: ChartDataItem[] | null;
   activeBusiness: Business | null; 
-  // isRestaurantKeyword removed
+  isRestaurantKeyword?: boolean; // Add restaurant flag to always show saved count chart
 }
 
-const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, activeBusiness }) => { // Removed isRestaurantKeyword from destructuring
+const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, activeBusiness, isRestaurantKeyword }) => { // Removed isRestaurantKeyword from destructuring
   // 데이터 디버깅 로그 추가 - 더 자세한 로깅으로 개선
   console.log('[Debug] KeywordRankingChart 입력 데이터:', {
     chartDataLength: chartData?.length || 0,
@@ -57,12 +57,13 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
     });
   }, [chartData]);
 
+  // Modify show logic: show saved count chart if hasSavedCountData or isRestaurantKeyword
+  const shouldShowSavedCount = useMemo(() => {
+    return Boolean(isRestaurantKeyword) || hasSavedCountData;
+  }, [isRestaurantKeyword, hasSavedCountData]);
+
   // 조건이 모두 맞는지 확인하는 로그 추가
-  console.log('[Debug] 저장 수 차트 표시 조건:', {
-    // isRestaurantKeyword removed
-    hasSavedCountData,
-    shouldShowChart: hasSavedCountData // Logic simplified: show if saved data exists
-  });
+  console.log('[Debug] 저장 수 차트 표시 조건:', { hasSavedCountData, isRestaurantKeyword, shouldShowSavedCount });
 
   // 날짜별로 데이터 처리 (중복 제거)
   const processedData = useMemo(() => {
@@ -121,6 +122,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
         for (let k = start + 1; k < end; k++) {
           const ratio = (k - start) / (end - start);
           dataArr[k].ranking = Math.round(v1 + (v2 - v1) * ratio);
+          dataArr[k].interpolated = true; // 추정 데이터임을 표시
         }
       }
       // Fill after last anchor
@@ -273,7 +275,7 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
       {/* 1. 순위 그래프 */}
       <div>
         <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">순위 변화</h4>
-        <div className="h-[250px] bg-white p-2 rounded-md">
+        <div className="h-[320px] bg-white p-2 rounded-md">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={processedData}
@@ -294,9 +296,14 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                 tick={{ fontSize: 10 }}
                 tickCount={7}
                 label={{ value: '순위', angle: -90, position: 'insideLeft', fontSize: 12 }}
-              />
-              <Tooltip 
-                formatter={(value: number | string | number) => [`${value}위`, '순위']}
+              />              <Tooltip
+                formatter={(value: number | string, name: string, props: { payload?: ChartDataItem }) => {
+                  if (name === '순위') {
+                    const suffix = props?.payload?.interpolated ? ' (추정)' : '';
+                    return [`${value}위${suffix}`, '순위'];
+                  }
+                  return [`${value}위`, '순위'];
+                }}
                 labelFormatter={(label: string) => {
                   const date = new Date(label);
                   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -310,25 +317,20 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
                 stroke="#8884d8"
                 strokeWidth={2}
                 connectNulls={false}
-                isAnimationActive={false}  // disable animation for faster rendering
+                isAnimationActive={false}
                 dot={(props) => {
                   const { cx, cy, payload } = props;
-                  if (payload.outOfRank) {
-                    return (
-                      <svg key={`${payload.date}-rank-out`} x={cx - 4} y={cy - 4} width={8} height={8} fill="red">
-                        <circle cx={4} cy={4} r={4} />
-                      </svg>
-                    );
-                  }
                   if (payload.interpolated) {
+                    // 추정 데이터는 빈 원으로 표시
                     return (
-                      <svg key={`${payload.date}-rank-interp`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#999">
-                        <circle cx={4} cy={4} r={4} />
+                      <svg key={`${payload.date}-rank-interp`} x={cx - 4} y={cy - 4} width={8} height={8}>
+                        <circle cx={4} cy={4} r={4} stroke="#8884d8" strokeWidth={2} fill="white" />
                       </svg>
                     );
                   }
+                  // 실제 데이터는 채워진 원으로 표시
                   return (
-                    <svg key={`${payload.date}-rank`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#8884d8">
+                    <svg key={`${payload.date}-rank-actual`} x={cx - 4} y={cy - 4} width={8} height={8} fill="#8884d8">
                       <circle cx={4} cy={4} r={4} />
                     </svg>
                   );
@@ -337,12 +339,23 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {/* 차트 설명 추가 */}
+        <div className="mt-2 text-xs text-gray-600 px-4 flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+            <span>실제 데이터</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full border-2 border-blue-600 bg-white"></div>
+            <span>추정 데이터</span>
+          </div>
+        </div>
       </div>
       
       {/* 2. 리뷰 그래프 - dataKey 수정 */}
       <div>
         <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">리뷰 수 변화</h4>
-        <div className="h-[250px] bg-white p-2 rounded-md">
+        <div className="h-[320px] bg-white p-2 rounded-md">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={processedData}
@@ -413,11 +426,11 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
         </div>
       </div>
       
-      {/* 3. 저장 수 그래프 - show if savedCount data exists */}
-      {hasSavedCountData && (
+      {/* 3. 저장 수 그래프 - show if shouldShowSavedCount */}
+      {shouldShowSavedCount && (
         <div>
           <h4 className="text-sm font-medium ml-4 mb-2 text-gray-700">저장 수 변화</h4>
-          <div className="h-[250px] bg-white p-2 rounded-md">
+          <div className="h-[320px] bg-white p-2 rounded-md">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={processedData}

@@ -38,7 +38,7 @@ export interface Platform {
  */
 export interface Business {
   place_name: string;
-  platform: Platform;
+  platform: string;
   category?: string;
   place_id?: string;
   isNewlyOpened?: boolean;
@@ -46,6 +46,7 @@ export interface Business {
   isRestaurant?: boolean; // Add restaurant flag
   blog_review_count?: number | null;   // Add optional review counts
   receipt_review_count?: number | null;
+  is_favorite?: boolean; // Favorite flag
 }
 
 export interface UserKeyword {
@@ -239,7 +240,7 @@ export interface KeywordRankingDetail extends BaseKeywordData {
   category: string;
   keywordList: string[] | null;
   crawled_at?: string;
-  isRestaurant?: boolean;  // 가게 여부 판별 속성
+  isRestaurant?: boolean;  // 키워드의 레스토랑 여부 (개별 항목)
 }
 
 /**
@@ -253,6 +254,13 @@ export interface KeywordRankingData {
     totalCount?: number;
     currentPage?: number;
     lastUpdated?: string;
+    keyword?: string;
+    isRestaurant?: boolean; // 키워드의 레스토랑 여부 추가
+    targetDate?: string;
+    placeId?: string | number;
+    rangeValue?: number;
+    hasData?: boolean;
+    message?: string;
   };
 }
 
@@ -312,4 +320,21 @@ export interface UserBusiness {
   place_id: string; // 업체의 고유 ID (예: Google Place ID)
   display_name: string; // 업체 표시 이름
   // 필요에 따라 다른 업체 관련 속성 추가 가능
+}
+
+/**
+ * 제거된 키워드 정보
+ */
+export interface RemovedKeyword {
+  keyword: string;
+  reason: string;
+}
+
+/**
+ * 키워드 조회 응답 (제거된 키워드 정보 포함)
+ */
+export interface KeywordResponseWithRemoved {
+  keywordDetails?: ApiKeywordResponse[];
+  removedKeywords?: RemovedKeyword[];
+  message?: string;
 }

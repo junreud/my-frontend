@@ -1,33 +1,27 @@
-"use client"
+"use client";
 
 import React, { useEffect, useState, useCallback } from "react";
-import Image from "next/image";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Calendar, User, RefreshCw, Receipt, Image as ImageIcon, Download, MessageSquare, Settings, Bot } from "lucide-react";
+import { ExternalLink, Calendar, User, RefreshCw, MessageSquare, Download } from "lucide-react";
 import { useBusinessContext } from "@/app/dashboard/BusinessContext";
-import { useReceiptReviews, useCrawlReviews } from "@/hooks/useReviews";
-import { useGenerateReplies } from "@/hooks/useReviewReplies";
+import { useBlogReviews, useCrawlReviews } from "@/hooks/useReviews";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import ReplySettingsModal from "@/components/ReplySettingsModal";
 
-export default function ReceiptReviewPage() {
+export default function BlogReviewsPage() {
   const { activeBusiness } = useBusinessContext();
   const placeId = activeBusiness?.place_id;
   const [hasAutoExecuted, setHasAutoExecuted] = useState(false);
-  const [showReplySettings, setShowReplySettings] = useState(false);
 
-  // placeId가 없으면 훅 호출을 하지 않음
   const {
     data: reviewData,
     isLoading: reviewsLoading,
     isError: reviewsError,
     refetch: refetchReviews
-  } = useReceiptReviews(placeId, { enabled: !!placeId && !!activeBusiness });
+  } = useBlogReviews(placeId, { enabled: !!placeId });
 
   const crawlReviews = useCrawlReviews();
-  const generateReplies = useGenerateReplies();
 
   // placeId가 변경될 때 hasAutoExecuted 리셋
   useEffect(() => {
@@ -49,7 +43,7 @@ export default function ReceiptReviewPage() {
         maxPages: 2 
       });
       const now = new Date();
-      const lastAutoKey = `lastAutoCrawl_${placeId}_receipt`;
+      const lastAutoKey = `lastAutoCrawl_${placeId}_blog`;
       localStorage.setItem(lastAutoKey, now.toISOString());
       setHasAutoExecuted(true);
     } catch (error) {
@@ -64,7 +58,7 @@ export default function ReceiptReviewPage() {
 
     const checkAndAutoExecute = async () => {
       // 로컬 스토리지에서 마지막 자동 크롤링 시간 확인
-      const lastAutoKey = `lastAutoCrawl_${placeId}_receipt`;
+      const lastAutoKey = `lastAutoCrawl_${placeId}_blog`;
       const lastAutoTime = localStorage.getItem(lastAutoKey);
       const now = new Date();
       
@@ -114,7 +108,7 @@ export default function ReceiptReviewPage() {
 
   // 마지막 크롤링 시간 계산 (로컬 스토리지 기반)
   const getLastCrawlTime = () => {
-    const lastAutoKey = `lastAutoCrawl_${placeId}_receipt`;
+    const lastAutoKey = `lastAutoCrawl_${placeId}_blog`;
     const lastAutoTime = localStorage.getItem(lastAutoKey);
     
     if (!lastAutoTime) {
@@ -146,31 +140,9 @@ export default function ReceiptReviewPage() {
     return `${Math.floor(diffMinutes / 1440)}일 전`;
   };
 
-  // 답변 생성 처리 함수
-  const handleGenerateReplies = async () => {
-    if (!placeId) return;
-    
-    try {
-      const result = await generateReplies.mutateAsync({
-        placeId,
-        useSettings: true
-      });
-      
-      // 성공 시 알림
-      alert(`답변 생성 완료!\n성공: ${result.summary.success}개\n실패: ${result.summary.failure}개`);
-      
-      // 리뷰 데이터 새로고침
-      refetchReviews();
-      
-    } catch (error) {
-      console.error('답변 생성 실패:', error);
-      alert('답변 생성 중 오류가 발생했습니다.');
-    }
-  };
-
   // 크롤링 추천 여부 (로컬 스토리지 기반)
   const shouldRecommendCrawl = () => {
-    const lastAutoKey = `lastAutoCrawl_${placeId}_receipt`;
+    const lastAutoKey = `lastAutoCrawl_${placeId}_blog`;
     const lastAutoTime = localStorage.getItem(lastAutoKey);
     
     if (!lastAutoTime) {
@@ -195,14 +167,14 @@ export default function ReceiptReviewPage() {
   };
 
   // 네이버 URL을 직접 생성
-  const naverUrl = placeId ? `https://m.place.naver.com/place/${placeId}/review/ugc` : null;
+  const naverUrl = placeId ? `https://m.place.naver.com/place/${placeId}/review/visitor` : null;
 
   // 로딩 상태
   if (reviewsLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">영수증 리뷰 관리</h1>
+          <h1 className="text-2xl font-bold">블로그 리뷰 관리</h1>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -227,7 +199,7 @@ export default function ReceiptReviewPage() {
       <div className="p-6">
         <Alert>
           <AlertDescription>
-            업체를 선택해주세요. 사이드바에서 업체를 선택하면 해당 업체의 영수증 리뷰를 확인할 수 있습니다.
+            업체를 선택해주세요. 사이드바에서 업체를 선택하면 해당 업체의 블로그 리뷰를 확인할 수 있습니다.
           </AlertDescription>
         </Alert>
       </div>
@@ -239,7 +211,7 @@ export default function ReceiptReviewPage() {
     return (
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">영수증 리뷰 관리</h1>
+          <h1 className="text-2xl font-bold">블로그 리뷰 관리</h1>
           <Button onClick={() => refetchReviews()} variant="outline">
             <RefreshCw className="h-4 w-4 mr-2" />
             다시 시도
@@ -247,7 +219,7 @@ export default function ReceiptReviewPage() {
         </div>
         <Alert variant="destructive">
           <AlertDescription>
-            영수증 리뷰 데이터를 불러오는데 실패했습니다.
+            블로그 리뷰 데이터를 불러오는데 실패했습니다.
             <br />
             다시 시도해주세요.
           </AlertDescription>
@@ -258,16 +230,16 @@ export default function ReceiptReviewPage() {
 
   const reviews = reviewData?.reviews || [];
   const totalCount = reviewData?.totalCount || 0;
-  const unansweredCount = reviewData?.unansweredCount || 0;
 
   return (
     <div className="p-6 space-y-6">
       {/* 헤더 */}
       <div className="flex justify-between items-center">
         <div>
+          <h1 className="text-2xl font-bold">블로그 리뷰 관리</h1>
           <div className="flex items-center gap-4 mt-1">
             <p className="text-gray-600">
-              {activeBusiness.place_name}의 영수증 리뷰를 관리합니다
+              {activeBusiness.place_name}의 블로그 리뷰를 관리합니다
             </p>
             {reviews.length > 0 && (
               <Badge variant="secondary" className="text-xs">
@@ -306,17 +278,17 @@ export default function ReceiptReviewPage() {
       </div>
 
       {/* 통계 카드 */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5" />
+              <MessageSquare className="h-5 w-5" />
               총 리뷰 수
             </CardTitle>
-            <CardDescription>등록된 영수증 리뷰</CardDescription>
+            <CardDescription>등록된 블로그 리뷰</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-600">
+            <div className="text-3xl font-bold text-blue-600">
               {totalCount.toLocaleString()}
             </div>
           </CardContent>
@@ -324,30 +296,19 @@ export default function ReceiptReviewPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                답변 필요
-              </div>
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={() => setShowReplySettings(true)}
-                disabled={generateReplies.isPending}
-              >
-                {generateReplies.isPending ? '생성 중...' : '답변 생성'}
-              </Button>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              최근 업데이트
             </CardTitle>
-            <CardDescription>사업자 답변이 없는 리뷰</CardDescription>
+            <CardDescription>마지막 리뷰 수집</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">
-              {unansweredCount.toLocaleString()}
+            <div className="text-lg font-semibold text-green-600">
+              {reviews.length > 0 
+                ? new Date(reviews[0].date).toLocaleDateString('ko-KR')
+                : '데이터 없음'
+              }
             </div>
-            <p className="text-sm text-gray-600 mt-1">
-              답변률: {totalCount > 0 ? Math.round(((totalCount - unansweredCount) / totalCount) * 100) : 0}%
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -355,16 +316,16 @@ export default function ReceiptReviewPage() {
       {/* 리뷰 목록 */}
       <Card>
         <CardHeader>
-          <CardTitle>최신 영수증 리뷰</CardTitle>
+          <CardTitle>최신 블로그 리뷰</CardTitle>
           <CardDescription>
-            최근 등록된 영수증 리뷰 목록입니다
+            최근 등록된 블로그 리뷰 목록입니다
           </CardDescription>
         </CardHeader>
         <CardContent>
           {reviews.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-              <p>등록된 영수증 리뷰가 없습니다.</p>
+              <MessageSquare className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>등록된 블로그 리뷰가 없습니다.</p>
               <p className="text-sm">네이버 플레이스에서 리뷰가 수집되면 여기에 표시됩니다.</p>
             </div>
           ) : (
@@ -376,15 +337,9 @@ export default function ReceiptReviewPage() {
                 >
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-medium text-lg line-clamp-1">
-                      {review.title || '영수증 리뷰'}
+                      {review.title}
                     </h3>
                     <div className="flex items-center gap-2 ml-4">
-                      {review.images && review.images.length > 0 && (
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <ImageIcon className="h-3 w-3" />
-                          {review.images.length}
-                        </Badge>
-                      )}
                       {review.url && (
                         <Button variant="ghost" size="sm" asChild>
                           <a href={review.url} target="_blank" rel="noopener noreferrer">
@@ -400,28 +355,6 @@ export default function ReceiptReviewPage() {
                       {review.content}
                     </p>
                   )}
-
-                  {/* 이미지 미리보기 */}
-                  {review.images && review.images.length > 0 && (
-                    <div className="flex gap-2 mb-3 overflow-x-auto">
-                      {review.images.slice(0, 4).map((image, imgIndex) => (
-                        <div key={imgIndex} className="flex-shrink-0">
-                          <Image 
-                            src={image} 
-                            alt={`리뷰 이미지 ${imgIndex + 1}`}
-                            width={64}
-                            height={64}
-                            className="w-16 h-16 object-cover rounded border"
-                          />
-                        </div>
-                      ))}
-                      {review.images.length > 4 && (
-                        <div className="flex-shrink-0 w-16 h-16 bg-gray-100 rounded border flex items-center justify-center text-xs text-gray-500">
-                          +{review.images.length - 4}
-                        </div>
-                      )}
-                    </div>
-                  )}
                   
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center gap-4">
@@ -434,9 +367,7 @@ export default function ReceiptReviewPage() {
                         {new Date(review.date).toLocaleDateString('ko-KR')}
                       </div>
                     </div>
-                    <Badge variant="outline" className="bg-purple-50 text-purple-700">
-                      영수증
-                    </Badge>
+                    <Badge variant="outline">블로그</Badge>
                   </div>
                 </div>
               ))}
@@ -444,16 +375,6 @@ export default function ReceiptReviewPage() {
           )}
         </CardContent>
       </Card>
-      
-      {/* AI 답변 설정 모달 */}
-      {showReplySettings && placeId && activeBusiness && (
-        <ReplySettingsModal
-          isOpen={showReplySettings}
-          onClose={() => setShowReplySettings(false)}
-          placeId={placeId}
-          businessName={activeBusiness.place_name}
-        />
-      )}
     </div>
   );
 }

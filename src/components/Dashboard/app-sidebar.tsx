@@ -21,7 +21,7 @@ import {
 import { NavCommon } from "@/components/Dashboard/nav-common"
 import { NavSecondary } from "@/components/Dashboard/nav-secondary"
 import { NavUser } from "@/components/Dashboard/nav-user"
-import { BusinessSelector } from "@/components/Dashboard/business-selector"
+import { BusinessSwitcher } from "@/components/Dashboard/business-switcher"
 
 /** (A) 일반/관리자용 사이드바 섹션 구분 */
 const STATIC_SIDEBAR_SECTIONS = [
@@ -36,7 +36,7 @@ const STATIC_SIDEBAR_SECTIONS = [
     label: "리뷰 관리",
     items: [
       { title: "방문자", url: "/dashboard/review-receipt", icon: "Receipt" },
-      { title: "블로그", url: "/dashboard/review-blog", icon: "FileText" },
+      { title: "블로그", url: "/dashboard/blog-reviews", icon: "FileText" },
     ],
   },
 ]
@@ -76,7 +76,11 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   
   // 유저 역할에 따른 사이드바 섹션 선택
   const sections = React.useMemo(() => {
-    return user?.role === "admin" ? ADMIN_SIDEBAR_SECTIONS : STATIC_SIDEBAR_SECTIONS;
+    if (user?.role === "admin") {
+      // admin일 경우 모든 섹션을 표시 (기존 일반 사용자 메뉴 + admin 전용 메뉴)
+      return [...STATIC_SIDEBAR_SECTIONS, ...ADMIN_SIDEBAR_SECTIONS];
+    }
+    return STATIC_SIDEBAR_SECTIONS;
   }, [user?.role]);
 
   // (3) 로딩시 skeleton
@@ -84,8 +88,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return (
       <Sidebar variant="inset" {...props}>
         <SidebarHeader>
-          {/* Add the BusinessSelector for loading state */}
-          <BusinessSelector />
+          {/* Add the BusinessSwitcher for loading state */}
+          <BusinessSwitcher />
         </SidebarHeader>
         <SidebarContent>
           {/* "대시보드 홈" 스켈레톤 */}
@@ -132,8 +136,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     return (
       <Sidebar variant="inset" {...props}>
         <SidebarHeader>
-          {/* Add the BusinessSelector for error state */}
-          <BusinessSelector />
+          {/* Add the BusinessSwitcher for error state */}
+          <BusinessSwitcher />
         </SidebarHeader>
         <SidebarContent className="flex flex-col items-center justify-center p-4">
           <div className="text-center p-6 bg-red-50 rounded-lg border border-red-100 w-[90%] shadow-sm">
@@ -162,8 +166,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
-        {/* Add the new BusinessSelector component */}
-        <BusinessSelector />
+        {/* Add the new BusinessSwitcher component */}
+        <BusinessSwitcher />
       </SidebarHeader>
 
       <SidebarContent>

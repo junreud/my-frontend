@@ -60,7 +60,7 @@ function useWorkOptions() {
   });
 }
 
-// 빈 데이터 생성 함수 - 100개의 빈 행 생성
+// 빈 데이터 생성 함수 - 화면에 맞는 행 수만 생성
 const createEmptyRows = (count: number) => {
   return Array(count).fill(null).map((_: unknown, index: number) => ({
     id: index,
@@ -87,7 +87,7 @@ const WorkTable: React.FC<WorkTableProps> = ({
 }) => {
   const [visibleItems, setVisibleItems] = useState(50);
   const loaderRef = useRef<HTMLDivElement>(null);
-  const emptyRows = createEmptyRows(50);
+  const emptyRows = createEmptyRows(15); // 한 화면에 적당한 행 수로 변경
   const [isExportMode, setIsExportMode] = useState(false);
   const [selectedRows, setSelectedRows] = useState<number[]>([]);
   const [isExporting, setIsExporting] = useState(false);

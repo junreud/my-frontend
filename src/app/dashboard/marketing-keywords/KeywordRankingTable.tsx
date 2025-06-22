@@ -8,7 +8,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
   activeBusiness,
   isError,
   keywordData,
-  historicalData,
+  historicalData, // eslint-disable-line @typescript-eslint/no-unused-vars
   rangeValue,
 }) => {
   const [usingFallbackData, setUsingFallbackData] = useState(false); // 어제 데이터 사용 여부
@@ -201,21 +201,34 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
         } as KeywordRankingDetail;
       }
 
-      // 같은 place_id를 가진 과거 데이터 찾기
-      // 만약 어제 데이터를 사용 중이라면, 오늘 데이터에서 비교 데이터 찾기
+      // 같은 place_id를 가진 과거 데이터 찾기 (rangeValue 기반)
       let comparisonData = null;
-      if (isDataIncomplete) {
+      
+      if (rangeValue > 0) {
+        // rangeValue일 전의 날짜 계산
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - rangeValue);
+        const targetDateString = targetDate.toISOString().split('T')[0];
+        
+        // 정확한 날짜부터 찾고, 없으면 가장 가까운 과거 데이터 찾기
+        const candidateDates = keywordData.rankingDetails
+          .filter((item: KeywordRankingDetail) => 
+            item.place_id === dataForRank.place_id && 
+            item.date_key <= targetDateString
+          )
+          .sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => 
+            new Date(b.date_key).getTime() - new Date(a.date_key).getTime()
+          );
+        
+        comparisonData = candidateDates[0] || null;
+      } else if (isDataIncomplete) {
+        // rangeValue가 0이고 데이터가 불완전한 경우, 오늘 데이터와 비교
         comparisonData = todayData.find((item: KeywordRankingDetail) => 
           item.place_id === dataForRank.place_id
         );
       } else {
-        // 오늘 데이터를 사용 중이라면, 과거 데이터에서 비교 데이터 찾기
-        comparisonData = keywordData.rankingDetails.filter((item: KeywordRankingDetail) => 
-          item.place_id === dataForRank.place_id && 
-          item.date_key !== todayDate
-        ).sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => 
-          new Date(b.date_key).getTime() - new Date(a.date_key).getTime()
-        )[0] || null;
+        // rangeValue가 0이면 비교 데이터 없음 (현재 데이터만 표시)
+        comparisonData = null;
       }
 
       // 데이터 조합
@@ -226,7 +239,7 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
         savedCount: dataForRank.savedCount ?? comparisonData?.savedCount ?? null,
       };
     });
-  }, [keywordData, selectedKeyword]); // ✅ selectedKeyword 추가
+  }, [keywordData, selectedKeyword, rangeValue]);
   
   // 디버깅: 데이터 로드 후 로그 추가
   useEffect(() => {
@@ -331,13 +344,28 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                 const isEmpty = typeof item.place_id === 'string' && 
                                (item.place_id as string).startsWith('empty-');
 
-                // 과거 데이터에서 해당 업체 찾기
-                const pastData = !isEmpty && historicalData && keywordData
-                ? keywordData.rankingDetails.find((d: KeywordRankingDetail) => 
-                    d.place_id === item.place_id && 
-                    d.date_key === historicalData[0]?.date_key // 배열의 첫 번째 요소 사용
-                  )
-                : null;
+                // 과거 데이터에서 해당 업체 찾기 (rangeValue 기반)
+                let pastData = null;
+                
+                if (!isEmpty && rangeValue > 0 && keywordData) {
+                  // rangeValue일 전의 날짜 계산
+                  const targetDate = new Date();
+                  targetDate.setDate(targetDate.getDate() - rangeValue);
+                  const targetDateString = targetDate.toISOString().split('T')[0];
+                  
+                  // 해당 업체의 과거 데이터 중 가장 가까운 날짜 찾기
+                  const candidateDates = keywordData.rankingDetails
+                    .filter((d: KeywordRankingDetail) => 
+                      d.place_id === item.place_id && 
+                      d.date_key <= targetDateString &&
+                      d.keyword === selectedKeyword
+                    )
+                    .sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => 
+                      new Date(b.date_key).getTime() - new Date(a.date_key).getTime()
+                    );
+                  
+                  pastData = candidateDates[0] || null;
+                }
 
                 const normalizedUrl = `https://m.place.naver.com/place/${item.place_id}/home`;
                   

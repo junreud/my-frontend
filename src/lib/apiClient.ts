@@ -30,11 +30,8 @@ let pendingRequests: (() => void)[] = [];
 // response interceptor
 apiClient.interceptors.response.use(
   (response) => {
-    // 백엔드 응답이 {success, message, data} 형태로 래핑된 경우 자동으로 unwrap
-    if (response.data && typeof response.data === 'object' && 'success' in response.data && 'data' in response.data) {
-      console.log(`[apiClient] Unwrapping response data for ${response.config.url}`);
-      response.data = response.data.data;
-    }
+    // 백엔드 응답이 {success, message, data} 형태로 래핑된 경우는 그대로 유지
+    // unwrap하지 않고 클라이언트에서 직접 처리하도록 함
     return response;
   },
   async (error) => {
@@ -42,6 +39,27 @@ apiClient.interceptors.response.use(
 
     // 401 Unauthorized 처리
     if (error.response?.status === 401 && !originalRequest._retry) {
+      // 현재 경로가 공개 페이지인지 확인
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const publicPaths = ['/', '/login', '/signup', '/password-reset'];
+      
+      // 공개 페이지에서는 토큰 갱신을 시도하지 않음
+      if (publicPaths.includes(currentPath)) {
+        console.log(`[apiClient] 공개 페이지에서 401 오류 - 토큰 갱신 건너뛰기: ${currentPath}`);
+        return Promise.reject(error);
+      }
+
+      // localStorage에 토큰이 없으면 갱신을 시도하지 않음
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.log(`[apiClient] 액세스 토큰이 없음 - 토큰 갱신 건너뛰기`);
+        if (typeof window !== 'undefined') {
+          console.log(`[apiClient] 로그인 페이지로 리디렉트`);
+          window.location.href = '/login';
+        }
+        return Promise.reject(error);
+      }
+
       // (1) 이미 refresh 진행 중이라면, 동시 요청들은 기다렸다가 재시도
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -91,15 +109,22 @@ apiClient.interceptors.response.use(
         console.log(`[apiClient] 원래 요청 재시도: ${originalRequest.method?.toUpperCase()} ${originalRequest.url}`);
         return apiClient(originalRequest); 
       } catch (err) {
-        console.log(`[apiClient] 토큰 갱신 실패:`, err);
+        console.log(`[apiClient] 토큰 갱신 실패 - 로그인되지 않은 사용자일 가능성 높음`);
         pendingRequests = [];
         // 쿠키 문제일 경우 로그아웃으로 처리
         localStorage.removeItem("accessToken");
         console.log(`[apiClient] localStorage에서 토큰 제거됨`);
-        // 토큰 만료 시 로그인 페이지로 리디렉션
+        // 토큰 만료 시 로그인 페이지로 리디렉션 (홈페이지는 제외)
         if (typeof window !== 'undefined') {
-          console.log(`[apiClient] 로그인 페이지로 리디렉션`);
-          window.location.href = '/login';
+          const currentPath = window.location.pathname;
+          // 홈페이지('/'), 로그인 페이지, 회원가입 페이지는 리다이렉트하지 않음
+          const publicPaths = ['/', '/login', '/signup', '/password-reset'];
+          if (!publicPaths.includes(currentPath)) {
+            console.log(`[apiClient] 로그인 페이지로 리디렉션`);
+            window.location.href = '/login';
+          } else {
+            console.log(`[apiClient] 공개 페이지이므로 리디렉션 건너뛰기: ${currentPath}`);
+          }
         }
         return Promise.reject(err);
       } finally {

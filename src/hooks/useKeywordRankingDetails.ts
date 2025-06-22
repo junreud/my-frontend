@@ -49,29 +49,45 @@ export function useKeywordRankingDetails({
         return [];
       }
 
-      const response = await apiClient.get(
-        `/keyword/keyword-rankings-by-business?placeId=${activeBusinessId}`
-      );
+      try {
+        const apiUrl = `/keyword/keyword-rankings-by-business?placeId=${activeBusinessId}`;
+        logger.info(`API 호출 시도: ${apiUrl}`);
+        
+        const response = await apiClient.get(apiUrl);
+        
+        logger.info('API 응답 성공:', {
+          status: response.status,
+          dataStructure: response.data,
+          dataType: typeof response.data,
+          dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
+          firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null
+        });
 
-      // 디버깅을 위한 API 응답 로깅 추가
-      // console.log('[Debug] Keyword API Response:', {
-      //   responseData: response.data,
-      //   firstItem: Array.isArray(response.data?.data) && response.data?.data.length > 0 
-      //     ? response.data?.data[0] 
-      //     : null,
-      //   hasIsRestaurantFlag: Array.isArray(response.data?.data) && response.data?.data.length > 0
-      //     ? 'isRestaurant' in response.data?.data[0]
-      //     : false
-      // });
+        // 백엔드에서 직접 배열을 반환하는 경우와 wrapped response 모두 처리
+        const actualData = Array.isArray(response.data) ? response.data : (response.data?.data || response.data);
 
-      const actualData = response.data?.data || response.data;
+        // 빈 객체나 null/undefined인 경우 빈 배열 반환
+        if (!actualData || (typeof actualData === 'object' && Object.keys(actualData).length === 0)) {
+          logger.info('순위 데이터가 없습니다. 빈 배열을 반환합니다.');
+          return [];
+        }
 
-      if (!Array.isArray(actualData)) {
-        logger.error('순위 상세 데이터 형식 오류:', response.data);
+        if (!Array.isArray(actualData)) {
+          logger.error('순위 상세 데이터 형식 오류:', actualData);
+          return [];
+        }
+
+        return actualData;
+      } catch (error: unknown) {
+        logger.error('키워드 순위 데이터 가져오기 실패:', error);
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response: { status: number; data: unknown } };
+          logger.error('에러 응답 상태:', axiosError.response.status);
+          logger.error('에러 응답 데이터:', axiosError.response.data);
+        }
+        // 에러가 발생해도 빈 배열을 반환하여 UI가 깨지지 않도록 함
         return [];
       }
-
-      return actualData;
     },
     select: (data) => {
       if (!Array.isArray(data)) {

@@ -15,11 +15,12 @@ export function useUserKeywords(userId?: number | string, activeBusinessId?: num
       const response = await apiClient.get<ApiKeywordResponse[]>(
         `/api/user-keywords?userId=${userId}&placeId=${activeBusinessId}`
       );
-      const rawData: ApiKeywordResponse[] = response.data;
+      const responseData = response.data;
 
+      // 기존 응답 형식 (배열) 처리
+      const rawData: ApiKeywordResponse[] = Array.isArray(responseData) ? responseData : [];
       const mappedData: UserKeyword[] = rawData
         .map((item: ApiKeywordResponse) => {
-          // Handle possible casing and ensure keyword field
           const raw = item.keyword ?? (item as unknown as Record<string, unknown>).Keyword;
           const kw = typeof raw === 'string' ? raw.trim() : '';
           return { 

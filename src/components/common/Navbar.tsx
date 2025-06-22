@@ -26,11 +26,27 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
     setIsClient(true);
   }, []);
   
-  // useUser 훅은 항상 호출하되, 결과는 클라이언트 사이드에서만 사용
-  const userQuery = useUser();
+  // 현재 경로 확인
+  const [currentPath, setCurrentPath] = useState('');
   
-  // 클라이언트 사이드에서만 fetch된 데이터 사용
-  const fetchedUser = isClient ? userQuery.data : null;
+  useEffect(() => {
+    if (isClient) {
+      setCurrentPath(window.location.pathname);
+    }
+  }, [isClient]);
+  
+  // 공개 페이지인지 확인
+  const isPublicPage = ['/', '/login', '/signup', '/password-reset'].includes(currentPath);
+  
+  // useUser 훅은 클라이언트에서만 호출하고, 공개 페이지에서는 비활성화
+  const userQuery = useUser({
+    retry: false, // 재시도 비활성화
+    enabled: isClient && !isPublicPage, // 클라이언트이고 공개 페이지가 아닐 때만 실행
+    throwOnError: false, // 에러를 throw하지 않음
+  });
+  
+  // 클라이언트 사이드에서만 fetch된 데이터 사용, 에러는 무시
+  const fetchedUser = isClient && !userQuery.isError ? userQuery.data : null;
   const isLoading = isClient ? userQuery.isLoading : false;
   
   // prop으로 전달된 user와 fetch된 user 중 유효한 것 사용

@@ -55,12 +55,12 @@ function LogoPart({ isLoading, isError, activeBusiness }: LogoPartProps) {
       </div>
     )
   }
-  const logoPath = getPlatformLogo(activeBusiness.platform.platform)
+  const logoPath = getPlatformLogo(activeBusiness.platform)
   return (
     <div className="flex aspect-square size-8 items-center justify-center rounded-md overflow-hidden">
       <Image
         src={logoPath}
-        alt={`${activeBusiness.platform.platform} 로고`}
+        alt={`${activeBusiness.platform} 로고`}
         width={32}
         height={32}
         className="object-contain"
@@ -109,15 +109,13 @@ function TextPart({ isLoading, isError, businesses, activeBusiness }: TextPartPr
       </div>
     )
   }
-  // 여기서 category도 추가
   return (
     <div className="grid flex-1 text-left text-sm leading-tight ml-3">
       <span className="truncate font-semibold">
         {activeBusiness.place_name}
       </span>
       <span className="truncate text-xs">
-        {activeBusiness.category}
-        {activeBusiness.isNewlyOpened && " • 신규"}
+        {activeBusiness.category || "카테고리 없음"}{Boolean(activeBusiness.isNewlyOpened) && " • 신규"}
       </span>
     </div>
   )
@@ -210,15 +208,17 @@ function DropdownInner({
               <Image
                 width={16}
                 height={16}
-                src={getPlatformLogo(biz.platform.platform)}
-                alt={`${biz.platform.platform} 로고`}
+                src={getPlatformLogo(biz.platform)}
+                alt={`${biz.platform} 로고`}
                 className="absolute left-3 h-4 w-4"
               />
             </div>
-            <span>{biz.place_name}</span>
-            {biz.isNewlyOpened && (
-              <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">신규</span>
-            )}
+            <div className="flex flex-col">
+              <span>{biz.place_name}</span>
+              <span className="text-xs text-gray-500">
+                {biz.category || "카테고리 없음"}{Boolean(biz.isNewlyOpened) && " • 신규"}
+              </span>
+            </div>
           </div>
         </DropdownMenuItem>
       ))}

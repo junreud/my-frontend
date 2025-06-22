@@ -46,6 +46,7 @@ import {
   NonCriticalBoundary,
   KeywordListSkeleton
 } from "@/components/performance/SuspenseWrappers";
+import { getKeywordUsageStatus } from "@/utils/keywordLimits";
 
 // Create lazy components for code splitting
 const LazyKeywordRankingTable = withSuspense(
@@ -53,9 +54,10 @@ const LazyKeywordRankingTable = withSuspense(
   <KeywordListSkeleton />
 );
 import { useUser } from "@/hooks/useUser"; 
-import { useUserBusinesses } from "@/hooks/useUserBusinesses";
+import { useBusinessContext } from '@/app/dashboard/BusinessContext';
 import { useUserKeywords } from "@/hooks/useUserKeywords";
 import { useKeywordRankingDetails } from "@/hooks/useKeywordRankingDetails";
+import { useKeywordRankingTable } from "@/hooks/useKeywordRankingTable";
 import { useAddKeyword } from "@/hooks/useAddKeyword";
 import { useKeywordHistory } from '@/hooks/useKeywordHistory';
 
@@ -64,7 +66,6 @@ import { ChartDataItem } from "./KeywordRankingChart";
 // import KeywordRankingTable from "./KeywordRankingTableVirtualized";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Combobox } from "@/components/ui/combobox";
 // import LoadingSpinner from "@/components/ui/LoadingSpinner"; 
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
@@ -127,22 +128,54 @@ export default function MarketingKeywordsPage() {
   const { data: user, isLoading: isLoadingUser, isError: isErrorUser } = useUser(); 
   const userId = user?.id;
   
-  // 2. 사용자 정보가 있을 때만 업체 정보 로드 (의존성 체인)
+  // 2. Business Context 사용
   const { 
     businesses: userBusinesses, 
+    activeBusiness: selectedBusiness,
     isLoading: isLoadingBusinesses, 
     isError: isErrorBusinesses 
-  } = useUserBusinesses(
-    userId ? String(userId) : undefined, 
-    { enabled: !!userId }
-  );
-  const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+  } = useBusinessContext();
+
+  const selectedBusinessId = selectedBusiness?.place_id || null;
   const [newKeyword, setNewKeyword] = useState("");
   const [selectedKeywordForChart, setSelectedKeywordForChart] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("chart");
-  // const [showFullChart, setShowFullChart] = useState(false); // Removed
-  const [timeRangeValue, setTimeRangeValue] = useState(30); // 기본값 30일
+  const [timeRangeValue, setTimeRangeValue] = useState(0); // 기본값 0일 (비교 없음)
   const [expandedKeywordIndex, setExpandedKeywordIndex] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'chart' | 'table'>('chart'); // 탭 상태 추가
+
+  // 날짜 계산 함수
+  const getTargetDateInfo = (rangeValue: number) => {
+    if (rangeValue === 0) {
+      return {
+        displayText: "오늘",
+        fullDate: new Date().toLocaleDateString('ko-KR', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        shortDate: new Date().toLocaleDateString('ko-KR', { 
+          month: 'numeric', 
+          day: 'numeric' 
+        })
+      };
+    }
+    
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() - rangeValue);
+    
+    return {
+      displayText: `${rangeValue}일 전`,
+      fullDate: targetDate.toLocaleDateString('ko-KR', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      }),
+      shortDate: targetDate.toLocaleDateString('ko-KR', { 
+        month: 'numeric', 
+        day: 'numeric' 
+      })
+    };
+  };
 
   // Track business selection changes for analytics
   useEffect(() => {
@@ -154,20 +187,9 @@ export default function MarketingKeywordsPage() {
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       console.log('userBusinesses:', userBusinesses); // 디버깅: userBusinesses 데이터 확인
+      console.log('selectedBusiness:', selectedBusiness); // 디버깅: 선택된 비즈니스 확인
     }
-    if (userBusinesses && userBusinesses.length > 0 && !selectedBusinessId) {
-      const firstBusinessId = String(userBusinesses[0].place_id);
-      setSelectedBusinessId(firstBusinessId);
-      
-      // PERFORMANCE OPTIMIZATION: Prefetch data for the selected business
-      if (userId) {
-        startTransition(() => {
-          // Background prefetch for better performance
-          prefetchStrategies.marketingKeywordsPath(queryClient, String(userId), firstBusinessId);
-        });
-      }
-    }
-  }, [userBusinesses, selectedBusinessId, userId, queryClient]);
+  }, [userBusinesses, selectedBusiness]);
 
   // 3. 업체가 선택되었을 때만 키워드 정보 로드 (의존성 체인)
   const { 
@@ -191,6 +213,22 @@ export default function MarketingKeywordsPage() {
   }, [userId, selectedBusinessId, trackAccess]);
 
   const userKeywords: UserKeyword[] = useMemo(() => userKeywordsData || [], [userKeywordsData]);
+
+  // 키워드 사용량 정보 계산
+  const keywordUsageStatus = useMemo(() => {
+    return getKeywordUsageStatus(userKeywords.length, user?.role);
+  }, [userKeywords.length, user?.role]);
+
+  // 키워드가 로드되었을 때 첫 번째 키워드를 자동으로 선택
+  useEffect(() => {
+    if (userKeywords.length > 0 && !selectedKeywordForChart) {
+      const firstKeyword = userKeywords[0].keyword;
+      if (firstKeyword) {
+        setSelectedKeywordForChart(firstKeyword);
+        trackCustomMetric('auto_keyword_selected', performance.now());
+      }
+    }
+  }, [userKeywords, selectedKeywordForChart, trackCustomMetric]);
 
   // Transform UserKeywords to match VirtualizedKeywordList expectations
   const virtualizedKeywords = useMemo(() => {
@@ -237,7 +275,32 @@ export default function MarketingKeywordsPage() {
     }
   }, [activeKeyword]);
 
-  // 5. 키워드가 로드된 후에만 랭킹 상세 정보 로드 (의존성 체인)
+  // 키워드가 로드되었을 때 첫 번째 키워드를 자동으로 선택
+  useEffect(() => {
+    if (userKeywords.length > 0 && !selectedKeywordForChart) {
+      const firstKeyword = userKeywords[0].keyword;
+      if (firstKeyword) {
+        setSelectedKeywordForChart(firstKeyword);
+        trackCustomMetric('auto_keyword_selected', performance.now());
+      }
+    }
+  }, [userKeywords, selectedKeywordForChart, trackCustomMetric]);
+
+  // 5. 선택된 키워드에 대한 순위 테이블 정보 로드 (새로운 API 사용)
+  const {
+    data: keywordTableData,
+    isLoading: isLoadingTable,
+    isError: isErrorTable,
+    error: errorTable,
+  } = useKeywordRankingTable({
+    keyword: selectedKeywordForChart || '',
+    placeId: selectedBusinessId || '',
+    rangeValue: timeRangeValue,
+    userId: userId,
+    options: { enabled: !!userId && !!selectedBusinessId && !!selectedKeywordForChart }
+  });
+
+  // 기존 API는 차트용으로만 사용 (모든 키워드)
   const {
     data: allKeywordsRankingData,
     isLoading: isLoadingRankings,
@@ -250,11 +313,51 @@ export default function MarketingKeywordsPage() {
     options: { enabled: !!userId && !!selectedBusinessId && !isLoadingKeywords && userKeywords.length > 0 }
   });
   
+  // Debug table data loading (개발 환경에서만, 제한적으로)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Debug] Table Data Hook Status:', {
+        selectedKeywordForChart,
+        selectedBusinessId,
+        userId,
+        isLoadingTable,
+        isErrorTable,
+        hasTableData: !!keywordTableData,
+        enabled: !!userId && !!selectedBusinessId && !!selectedKeywordForChart
+      });
+    }
+  }, [selectedKeywordForChart, selectedBusinessId, userId, isLoadingTable, isErrorTable, keywordTableData]);
+  
+  // Chart data from old API (for all keywords)
+  const chartKeywordData: KeywordRankingData | null = useMemo(() => {
+    if (!allKeywordsRankingData) {
+      console.log('[Debug] allKeywordsRankingData is null/undefined');
+      return null;
+    }
+    
+    console.log('[Debug] Creating chartKeywordData from old API:', {
+      rankingDetailsCount: allKeywordsRankingData.rankingDetails?.length || 0,
+      rankingListCount: allKeywordsRankingData.rankingList?.length || 0,
+      hasChartData: !!allKeywordsRankingData.chartData
+    });
+    
+    return {
+      rankingDetails: allKeywordsRankingData.rankingDetails || [],
+      rankingList: allKeywordsRankingData.rankingList || [],
+      chartData: allKeywordsRankingData.chartData as KeywordHistoricalData[] | undefined,
+      metadata: {
+        totalCount: allKeywordsRankingData.rankingDetails?.length || 0,
+        currentPage: 1,
+        lastUpdated: new Date().toISOString(),
+      }
+    };
+  }, [allKeywordsRankingData]);
+  
   const keywordRankingsMap = useMemo(() => {
     const map = new Map<string, { details: KeywordRankingDetail[]; historical: ChartDataItem[] }>();
-    if (allKeywordsRankingData?.rankingDetails) {
+    if (chartKeywordData?.rankingDetails) {
       const detailsByKeyword: { [key: string]: KeywordRankingDetail[] } = {};
-      for (const detail of allKeywordsRankingData.rankingDetails) {
+      for (const detail of chartKeywordData.rankingDetails) {
         if (detail.keyword) {
           if (!detailsByKeyword[detail.keyword]) {
             detailsByKeyword[detail.keyword] = [];
@@ -271,7 +374,7 @@ export default function MarketingKeywordsPage() {
       }
     }
     return map;
-  }, [allKeywordsRankingData]);
+  }, [chartKeywordData]);
 
   const numericSelectedBusinessId = useMemo(() => {
     if (!selectedBusinessId) return null;
@@ -283,17 +386,6 @@ export default function MarketingKeywordsPage() {
     userId!, 
     numericSelectedBusinessId!
   );
-
-  // Get selected business object
-  const selectedBusiness = useMemo(() => {
-    if (!selectedBusinessId || !userBusinesses) return null;
-    return userBusinesses.find(business => business.place_id === selectedBusinessId) || null;
-  }, [selectedBusinessId, userBusinesses]);
-  
-  // const changeKeywordMutation = useChangeKeyword(
-  //   userId!, 
-  //   numericSelectedBusinessId!
-  // );
 
   // Enhanced keyword addition with request batching and optimization
   const handleAddKeyword = async () => {
@@ -399,21 +491,6 @@ export default function MarketingKeywordsPage() {
     }
   };
 
-  const businessOptions = useMemo(() => {
-    if (!userBusinesses) return [];
-    const options = userBusinesses.map((business) => {
-      const displayName = 'display_name' in business 
-        ? (business as { display_name: string }).display_name 
-        : business.place_name || "내 업체";
-      return {
-        value: business.place_id || "", // Handle undefined place_id
-        label: displayName,
-      };
-    });
-    console.log('businessOptions:', options); // 디버깅: businessOptions 배열 확인
-    return options;
-  }, [userBusinesses]);
-
   const preparedKeywordOptions = useMemo(() => {
     // 1. 먼저 모든 키워드 옵션 생성
     const options = userKeywords.map((uk) => { 
@@ -458,30 +535,24 @@ export default function MarketingKeywordsPage() {
     });
   }, [userKeywords, keywordRankingsMap]);
 
+  // Table data from new API (for selected keyword only)
   const tableKeywordData: KeywordRankingData | null = useMemo(() => {
-    if (!allKeywordsRankingData) return null;
-    return {
-      rankingDetails: allKeywordsRankingData.rankingDetails || [],
-      rankingList: allKeywordsRankingData.rankingList || [],
-      chartData: allKeywordsRankingData.chartData as KeywordHistoricalData[] | undefined,
-      metadata: {
-        totalCount: allKeywordsRankingData.rankingDetails?.length || 0,
-        currentPage: 1,
-        lastUpdated: new Date().toISOString(),
-      }
-    };
-  }, [allKeywordsRankingData]);
+    if (!keywordTableData) {
+      console.log('[Debug] keywordTableData is null/undefined');
+      return null;
+    }
+    
+    console.log('[Debug] Creating tableKeywordData from new API:', {
+      rankingDetailsCount: keywordTableData.rankingDetails?.length || 0,
+      keyword: selectedKeywordForChart,
+      metadata: keywordTableData.metadata
+    });
+    
+    return keywordTableData;
+  }, [keywordTableData, selectedKeywordForChart]);
 
-  // Only pass data for the currently selected keyword into the table
-  const filteredTableKeywordData = useMemo(() => {
-    if (!tableKeywordData || !selectedKeywordForChart) return null;
-    return {
-      rankingDetails: tableKeywordData.rankingDetails.filter(d => d.keyword === selectedKeywordForChart),
-      rankingList: [],
-      chartData: undefined,
-      metadata: tableKeywordData.metadata
-    };
-  }, [tableKeywordData, selectedKeywordForChart]);
+  // No need for filtering anymore - new API returns data for selected keyword only
+  const filteredTableKeywordData = tableKeywordData;
 
 
   // 디버깅: 로딩 상태 확인 (개발 환경에서만)
@@ -636,109 +707,112 @@ export default function MarketingKeywordsPage() {
     return <div className="text-center mt-20 p-4">등록된 업체가 없습니다. 업체를 먼저 등록해주세요.</div>;
   }
 
-  // Get display name for the selected business
-  const selectedBusinessDisplayName = selectedBusiness && 'display_name' in selectedBusiness 
-    ? (selectedBusiness as { display_name: string }).display_name 
-    : selectedBusiness?.place_name || "";
-
   const toggleAccordionByIndex = (index: number) => {
     setExpandedKeywordIndex(expandedKeywordIndex === index ? null : index);
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6 lg:p-8" style={{ contentVisibility: 'auto' }}>
-      {/* Connection Status Indicator */}
-      {!isOnline && (
-        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg flex items-center">
-          <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></div>
-          <span className="text-yellow-800 text-sm">오프라인 모드 - 일부 기능이 제한될 수 있습니다</span>
-        </div>
-      )}
-
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">마케팅 키워드 관리</h1>
-
-      {/* Flex container for Business Selection and Add Keyword */}
-      <div className="flex flex-col md:flex-row gap-8 mb-8" style={{ contentVisibility: 'auto' }}>
-        {/* Business Selection Section */}
-        <div className="flex-1 p-6 bg-white shadow rounded-lg">
-          <label htmlFor="business-select" className="block text-sm font-medium text-gray-700 mb-2">
-            업체 선택
-          </label>
-          {businessOptions.length > 0 ? (
-            <Combobox
-              options={businessOptions.map((opt: { value: string; label: string }) => opt.label || "내 업체").filter((label, index, self) => self.indexOf(label) === index)} // Remove duplicates
-              value={selectedBusinessDisplayName} // Use the display name as the value
-              onChange={(selectedDisplayName) => { 
-                console.log('Selected display name:', selectedDisplayName);
-                const selectedOpt = businessOptions.find((opt: { value: string; label: string }) => opt.label === selectedDisplayName);
-                console.log('Found business option:', selectedOpt);
-                if (selectedOpt) {
-                  setSelectedBusinessId(selectedOpt.value);
-                  setSelectedKeywordForChart(null); 
-                  setActiveTab("chart");
-                  setExpandedKeywordIndex(null); // Reset accordion on business change
-                  
-                  // Track business change and prefetch data
-                  trackCustomMetric('business_change', performance.now());
-                  
-                  // Viewport-based prefetching for business change
-                  startTransition(() => {
-                    if (userId) {
-                      prefetchStrategies.marketingKeywordsPath(queryClient, String(userId), selectedOpt.value);
-                      // Background analytics prefetch
-                      prefetchStrategies.backgroundAnalytics(queryClient, selectedOpt.value);
-                    }
-                  });
-                }
-              }}
-              placeholder="업체를 선택하세요..."
-              className="w-full border-2 focus-within:border-blue-500" // Adjusted width to full
-            />
-          ) : (
-            <div className="p-2 text-gray-500 border rounded">
-              업체 데이터를 불러오는 중이거나 사용 가능한 업체가 없습니다.
+    <div className="h-full flex flex-col" style={{ contentVisibility: 'auto' }}>
+      {/* 브레드크럼프 스타일의 탭 네비게이션 - 헤더 바로 아래 */}
+      {selectedBusinessId && (
+        <div className="bg-white border-b border-gray-200 px-4 md:px-6 lg:px-8 py-2 flex items-center justify-between">
+          {/* 탭 네비게이션 - 개선된 스타일 */}
+          <div className="flex items-center bg-gray-100 rounded-md p-0.5">
+            <button
+              onClick={() => setActiveTab('chart')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 ${
+                activeTab === 'chart' 
+                  ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              📊 차트
+            </button>
+            <button
+              onClick={() => setActiveTab('table')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-all duration-200 ${
+                activeTab === 'table' 
+                  ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              📋 표
+            </button>
+          </div>
+          
+          {/* 키워드 추가 섹션 */}
+          <div className="flex items-center gap-3">
+            {/* 키워드 사용량 정보 - 간단한 형태 */}
+            <div className="text-sm text-gray-600 font-medium">
+              <span className={`${
+                keywordUsageStatus.status === 'danger' ? 'text-red-600' :
+                keywordUsageStatus.status === 'warning' ? 'text-yellow-600' : 'text-gray-600'
+              }`}>
+                {keywordUsageStatus.currentCount}/{keywordUsageStatus.limit}
+              </span>
+              <span className={`ml-1 text-xs px-2 py-0.5 rounded ${
+                keywordUsageStatus.isPremium ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+              }`}>
+                {keywordUsageStatus.description}
+              </span>
             </div>
-          )}
-        </div>
-
-        {/* Add New Keyword Section - Conditionally rendered */}
-        {selectedBusinessId && (
-          <div className="flex-1 bg-white shadow-md rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4 text-gray-700">새 키워드 추가</h2>
-            <div className="flex flex-col sm:flex-row gap-2">
+            
+            {/* 키워드 입력 */}
+            <div className="flex items-center gap-2">
               <Input
                 type="text"
                 value={newKeyword}
                 onChange={(e) => setNewKeyword(e.target.value)}
-                placeholder="새로운 키워드를 입력하세요 (예: 강남역 맛집)"
-                className="flex-grow"
-                disabled={addKeywordMutation.isAdding}
+                placeholder="새 키워드 추가"
+                className="text-sm w-40"
+                disabled={addKeywordMutation.isAdding || !keywordUsageStatus.canAdd}
                 onKeyDown={(e) => {
-                  // Enhanced UX: Add keyword on Enter key press
-                  if (e.key === 'Enter' && !addKeywordMutation.isAdding && newKeyword.trim()) {
+                  if (e.key === 'Enter' && !addKeywordMutation.isAdding && newKeyword.trim() && keywordUsageStatus.canAdd) {
                     handleAddKeyword();
                   }
                 }}
               />
               <Button 
                 onClick={handleAddKeyword} 
-                disabled={addKeywordMutation.isAdding || !newKeyword.trim() || numericSelectedBusinessId === null}
-                className="w-full sm:w-auto"
+                disabled={addKeywordMutation.isAdding || !newKeyword.trim() || numericSelectedBusinessId === null || !keywordUsageStatus.canAdd}
+                size="sm"
+                className="px-3 py-1 text-sm whitespace-nowrap"
               >
-                {addKeywordMutation.isAdding ? <Skeleton className="h-5 w-5" /> : "키워드 추가"}
+                {addKeywordMutation.isAdding ? <Skeleton className="h-4 w-4" /> : "추가"}
               </Button>
             </div>
-            {addKeywordMutation.error && (
-              <p className="text-red-500 text-sm mt-2">
-                {(addKeywordMutation.error as Error)?.message || "키워드 추가에 실패했습니다."}
-              </p>
-            )}
+          </div>
+        </div>
+      )}
+
+      {/* 메인 콘텐츠 영역 */}
+      <div className="flex-1 overflow-auto">
+        {/* Connection Status Indicator */}
+        {!isOnline && (
+          <div className="mx-4 md:mx-6 lg:mx-8 mt-4 mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg flex items-center">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2 animate-pulse"></div>
+            <span className="text-yellow-800 text-sm">오프라인 모드 - 일부 기능이 제한될 수 있습니다</span>
           </div>
         )}
-      </div>
+
+        {/* 제한 도달 메시지 */}
+        {selectedBusinessId && !keywordUsageStatus.canAdd && (
+          <div className="mx-4 md:mx-6 lg:mx-8 mt-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+            키워드 제한에 도달했습니다. 플랜을 업그레이드하거나 기존 키워드를 삭제해주세요.
+          </div>
+        )}
+
+        {/* Error Message for Keyword Addition */}
+        {addKeywordMutation.error && (
+          <div className="mx-4 md:mx-6 lg:mx-8 mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm">
+              {(addKeywordMutation.error as Error)?.message || "키워드 추가에 실패했습니다."}
+            </p>
+          </div>
+        )}
 
       {selectedBusinessId && (
-        <div style={{ contentVisibility: 'auto' }}>
+        <div className="px-4 md:px-6 lg:px-8 py-6" style={{ contentVisibility: 'auto' }}>
           {isLoadingKeywords && (
             <div className="my-8 space-y-4">
               <Skeleton className="h-8 w-full" />
@@ -756,49 +830,20 @@ export default function MarketingKeywordsPage() {
           )}
 
           {userKeywords.length > 0 && (
-            <Tabs value={activeTab} onValueChange={(newTab) => {
-              setActiveTab(newTab);
-              trackCustomMetric('tab_change', performance.now());
-              
-              // Preload tab content when switching
-              if (newTab === 'table' && userKeywords.length > 0) {
-                preloadCritical([
-                  { url: `/keywords/keyword-rankings-by-business?placeId=${selectedBusinessId}`, type: 'fetch' }
-                ]);
-              } else if (newTab === 'chart' && userKeywords.length > 0) {
-                preloadCritical([
-                  { url: `/keywords/keyword-rankings-by-business?placeId=${selectedBusinessId}`, type: 'fetch' }
-                ]);
-              }
-            }} className="mb-8">
-              <TabsList className="grid w-full grid-cols-2 gap-2"> {/* Removed bg-slate-100, p-1.5, and rounded-lg */}
-                <TabsTrigger 
-                  value="chart" 
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                    ${activeTab === "chart" 
-                      ? "bg-white text-slate-900 shadow-sm" 
-                      : "text-slate-500 hover:bg-slate-200/60 hover:text-slate-700"
-                    }`}
-                >
-                  차트 정보
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="table" 
-                  className={`rounded-md px-3 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                    ${activeTab === "table" 
-                      ? "bg-white text-slate-900 shadow-sm" 
-                      : "text-slate-500 hover:bg-slate-200/60 hover:text-slate-700"
-                    }`}
-                >
-                  표 정보
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="chart" className="mt-6 bg-white shadow-lg rounded-xl p-6">
+            <div className="space-y-8">
+              {/* 차트 탭 콘텐츠 */}
+              {activeTab === 'chart' && (
+                <div className="bg-white border border-gray-200 rounded-xl p-8 relative overflow-visible">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-800">키워드 순위 차트</h2>
+                    <div className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      실시간 업데이트
+                    </div>
+                  </div>
                 <CriticalBoundary>
                   {!isLoadingRankings && userKeywords.length > 0 && (
                     <LazyContent 
                       onVisible={() => {
-                        // Only preload if we have actual ranking data to chart
                         if (userKeywords.length > 0) {
                           preloadCritical([
                             { url: `/keyword/keyword-rankings-by-business?placeId=${selectedBusinessId}`, type: 'fetch' }
@@ -807,17 +852,19 @@ export default function MarketingKeywordsPage() {
                       }}
                       fallback={<Skeleton className="h-96 w-full" />}
                     >
-                      <VirtualizedKeywordList
-                        keywords={virtualizedKeywords}
-                        expandedIndex={expandedKeywordIndex}
-                        onToggle={toggleAccordionByIndex}
-                        keywordRankingsMap={keywordRankingsMap}
-                        selectedBusiness={selectedBusiness}
-                        historyData={historyData || []}
-                        loadingHistory={loadingHistory}
-                        height={600}
-                        width="100%"
-                      />
+                      <div className="max-h-[600px] overflow-y-auto overflow-x-visible relative z-10">
+                        <VirtualizedKeywordList
+                          keywords={virtualizedKeywords}
+                          expandedIndex={expandedKeywordIndex}
+                          onToggle={toggleAccordionByIndex}
+                          keywordRankingsMap={keywordRankingsMap}
+                          selectedBusiness={selectedBusiness}
+                          historyData={historyData || []}
+                          loadingHistory={loadingHistory}
+                          height={550}
+                          width="100%"
+                        />
+                      </div>
                     </LazyContent>
                   )}
                   
@@ -828,92 +875,145 @@ export default function MarketingKeywordsPage() {
                     </div>
                   )}
                 </CriticalBoundary>
-              </TabsContent>
-              <TabsContent value="table" className="mt-6 bg-white shadow-lg rounded-xl p-6">
+                </div>
+              )}
+
+              {/* 표 탭 콘텐츠 */}
+              {activeTab === 'table' && (
+                <div className="bg-white border border-gray-200 rounded-xl p-8 relative overflow-visible">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-800">상세 순위 테이블</h2>
+                    <div className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                      업체별 순위
+                    </div>
+                  </div>
                 <NonCriticalBoundary>
                   <LazyContent
                     onVisible={() => {
-                      // Only preload if we have data to show
                       if (userKeywords.length > 0) {
                         preloadCritical([
                           { url: `/keyword/keyword-rankings-by-business?placeId=${selectedBusinessId}`, type: 'fetch' }
                         ]);
                       }
                     }}
-                    fallback={<Skeleton className="h-64 w-full" />}
+                    fallback={<Skeleton className="h-96 w-full" />}
                   >
-                    <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                      <Combobox
-                        options={preparedKeywordOptions.map(opt => opt.label)}
-                        value={
-                          selectedKeywordForChart
-                            ? preparedKeywordOptions.find(opt => opt.value === selectedKeywordForChart)?.label || ""
-                            : ""
-                        }
-                        onChange={(selectedLabel) => {
-                          const selectedOpt = preparedKeywordOptions.find(opt => opt.label === selectedLabel);
-                          setSelectedKeywordForChart(selectedOpt ? selectedOpt.value : null);
-                          
-                          // Track table interaction
-                          trackCustomMetric('table_keyword_selected', performance.now());
-                        }}
-                        placeholder="키워드를 선택하세요..."
-                        className="w-full sm:w-96 border-2 focus-within:border-blue-500"
-                      />
-                    </div>
-                    
-                    <Suspense fallback={<KeywordListSkeleton />}>
-                      {isLoadingRankings && (
-                        <div className="py-8 space-y-2">
-                          <Skeleton className="h-8 w-full" />
-                          <Skeleton className="h-8 w-full" />
-                          <Skeleton className="h-8 w-full" />
-                          <Skeleton className="h-8 w-full" />
-                          <Skeleton className="h-8 w-3/4" />
+                    <div className="space-y-6 relative z-10">
+                      {/* 키워드 선택 드롭다운 - 컴팩트하게 */}
+                      <div className="relative z-20">
+                        <Combobox
+                          options={preparedKeywordOptions.map(opt => opt.label)}
+                          value={
+                            selectedKeywordForChart
+                              ? preparedKeywordOptions.find(opt => opt.value === selectedKeywordForChart)?.label || ""
+                              : ""
+                          }
+                          onChange={(selectedLabel) => {
+                            const selectedOpt = preparedKeywordOptions.find(opt => opt.label === selectedLabel);
+                            const newKeyword = selectedOpt ? selectedOpt.value : null;
+                            console.log('[Debug] Keyword selection changed:', { 
+                              selectedLabel, 
+                              newKeyword, 
+                              previousKeyword: selectedKeywordForChart,
+                              availableOptions: preparedKeywordOptions.length 
+                            });
+                            setSelectedKeywordForChart(newKeyword);
+                            trackCustomMetric('table_keyword_selected', performance.now());
+                          }}
+                          placeholder="키워드를 선택하세요..."
+                          className="w-full border-2 focus-within:border-blue-500"
+                        />
+                      </div>
+                      
+                      {/* 시간 범위 슬라이더 - 컴팩트하게 */}
+                      {selectedKeywordForChart && (
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <DateRangeSlider 
+                            defaultValue={[timeRangeValue]} 
+                            max={30}
+                            min={0}
+                            step={1}
+                            onValueChange={(values: number[]) => {
+                              setTimeRangeValue(values[0]);
+                              trackCustomMetric('table_range_changed', performance.now());
+                            }}
+                            valueSuffix={timeRangeValue === 0 ? "" : "일 전과 비교"}
+                          />
+                          {timeRangeValue > 0 && (
+                            <div className="mt-2 text-xs text-gray-600">
+                              📅 {getTargetDateInfo(timeRangeValue).fullDate} 데이터와 비교
+                            </div>
+                          )}
                         </div>
                       )}
-                      {isErrorRankingsFlag && <p className="text-red-500 text-center py-8">키워드 순위 정보를 가져오는데 실패했습니다: {(errorRankings as Error)?.message || "알 수 없는 오류"}</p>}
-                      {!isLoadingRankings && !isErrorRankingsFlag && filteredTableKeywordData && selectedKeywordForChart && (
-                         <>
-                           <div className="mb-4">
-                             <DateRangeSlider 
-                               label="시간 비교 (Time Machine)" 
-                               defaultValue={[timeRangeValue]} 
-                               max={30}
-                               min={0}
-                               step={1}
-                               onValueChange={(values: number[]) => {
-                                 setTimeRangeValue(values[0]);
-                                 trackCustomMetric('table_range_changed', performance.now());
-                               }}
-                               valueSuffix="일 전과 비교"
-                             />
+                    </div>
+                    
+                    <div className="mt-6 max-h-[600px] overflow-auto">
+                      <Suspense fallback={<KeywordListSkeleton />}>
+                        {(isLoadingRankings || isLoadingTable) && (
+                          <div className="py-8 space-y-3">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-3/4" />
+                          </div>
+                        )}
+                        {(isErrorRankingsFlag || isErrorTable) && <p className="text-red-500 text-center py-8">키워드 순위 정보를 가져오는데 실패했습니다: {(errorRankings as Error)?.message || (errorTable as Error)?.message || "알 수 없는 오류"}</p>}
+                        {!isLoadingRankings && !isLoadingTable && !isErrorRankingsFlag && !isErrorTable && selectedKeywordForChart && (
+                          <>
+                            {filteredTableKeywordData && filteredTableKeywordData.metadata?.hasData !== false ? (
+                              <LazyKeywordRankingTable
+                                isLoading={isLoadingKeywords || isLoadingRankings || isLoadingTable}
+                                keywordData={filteredTableKeywordData}
+                                activeBusiness={selectedBusiness}
+                                selectedKeyword={selectedKeywordForChart} 
+                                historicalData={filteredTableKeywordData?.chartData || []}
+                                rangeValue={timeRangeValue}
+                                isError={isErrorRankingsFlag || isErrorTable || errorLoadingKeywords instanceof Error}
+                                isRestaurantKeyword={Boolean(filteredTableKeywordData?.metadata?.isRestaurant)}
+                              />
+                            ) : (
+                              <div className="text-center text-gray-500 py-12">
+                                <p className="text-lg">
+                                  {timeRangeValue === 0 
+                                    ? "선택한 키워드의 데이터가 없습니다" 
+                                    : `${getTargetDateInfo(timeRangeValue).displayText} 데이터가 없습니다`
+                                  }
+                                </p>
+                                <p className="text-sm">
+                                  {timeRangeValue === 0 
+                                    ? filteredTableKeywordData?.metadata?.message || "오늘 크롤링된 데이터를 찾을 수 없습니다."
+                                    : `${getTargetDateInfo(timeRangeValue).fullDate} (${getTargetDateInfo(timeRangeValue).displayText}) 크롤링된 데이터를 찾을 수 없습니다.`
+                                  }
+                                </p>
+                                {timeRangeValue > 0 && (
+                                  <div className="text-xs text-blue-500 mt-2 space-y-1">
+                                    <p>📅 선택된 날짜: {getTargetDateInfo(timeRangeValue).fullDate}</p>
+                                    <p>다른 날짜를 선택해보시거나 비교 기간을 0일로 설정해보세요.</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {!isLoadingRankings && !isLoadingTable && !isErrorRankingsFlag && !isErrorTable && !selectedKeywordForChart && (
+                           <div className="text-center text-gray-500 py-12">
+                              <p className="text-lg">키워드를 선택하세요</p>
+                              <p className="text-sm">위에서 키워드를 선택하면 순위 테이블을 확인할 수 있습니다.</p>
                            </div>
-                           <LazyKeywordRankingTable
-                             isLoading={isLoadingKeywords || isLoadingRankings}
-                             keywordData={filteredTableKeywordData}
-                             activeBusiness={selectedBusiness}
-                             selectedKeyword={selectedKeywordForChart || ""} 
-                             historicalData={filteredTableKeywordData?.chartData || []}
-                             rangeValue={timeRangeValue}
-                             isError={isErrorRankingsFlag || errorLoadingKeywords instanceof Error}
-                           />
-                         </>
-                      )}
-                      {!isLoadingRankings && !isErrorRankingsFlag && (!filteredTableKeywordData || !selectedKeywordForChart) && (
-                         <div className="text-center text-gray-500 py-12">
-                            <p className="text-lg">키워드를 선택하세요</p>
-                            <p className="text-sm">위에서 키워드를 선택하면 순위 테이블을 확인할 수 있습니다.</p>
-                         </div>
-                      )}
-                    </Suspense>
+                        )}
+                      </Suspense>
+                    </div>
                   </LazyContent>
                 </NonCriticalBoundary>
-              </TabsContent>
-            </Tabs>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

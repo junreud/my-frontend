@@ -22,8 +22,13 @@ export interface User {
 
 // (C) React Query로 user 정보 가져오기 + staleTime 설정
 export function useUser(options: Partial<UseQueryOptions<User>> = {}) {
+  // 공개 페이지에서는 useUser를 비활성화
+  const isPublicPage = typeof window !== 'undefined' && 
+    ['/', '/login', '/signup', '/password-reset'].includes(window.location.pathname);
+
   return useQuery<User>({
     queryKey: ["user"],
+    enabled: !isPublicPage, // 공개 페이지에서는 실행하지 않음
     queryFn: async () => {
       try {
         const res = await apiClient.get("/api/user/me")
@@ -32,11 +37,12 @@ export function useUser(options: Partial<UseQueryOptions<User>> = {}) {
         // API 클라이언트에서 이미 unwrap된 데이터가 옴
         return res.data;
       } catch (error) {
-        console.error('사용자 정보 조회 실패:', error);
-        // 401 오류의 경우 더 구체적인 에러 메시지
+        // 401 오류는 로그인하지 않은 상태이므로 조용히 처리
         if (error instanceof AxiosError && error.response?.status === 401) {
-          throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+          console.log('[useUser] 로그인하지 않은 사용자 - 401 오류 무시');
+          throw new Error('NOT_AUTHENTICATED'); // 특별한 에러 메시지로 구분
         }
+        console.error('사용자 정보 조회 실패:', error);
         throw error;
       }
     },

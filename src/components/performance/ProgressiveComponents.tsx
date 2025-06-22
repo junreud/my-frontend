@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, memo } from 'react';
+import Image from 'next/image'; // Import next/image
 import { Skeleton } from '@/components/ui/skeleton';
 import { useResourcePreloader, useMemoryOptimization } from '@/hooks/useAdvancedOptimizations';
 
 interface ProgressiveImageProps {
   src: string;
   alt: string;
+  width: number; // Added: required for sizing
+  height: number; // Added: required for sizing
   className?: string;
-  placeholder?: string;
   blurDataURL?: string;
   priority?: boolean;
   onLoad?: () => void;
@@ -22,8 +24,9 @@ interface ProgressiveImageProps {
 export const ProgressiveImage = memo<ProgressiveImageProps>(({
   src,
   alt,
+  width,
+  height,
   className = '',
-  placeholder,
   blurDataURL,
   priority = false,
   onLoad,
@@ -31,65 +34,57 @@ export const ProgressiveImage = memo<ProgressiveImageProps>(({
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(placeholder || blurDataURL || '');
   
+  // Hooks are kept assuming they might have other side effects or are part of a broader pattern.
+  // If their sole purpose was for the manual new Image() logic, they might be removable here.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { registerPreloadElement } = useResourcePreloader();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { registerCleanupTask } = useMemoryOptimization();
 
-  useEffect(() => {
-    const img = new Image();
-    
-    const handleLoad = () => {
-      setCurrentSrc(src);
-      setIsLoaded(true);
-      onLoad?.();
-    };
-
-    const handleError = (error: Event) => {
-      setIsError(true);
-      onError?.(new Error('Failed to load image'));
-    };
-
-    img.addEventListener('load', handleLoad);
-    img.addEventListener('error', handleError);
-    
-    // Start loading the full image
-    img.src = src;
-
-    // Register cleanup
-    const cleanup = registerCleanupTask(() => {
-      img.removeEventListener('load', handleLoad);
-      img.removeEventListener('error', handleError);
-    });
-
-    return () => {
-      cleanup();
-      img.removeEventListener('load', handleLoad);
-      img.removeEventListener('error', handleError);
-    };
-  }, [src, onLoad, onError, registerCleanupTask]);
+  // Removed useEffect for manual image loading (new Image(), addEventListener, etc.)
+  // next/image handles its own loading lifecycle.
 
   if (isError) {
     return (
-      <div className={`flex items-center justify-center bg-gray-100 ${className}`}>
+      <div 
+        className={`flex items-center justify-center bg-gray-100 ${className}`}
+        style={{ width, height }} // Ensure error placeholder respects dimensions
+      >
         <span className="text-gray-400 text-sm">이미지 로드 실패</span>
       </div>
     );
   }
 
   return (
-    <div className={`relative overflow-hidden ${className}`}>
-      <img
-        src={currentSrc}
+    <div 
+      className={`relative overflow-hidden ${className}`} // Parent needs to be relative for layout="fill"
+      style={{ width, height }} // Set dimensions on the container
+    >
+      <Image
+        src={src}
         alt={alt}
+        layout="fill" // Fills the parent container
+        objectFit="cover" // Behaves like CSS object-fit: cover
         className={`
-          w-full h-full object-cover transition-all duration-300
-          ${isLoaded ? 'opacity-100' : 'opacity-70 blur-sm'}
-          ${!currentSrc ? 'hidden' : ''}
-        `}
+          transition-opacity duration-300
+          ${isLoaded ? 'opacity-100' : 'opacity-0'} 
+        `} // Apply fade-in transition
+        placeholder={blurDataURL ? 'blur' : 'empty'} // Use blur placeholder if available
+        blurDataURL={blurDataURL}
+        priority={priority}
+        onLoadingComplete={() => {
+          setIsLoaded(true);
+          onLoad?.();
+        }}
+        onError={() => {
+          setIsError(true);
+          onError?.(new Error(`Failed to load image: ${src}`));
+        }}
       />
-      {!isLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center">
+      {/* Show skeleton only if no blur placeholder is active and image hasn't loaded */}
+      {!isLoaded && !blurDataURL && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <Skeleton className="w-full h-full" />
         </div>
       )}
@@ -118,7 +113,6 @@ export const ProgressiveTabs = memo<ProgressiveTabsProps>(({
 }) => {
   const [activeTab, setActiveTab] = useState(defaultTab || '');
   const [loadedTabs, setLoadedTabs] = useState(new Set([defaultTab || '']));
-  const { preloadCritical } = useResourcePreloader();
 
   // Preload tab content based on user interaction patterns
   useEffect(() => {
