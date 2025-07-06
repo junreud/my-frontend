@@ -294,7 +294,7 @@ export function BusinessSheet({
     const placeIdToUse = savedPlaceId || 
       sessionStorage.getItem('temp_place_id') ||
       localStorage.getItem('current_place_id') ||
-      (normalizedData?.placeInfo?.place_id) ||
+      (normalizedData?.data?.placeInfo?.place_id) ||
       (placeData?.place_id);
 
     if (!placeIdToUse) {
@@ -347,10 +347,10 @@ export function BusinessSheet({
   }, [savedPlaceId, setDialogOpen]);
 
   // URL 표시
-  const truncatedUrl = normalizedData?.normalizedUrl ? 
-    (normalizedData.normalizedUrl.length > 30
-      ? normalizedData.normalizedUrl.slice(0, 30) + "..."
-      : normalizedData.normalizedUrl)
+  const truncatedUrl = normalizedData?.data?.normalizedUrl ? 
+    (normalizedData.data.normalizedUrl.length > 30
+      ? normalizedData.data.normalizedUrl.slice(0, 30) + "..."
+      : normalizedData.data.normalizedUrl)
     : "";
     
   // 현재 단계에 대한 정보
@@ -502,7 +502,7 @@ export function BusinessSheet({
                     </div>
                     <Badge className="bg-white text-black">
                       <a
-                        href={normalizedData?.normalizedUrl}
+                        href={normalizedData?.data?.normalizedUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="underline"

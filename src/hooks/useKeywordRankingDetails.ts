@@ -51,32 +51,54 @@ export function useKeywordRankingDetails({
 
       try {
         const apiUrl = `/keyword/keyword-rankings-by-business?placeId=${activeBusinessId}`;
-        logger.info(`API 호출 시도: ${apiUrl}`);
+        logger.info(`API 호출 시도: ${apiUrl} (activeBusinessId: ${activeBusinessId}, type: ${typeof activeBusinessId})`);
         
         const response = await apiClient.get(apiUrl);
         
         logger.info('API 응답 성공:', {
           status: response.status,
-          dataStructure: response.data,
           dataType: typeof response.data,
-          dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
-          firstItem: Array.isArray(response.data) && response.data.length > 0 ? response.data[0] : null
+          hasSuccessField: 'success' in (response.data || {}),
+          hasDataField: 'data' in (response.data || {}),
+          responseStructure: Object.keys(response.data || {})
         });
 
-        // 백엔드에서 직접 배열을 반환하는 경우와 wrapped response 모두 처리
-        const actualData = Array.isArray(response.data) ? response.data : (response.data?.data || response.data);
+        // 표준 응답 형식 처리: { success: boolean, message: string, data: {...} }
+        let actualResponseData = response.data;
+        if (actualResponseData && typeof actualResponseData === 'object' && 'success' in actualResponseData && 'data' in actualResponseData) {
+          actualResponseData = actualResponseData.data;
+          logger.info('표준 응답 형식 감지 - data 필드 추출:', Object.keys(actualResponseData || {}));
+        }
 
-        // 빈 객체나 null/undefined인 경우 빈 배열 반환
-        if (!actualData || (typeof actualData === 'object' && Object.keys(actualData).length === 0)) {
+        // 새로운 응답 형식 처리: { place_name: string, keywords: [...] }
+        let actualData: KeywordRankingDetail[];
+        
+        if (actualResponseData && typeof actualResponseData === 'object' && 'keywords' in actualResponseData) {
+          // 새로운 형식: { place_name: string, keywords: [...] }
+          if (Array.isArray(actualResponseData.keywords)) {
+            actualData = actualResponseData.keywords;
+            logger.info('새로운 응답 형식 처리 완료 - keywords 배열 추출:', actualData.length);
+          } else {
+            logger.error('keywords 필드가 배열이 아님:', actualResponseData.keywords);
+            actualData = [];
+          }
+        } else if (Array.isArray(actualResponseData)) {
+          // 이전 형식: 직접 배열
+          actualData = actualResponseData;
+          logger.info('이전 응답 형식 처리 완료 - 직접 배열:', actualData.length);
+        } else {
+          // 예상치 못한 형식
+          logger.error('예상치 못한 응답 형식:', actualResponseData);
+          actualData = [];
+        }
+
+        // 빈 데이터 처리
+        if (!actualData || actualData.length === 0) {
           logger.info('순위 데이터가 없습니다. 빈 배열을 반환합니다.');
           return [];
         }
 
-        if (!Array.isArray(actualData)) {
-          logger.error('순위 상세 데이터 형식 오류:', actualData);
-          return [];
-        }
-
+        logger.info(`순위 데이터 ${actualData.length}개 항목 처리 완료`);
         return actualData;
       } catch (error: unknown) {
         logger.error('키워드 순위 데이터 가져오기 실패:', error);

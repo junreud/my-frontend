@@ -39,6 +39,12 @@ const STATIC_SIDEBAR_SECTIONS = [
       { title: "블로그", url: "/dashboard/blog-reviews", icon: "FileText" },
     ],
   },
+  {
+    label: "SEO 분석",
+    items: [
+      { title: "SEO 최적화", url: "/dashboard/seo-optimization", icon: "Search" },
+    ],
+  },
 ]
 
 const ADMIN_SIDEBAR_SECTIONS = [

@@ -19,7 +19,19 @@ export function useBusinessSwitcher() {
   // 1) 유저 가져오기
   const { data: user, isLoading: userIsLoading } = useUser()
 
+  console.log('[useBusinessSwitcher] User data:', { 
+    user: user ? {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    } : undefined, 
+    userIsLoading 
+  });
+
   // 2) 유저 비즈니스 정보
+  const userId = user?.id ? String(user.id) : undefined;
+  console.log('[useBusinessSwitcher] userId for businesses:', userId);
   const {
     businesses,
     activeBusiness,
@@ -32,7 +44,17 @@ export function useBusinessSwitcher() {
     canAddMoreBusinesses,
     remainingBusinessCount,
     userRole,
-  } = useUserBusinesses(user?.id ? String(user.id) : undefined)
+  } = useUserBusinesses(userId)
+
+  console.log('[useBusinessSwitcher] Business data:', { 
+    businesses, 
+    activeBusiness, 
+    businessesLoading, 
+    businessesError,
+    businessLimit,
+    canAddMoreBusinesses,
+    userRole 
+  });
 
   // 3) 비즈니스 생성 로직
   const {
@@ -130,13 +152,13 @@ export function useBusinessSwitcher() {
         placeUrl,
       })
       
-      if (res && res.success && res.placeInfo) {
-        logger.info("URL 정규화 성공", { placeName: res.placeInfo.place_name });
+      if (res && res.success && res.data?.placeInfo) {
+        logger.info("URL 정규화 성공", { placeName: res.data.placeInfo.place_name });
         
         setPlaceData({
-          place_name: res.placeInfo.place_name,
-          category: res.placeInfo.category,
-          platform: res.placeInfo.platform?.platform || String(res.placeInfo.platform || "unknown"),
+          place_name: res.data.placeInfo.place_name,
+          category: res.data.placeInfo.category,
+          platform: res.data.placeInfo.platform?.platform || String(res.data.placeInfo.platform || "unknown"),
         });
         
         setDialogOpen(true);

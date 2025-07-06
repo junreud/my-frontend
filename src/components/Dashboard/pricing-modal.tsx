@@ -18,7 +18,7 @@ import { toast } from "sonner";
 const plans = [
   {
     name: "Free",
-    price: "₩0",
+    price: { monthly: 0, yearly: 0 },
     description: "개인 사용자 및 체험용",
     features: [
       "플레이스 1개 등록",
@@ -30,7 +30,7 @@ const plans = [
   },
   {
     name: "Starter",
-    price: "₩9,900",
+    price: { monthly: 9900, yearly: 99000 }, // 연간 2개월 할인 (10개월 가격)
     description: "소상공인을 위한 시작 플랜",
     features: [
       "플레이스 최대 3개",
@@ -43,7 +43,7 @@ const plans = [
   },
   {
     name: "Pro",
-    price: "₩29,000",
+    price: { monthly: 29000, yearly: 290000 }, // 연간 2개월 할인 (10개월 가격)
     description: "마케팅 집중 관리용",
     features: [
       "플레이스 최대 10개",
@@ -57,7 +57,7 @@ const plans = [
   },
   {
     name: "Business",
-    price: "맞춤형",
+    price: { monthly: "맞춤형", yearly: "맞춤형" },
     description: "대행사/프랜차이즈 본사 전용",
     features: [
       "무제한 플레이스",
@@ -71,6 +71,28 @@ const plans = [
 ];
 
 export function PricingModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const [isYearly, setIsYearly] = React.useState(false);
+
+  const formatPrice = (price: number | string) => {
+    if (typeof price === 'string') return price;
+    return `₩${price.toLocaleString()}`;
+  };
+
+  const getCurrentPrice = (plan: typeof plans[0]) => {
+    if (typeof plan.price === 'string') return plan.price;
+    return isYearly ? plan.price.yearly : plan.price.monthly;
+  };
+
+  const getSavings = (plan: typeof plans[0]) => {
+    if (typeof plan.price === 'string' || plan.price.monthly === 0) return null;
+    if (typeof plan.price.monthly === 'string' || typeof plan.price.yearly === 'string') return null;
+    
+    const yearlyPrice = plan.price.yearly;
+    const monthlyPrice = plan.price.monthly * 12;
+    const savings = Math.round(((monthlyPrice - yearlyPrice) / monthlyPrice) * 100);
+    return savings;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
@@ -86,41 +108,87 @@ export function PricingModal({ open, onOpenChange }: { open: boolean; onOpenChan
         </DialogHeader>
         
         <div className="p-6 flex-grow overflow-y-auto">
-          <p className="text-center text-slate-600 mb-8 text-sm">
+          <p className="text-center text-slate-600 mb-6 text-sm">
             귀하의 비즈니스 성장에 적합한 플랜을 선택하세요. <br /> 궁금한 점이 있으시면 언제든지 문의해주세요.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-            {plans.map(plan => (
-              <Card 
-                key={plan.name} 
-                className={`flex flex-col ${plan.highlighted ? "border-blue-500 border-2 shadow-xl ring-2 ring-blue-500 ring-offset-1" : "border-slate-200 shadow-md hover:shadow-lg transition-shadow"}`}
+          
+          {/* 월간/연간 토글 */}
+          <div className="flex justify-center mb-8">
+            <div className="bg-slate-100 p-1 rounded-lg flex">
+              <button
+                onClick={() => setIsYearly(false)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  !isYearly 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                <CardHeader className="pb-3 pt-5">
-                  <CardTitle className="text-lg font-bold text-slate-800">{plan.name}</CardTitle>
-                  <p className="text-xs text-slate-500 min-h-[30px]">{plan.description}</p>
-                </CardHeader>
-                <CardContent className="space-y-3 flex flex-col flex-grow pt-2 pb-5">
-                  <div className="text-3xl font-extrabold text-slate-900 mb-2">
-                    {plan.price}
-                    {plan.name !== "Free" && plan.name !== "Business" && <span className="text-sm font-medium text-slate-500">/월</span>}
-                  </div>
-                  <ul className="space-y-1.5 text-xs text-slate-600 flex-grow mb-4">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Button 
-                    className={`w-full text-sm py-2.5 ${plan.highlighted ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-                    onClick={() => toast.info(`${plan.name} 플랜의 '${plan.cta}' 액션이 여기에 연결됩니다.`)}
-                  >
-                    {plan.cta}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                월간 결제
+              </button>
+              <button
+                onClick={() => setIsYearly(true)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors relative ${
+                  isYearly 
+                    ? 'bg-white text-slate-900 shadow-sm' 
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                연간 결제
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                  2개월 할인
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+            {plans.map(plan => {
+              const currentPrice = getCurrentPrice(plan);
+              const savings = getSavings(plan);
+              
+              return (
+                <Card 
+                  key={plan.name} 
+                  className={`flex flex-col relative ${plan.highlighted ? "border-blue-500 border-2 shadow-xl ring-2 ring-blue-500 ring-offset-1" : "border-slate-200 shadow-md hover:shadow-lg transition-shadow"}`}
+                >
+                  {savings && isYearly && (
+                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                        {savings}% 절약
+                      </span>
+                    </div>
+                  )}
+                  <CardHeader className="pb-3 pt-5">
+                    <CardTitle className="text-lg font-bold text-slate-800">{plan.name}</CardTitle>
+                    <p className="text-xs text-slate-500 min-h-[30px]">{plan.description}</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3 flex flex-col flex-grow pt-2 pb-5">
+                    <div className="text-3xl font-extrabold text-slate-900 mb-2">
+                      {formatPrice(currentPrice)}
+                      {plan.name !== "Free" && plan.name !== "Business" && (
+                        <span className="text-sm font-medium text-slate-500">
+                          /{isYearly ? '년' : '월'}
+                        </span>
+                      )}
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-slate-600 flex-grow mb-4">
+                      {plan.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button 
+                      className={`w-full text-sm py-2.5 ${plan.highlighted ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                      onClick={() => toast.info(`${plan.name} 플랜의 '${plan.cta}' 액션이 여기에 연결됩니다.`)}
+                    >
+                      {plan.cta}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
 

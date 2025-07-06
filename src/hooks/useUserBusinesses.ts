@@ -48,9 +48,14 @@ export function useUserBusinesses(userId: string | undefined, options?: { enable
       if (!userId) {
         throw new Error('userId가 제공되지 않았습니다');
       }
+      
+      console.log('[useUserBusinesses] API 호출 시작:', { userId, type: typeof userId });
+      
       try {
         const response = await apiClient.get(`/api/place?userId=${userId}`);
         const apiResponsePayload = response.data;
+
+        console.log('[useUserBusinesses] API 응답 받음:', apiResponsePayload);
 
         // API 응답에서 data 프로퍼티를 추출합니다
          
@@ -58,17 +63,19 @@ export function useUserBusinesses(userId: string | undefined, options?: { enable
 
         if (apiResponsePayload && typeof apiResponsePayload === 'object' && apiResponsePayload !== null && Array.isArray(apiResponsePayload.data)) {
           businessesArray = apiResponsePayload.data;
+          console.log('[useUserBusinesses] 응답에서 data 배열 추출:', businessesArray);
         } 
         else if (Array.isArray(apiResponsePayload)) {
           // 호환성을 위해 직접 배열 응답도 처리
           businessesArray = apiResponsePayload as Business[];
+          console.log('[useUserBusinesses] 직접 배열 응답 처리:', businessesArray);
         } 
         else {
           console.error("예상치 못한 API 응답 구조입니다:", apiResponsePayload);
           throw new Error("예상치 못한 API 응답 구조"); 
         }
         
-        return businessesArray
+        const processedBusinesses = businessesArray
           .filter((business) => business != null) // null/undefined 필터링
           .map((business) => {
             const displayName = business.place_name || "내 업체 " + String(business.place_id).slice(-4);
@@ -83,6 +90,9 @@ export function useUserBusinesses(userId: string | undefined, options?: { enable
               isNewlyOpened: Boolean(business.isNewlyOpened) // 숫자를 boolean으로 변환
             };
           });
+          
+        console.log('[useUserBusinesses] 처리된 비즈니스 데이터:', processedBusinesses);
+        return processedBusinesses;
       } catch (err) {
         console.error("[useUserBusinesses] 비즈니스 데이터 조회 오류:", err);
         if (err instanceof AxiosError) {
@@ -115,6 +125,18 @@ export function useUserBusinesses(userId: string | undefined, options?: { enable
       return failureCount < 2;
     },
   });
+
+  // Query enabled 상태 로깅
+  useEffect(() => {
+    console.log('[useUserBusinesses] Query enabled 상태:', {
+      userId,
+      hasUserId: !!userId,
+      optionsEnabled: options?.enabled !== false,
+      finalEnabled: !!userId && (options?.enabled !== false),
+      isLoading,
+      isError
+    });
+  }, [userId, options?.enabled, isLoading, isError]);
 
   // Log query error if it exists
   useEffect(() => {

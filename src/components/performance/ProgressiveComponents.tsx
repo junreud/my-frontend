@@ -139,11 +139,6 @@ export const ProgressiveTabs = memo<ProgressiveTabsProps>(({
     }
   }, [activeTab, loadedTabs, preloadTabs]);
 
-  const handleTabChange = useCallback((tabId: string) => {
-    setActiveTab(tabId);
-    setLoadedTabs(prev => new Set([...prev, tabId]));
-    onTabChange?.(tabId);
-  }, [onTabChange]);
 
   return (
     <div className="progressive-tabs">
@@ -254,7 +249,6 @@ export const SmartPrefetch = memo<SmartPrefetchProps>(({
 }) => {
   const [isPrefetched, setIsPrefetched] = useState(false);
   const { preloadResource, registerPreloadElement } = useResourcePreloader();
-  const { registerCleanupTask } = useMemoryOptimization();
 
   const prefetch = useCallback(() => {
     if (!isPrefetched) {
@@ -268,12 +262,6 @@ export const SmartPrefetch = memo<SmartPrefetchProps>(({
       setTimeout(prefetch, prefetchDelay);
     }
   }, [prefetchOn, prefetch, prefetchDelay]);
-
-  const handleVisible = useCallback(() => {
-    if (prefetchOn === 'visible') {
-      prefetch();
-    }
-  }, [prefetchOn, prefetch]);
 
   useEffect(() => {
     if (prefetchOn === 'immediate') {

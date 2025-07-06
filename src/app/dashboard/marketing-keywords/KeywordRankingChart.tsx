@@ -20,6 +20,7 @@ export interface ChartDataItem { // Exporting ChartDataItem
   interpolated?: boolean;
   outOfRank?: boolean;
   interpolatedSaved?: boolean;
+  isRestaurant?: boolean; // 키워드의 레스토랑 여부
 }
 import { Business } from '@/types/index';
 import {
@@ -57,13 +58,20 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
     });
   }, [chartData]);
 
-  // Modify show logic: show saved count chart if hasSavedCountData or isRestaurantKeyword
+  // Modify show logic: show saved count chart if hasSavedCountData or isRestaurantKeyword or if data indicates restaurant keyword
   const shouldShowSavedCount = useMemo(() => {
-    return Boolean(isRestaurantKeyword) || hasSavedCountData;
-  }, [isRestaurantKeyword, hasSavedCountData]);
+    // 차트 데이터에서 isRestaurant 정보 확인
+    const dataIndicatesRestaurant = chartData && chartData.length > 0 && chartData[0].isRestaurant;
+    return Boolean(isRestaurantKeyword) || Boolean(dataIndicatesRestaurant) || hasSavedCountData;
+  }, [isRestaurantKeyword, hasSavedCountData, chartData]);
 
   // 조건이 모두 맞는지 확인하는 로그 추가
-  console.log('[Debug] 저장 수 차트 표시 조건:', { hasSavedCountData, isRestaurantKeyword, shouldShowSavedCount });
+  console.log('[Debug] 저장 수 차트 표시 조건:', { 
+    hasSavedCountData, 
+    isRestaurantKeyword, 
+    dataIndicatesRestaurant: chartData && chartData.length > 0 && chartData[0].isRestaurant,
+    shouldShowSavedCount 
+  });
 
   // 날짜별로 데이터 처리 (중복 제거)
   const processedData = useMemo(() => {
@@ -379,7 +387,8 @@ const KeywordRankingChart: React.FC<KeywordRankingChartProps> = ({ chartData, ac
               <Tooltip 
                 formatter={(value: number | string, name: string | number) => [
                   value, 
-                  name === 'blog_review_count' ? '블로그 리뷰' : '영수증 리뷰' // Ensure correct key for name check
+                  name === 'blog_review_count' ? '블로그 리뷰' : 
+                  name === 'receipt_review_count' ? '영수증 리뷰' : name
                 ]}
                 labelFormatter={(label: string) => {
                   const date = new Date(label);

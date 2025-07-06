@@ -93,7 +93,7 @@ const KeywordItem = memo<KeywordItemProps>(({ index, style, data }) => {
               <KeywordRankingChart
                 chartData={historyData}
                 activeBusiness={selectedBusiness}
-                isRestaurantKeyword={Boolean(selectedBusiness?.isRestaurant)}
+                isRestaurantKeyword={Boolean(historyData[0]?.isRestaurant)}
               />
             ) : (
               <div className="text-center text-slate-500 py-8">

@@ -1,5 +1,7 @@
 'use client';
 
+import { Fragment } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { ICustomerInfo, IContactInfo } from '@/types/index';
 import { Trash2, Copy, Star, Ban, UserPlus, UserCheck, UserX } from 'lucide-react';
@@ -408,13 +410,14 @@ export default function CustomerTable({
                 filteredCustomers.map((customer, index) => {
                   const contacts = customer.contacts || [];
                   
-                  return contacts.length > 0 ? (
-                    contacts.map((contact, contactIndex) => {
-                      return (
-                      <tr
-                        key={`${customer.id}-${contact.id}`}
-                        className={contactIndex % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
-                      >
+                  if (contacts.length > 0) {
+                    return (
+                      <Fragment key={`customer-${customer.id}-${index}`}>
+                        {contacts.map((contact, contactIndex) => (
+                        <tr
+                          key={`${customer.id}-${contact.id}-${contactIndex}`}
+                          className={contactIndex % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
+                        >
                         {isSelectionMode && contactIndex === 0 && (
                           <td className="px-2 text-center border-b py-2" rowSpan={contacts.length}>
                             <input 
@@ -544,11 +547,13 @@ export default function CustomerTable({
                             </td>
                           </>
                         )}
-                      </tr>
-                      );
-                    })
-                  ) : (
-                    <tr key={customer.id} className="bg-white hover:bg-gray-100">
+                        </tr>
+                      ))}
+                    </Fragment>
+                    );
+                  } else {
+                    return (
+                      <tr key={`customer-${customer.id}-${index}`} className="bg-white hover:bg-gray-100">
                       {isSelectionMode && (
                         <td className="px-2 text-center border-b py-2">
                           <input 
@@ -602,7 +607,8 @@ export default function CustomerTable({
                         </Button>
                       </td>
                     </tr>
-                  );
+                    );
+                  }
                 })
               )}
             </tbody>

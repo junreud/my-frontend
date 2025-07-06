@@ -7,20 +7,27 @@ export function transformToChartData(rankingDetails: KeywordRankingDetail[]) {
     return [];
   }
 
-  const sortedData = [...rankingDetails].sort((a, b) => {
-    return new Date(a.date_key).getTime() - new Date(b.date_key).getTime();
+  // 현재 백엔드 구조에 맞게 변환 (date_key 대신 crawled_at 사용)
+  const transformedData = rankingDetails.map(item => {
+    const dateKey = item.date_key || item.crawled_at || new Date().toISOString().split('T')[0];
+    
+    return {
+      date: dateKey,
+      date_key: dateKey,
+      ranking: item.ranking ?? null,
+      uv: item.ranking != null ? 300 - item.ranking : null,
+      blog_review_count: item.blog_review_count ?? null,
+      receipt_review_count: item.receipt_review_count ?? null,
+      savedCount: item.savedCount ?? null,
+      place_id: item.place_id,
+      keyword: item.keyword, // 키워드 정보도 포함
+    };
   });
 
-  return sortedData.map(item => ({
-    date: item.date_key,
-    date_key: item.date_key, // Include required date_key field for compatibility
-    ranking: item.ranking ?? null,  // ✅ ranking은 null 허용
-    uv: item.ranking != null ? 300 - item.ranking : null,  // ✅ 명확히 처리
-    blog_review_count: item.blog_review_count ?? null,     // ✅ null처리 명확히
-    receipt_review_count: item.receipt_review_count ?? null, // ✅ 명확히 처리
-    savedCount: item.savedCount ?? null,                   // ✅ 명확히 처리
-    place_id: item.place_id,
-  }));
+  // 날짜순으로 정렬
+  return transformedData.sort((a, b) => {
+    return new Date(a.date_key).getTime() - new Date(b.date_key).getTime();
+  });
 }
 
 // 현재 순위 데이터 추출
@@ -30,9 +37,11 @@ export function getCurrentRanking(rankingDetails: KeywordRankingDetail[]) {
     return null;
   }
 
-  // 최신 날짜의 데이터에서 ranking 추출
+  // 최신 날짜의 데이터에서 ranking 추출 (crawled_at 기준)
   const sortedData = rankingDetails.sort((a, b) => {
-    return new Date(b.date_key).getTime() - new Date(a.date_key).getTime();
+    const dateA = new Date(a.date_key || a.crawled_at || 0);
+    const dateB = new Date(b.date_key || b.crawled_at || 0);
+    return dateB.getTime() - dateA.getTime();
   });
 
   return sortedData[0].ranking ?? null;

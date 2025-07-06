@@ -390,7 +390,9 @@ export function MarketingStatusClient() {
   
   // 작업 이력 데이터를 테이블 데이터로 변환
   const tableData = React.useMemo(() => {
-    if (!workHistories || workHistories.length === 0) return [];
+    if (!workHistories || !Array.isArray(workHistories) || workHistories.length === 0) {
+      return [];
+    }
     
     return workHistories.map((history, index) => {
       // prioritize user 작업기간 over actual 기간
@@ -412,7 +414,10 @@ export function MarketingStatusClient() {
   
   // 작업 이력 데이터를 캘린더 이벤트로 변환
   const calendarEvents = React.useMemo<CalendarEvent[]>(() => {
-    if (!workHistories || workHistories.length === 0) return [];
+    if (!workHistories || !Array.isArray(workHistories) || workHistories.length === 0) {
+      return [];
+    }
+    
     const events: CalendarEvent[] = [];
     for (const history of workHistories) {
       // prioritize user 작업기간 for calendar display
@@ -461,6 +466,16 @@ export function MarketingStatusClient() {
     );
   }
 
+  // 데이터가 없을 때 안내 메시지 표시
+  if (!isLoading && (!workHistories || workHistories.length === 0)) {
+    return (
+      <div className="p-8 text-center bg-gray-50 rounded-lg">
+        <p className="text-gray-600 mb-2">작업 이력이 없습니다.</p>
+        <p className="text-sm text-gray-500">작업이 등록되면 여기에 표시됩니다.</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div ref={calendarContainerRef}>
@@ -470,7 +485,6 @@ export function MarketingStatusClient() {
           selectedEventId={selectedRow?.id}
         />
       </div>
-
 
       <DataTable onRowClick={handleRowClick} selectedRow={selectedRow || undefined} data={tableData} />
     </>

@@ -23,58 +23,24 @@ export default function DashboardChart({ initialData }: DashboardChartProps) {
 
   const processedData: KeywordHistoricalData[] = useMemo(() => {
     console.log("원본 차트 데이터:", initialData);
-    console.log("활성 업체 ID:", activeBusiness?.place_id);
 
-    if (!initialData || initialData.length === 0) {
-      console.log("차트 데이터가 없거나 비어 있습니다");
+    // 안전하게 배열인지 확인
+    if (!initialData || !Array.isArray(initialData) || initialData.length === 0) {
+      console.log("차트 데이터가 없거나 배열이 아니거나 비어 있습니다");
       return [];
     }
 
-    let myBusinessData = initialData;
-
-    if (activeBusiness?.place_id) {
-      console.log("업체 ID 타입:", typeof activeBusiness.place_id);
-      console.log("첫 데이터의 ID 타입:", typeof myBusinessData[0]?.place_id);
-
-      const filtered = myBusinessData.filter(item => 
-        String(item.place_id) === String(activeBusiness.place_id)
-      );
-
-      console.log(`필터링 결과: ${filtered.length}건`);
-
-      if (filtered.length > 0) {
-        myBusinessData = filtered;
-      } else {
-        console.log("일치하는 업체가 없어 전체 데이터 사용");
-      }
-    }
-
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-
-    const filteredData = myBusinessData
-      .filter(item => {
-        try {
-          const itemDate = new Date(item.date);
-          return !isNaN(itemDate.getTime()) && itemDate >= twoWeeksAgo;
-        } catch  {
-          console.error("날짜 변환 오류:", item.date);
-          return false;
-        }
-      })
+    // 새로운 API에서 이미 2주간 데이터만 필터링되어 옴
+    const filteredData = initialData
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map(item => ({
         ...item,
-        date_key: item.date // Add the required date_key property
+        date_key: item.date // Add the required date_key property for compatibility
       }));
 
-    console.log(`날짜 필터링 후: ${filteredData.length}건`);
-
-    return filteredData.length > 0 ? filteredData : myBusinessData.map(item => ({
-      ...item,
-      date_key: item.date // Also add date_key for the fallback data
-    }));
-  }, [initialData, activeBusiness?.place_id]);
+    console.log(`최종 차트 데이터: ${filteredData.length}건`);
+    return filteredData;
+  }, [initialData]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);

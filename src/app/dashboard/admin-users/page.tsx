@@ -22,8 +22,17 @@ function useWorkOptions() {
     queryFn: async () => {
       try {
         const response = await apiClient.get('/api/admin/work-histories/options');
-        // After unwrapping interceptor, response.data is the options object
-        return response.data;
+        const responseData = response.data;
+        
+        // 백엔드 응답 구조 확인
+        if (!responseData.success) {
+          logger.warn('작업 옵션 API 요청 실패:', responseData);
+          return { workTypes: [], executors: [] };
+        }
+        
+        const data = responseData.data;
+        logger.debug('작업 옵션 데이터 로드됨:', data);
+        return data;
       } catch (error) {
         logger.error('작업 옵션 조회 오류:', error);
         throw new Error('작업 옵션을 가져오는데 실패했습니다.');

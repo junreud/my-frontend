@@ -37,16 +37,19 @@ export function useResourcePreloader() {
         
         case 'fetch':
         default:
+          // Import API client for proper base URL handling
+          const { default: apiClient } = await import('@/lib/apiClient');
+          
           // Use requestIdleCallback for non-critical fetches
           if ('requestIdleCallback' in window) {
             window.requestIdleCallback(() => {
-              fetch(url, { mode: 'cors' }).catch(() => {
+              apiClient.get(url).catch(() => {
                 // Silently handle preload failures
               });
             });
           } else {
             setTimeout(() => {
-              fetch(url, { mode: 'cors' }).catch(() => {
+              apiClient.get(url).catch(() => {
                 // Silently handle preload failures
               });
             }, 0);

@@ -29,7 +29,23 @@ export default function AdminManageCustomerClient() {
   // templates fetched via React Query
   const { data: templates = [], refetch: refetchTemplates } = useQuery({
     queryKey: ['templates'],
-    queryFn: () => apiClient.get('/api/templates').then(res => res.data),
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get('/api/templates');
+        const data = response.data;
+        
+        // 응답 데이터가 배열인지 확인
+        if (!Array.isArray(data)) {
+          console.warn('템플릿 응답이 배열이 아닙니다:', data);
+          return [];
+        }
+        
+        return data;
+      } catch (error) {
+        console.error('템플릿 로드 중 오류:', error);
+        return [];
+      }
+    },
   });
 
   // filters and UI states
@@ -60,15 +76,43 @@ export default function AdminManageCustomerClient() {
       params.set('page', String(pageParam));
       params.set('pageSize', String(pageSize));
       const res = await apiClient.get(`/api/customer/data?${params.toString()}`);
-      return { customers: res.data.data || [], totalPages: res.data.totalPages || 1, page: pageParam };
+      console.log('Customer API response:', res.data); // 디버그 로그 추가
+      
+      // 백엔드 응답 구조 확인 및 처리
+      let customerData;
+      if (res.data.success && res.data.data) {
+        // sendSuccess로 래핑된 응답인 경우
+        customerData = res.data.data;
+      } else {
+        // 직접 데이터인 경우
+        customerData = res.data;
+      }
+      
+      const customers = customerData.data || customerData || [];
+      const totalPages = customerData.totalPages || 1;
+      
+      console.log('Customer data structure:', customers.slice(0, 2)); // 첫 2개 고객 데이터 구조 확인
+      return { customers, totalPages, page: pageParam };
     },
     initialPageParam: 1,
     getNextPageParam: last => last.page < last.totalPages ? last.page + 1 : undefined,
     staleTime: 60000
   });
 
-  // aggregate loaded pages
-  const allCustomers = useMemo(() => data?.pages.flatMap(p => p.customers) || [], [data]);
+  // aggregate loaded pages with deduplication
+  const allCustomers = useMemo(() => {
+    const customers = data?.pages.flatMap(p => p.customers) || [];
+    
+    // 중복 제거: customer.id 기준으로 중복 제거
+    const uniqueCustomers = customers.filter((customer, index, array) => 
+      array.findIndex(c => c.id === customer.id) === index
+    );
+    
+    console.log('Total customers before dedup:', customers.length);
+    console.log('Total customers after dedup:', uniqueCustomers.length);
+    
+    return uniqueCustomers;
+  }, [data]);
 
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -151,7 +195,7 @@ export default function AdminManageCustomerClient() {
         <DialogContent className="bg-white">
           <DialogHeader><DialogTitle>템플릿 관리</DialogTitle></DialogHeader>
           <div className="space-y-2 max-h-64 overflow-y-auto">
-            {templates.map((t: Template) => (
+            {Array.isArray(templates) ? templates.map((t: Template) => (
               <div key={t.id!} className="flex items-center justify-between">
                 <span>{t.name}</span>
                 <div className="flex gap-2">
@@ -172,7 +216,11 @@ export default function AdminManageCustomerClient() {
                   }}>삭제</Button>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center text-gray-500 py-4">
+                템플릿이 없습니다.
+              </div>
+            )}
           </div>
           <div className="mt-4 flex justify-end gap-2">
             <Button size="sm" onClick={() => {
@@ -218,7 +266,7 @@ export default function AdminManageCustomerClient() {
         <label className="text-sm font-medium">템플릿:</label>
         <select value={selectedTemplateId ?? ''} onChange={e => setSelectedTemplateId(e.target.value ? Number(e.target.value) : undefined)} className="border rounded px-2 h-8 text-xs">
           <option value="">템플릿 선택</option>
-          {templates.map((t: Template) => <option key={t.id!} value={t.id!}>{t.name}</option>)}
+          {Array.isArray(templates) ? templates.map((t: Template) => <option key={t.id!} value={t.id!}>{t.name}</option>) : null}
         </select>
         <Button size="sm" onClick={() => setTemplateManagerOpen(true)}>템플릿 관리</Button>
         

@@ -22,7 +22,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, Settings, Bot } from "lucide-react";
-import { useReplySettings, useSaveReplySettings, useGenerateReplies, ReplySettings } from "@/hooks/useReviewReplies";
+import { useReplySettings, useSaveReplySettings, useGenerateReplies, ReplySettings } from "@/hooks/useReviews";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ReplySettingsModalProps {

@@ -37,11 +37,11 @@ export async function normalizeUrl(url: string, platform: Platform, userId?: str
   }
 }
 
-export async function storePlace(userId: string, placeInfo: Partial<Business>): Promise<{ success: boolean }> {
+export async function storePlace(userId: string, placeInfo: Partial<Business>): Promise<{ success: boolean; message?: string; data?: unknown }> {
   logger.info("내 업체 정보 저장:", { userId, placeInfo });
   
   try {
-    const response = await apiClient.post<{ success: boolean }>("/keyword/store-place", {
+    const response = await apiClient.post<{ success: boolean; message?: string; data?: unknown }>("/keyword/store-place", {
       user_id: userId,
       ...placeInfo,
     });
@@ -81,7 +81,7 @@ export async function chatgptKeywordsHandler(placeInfo: Partial<PlaceInfoWithUse
     // 응답 검증
     if (!response.data) {
       logger.error("서버 응답 데이터가 없습니다");
-      return { success: false, locationKeywords: [], featureKeywords: [] };
+      return { success: false, message: "서버 응답 데이터가 없습니다", data: { locationKeywords: [], featureKeywords: [] } };
     }
     
     return response.data;
@@ -148,13 +148,13 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
   // 데이터 검증
   if (!Array.isArray(cleanedList)) {
     logger.error("유효하지 않은 데이터 형식: 배열이 아님");
-    return { success: false, finalKeywords: [] };
+    return { success: false, message: "유효하지 않은 데이터 형식", data: { finalKeywords: [] } };
   }
 
   // 빈 데이터 검증: 그룹화 없이 성공으로 처리
   if (cleanedList.length === 0) {
     logger.warn("전달된 키워드가 없습니다. 그룹화 단계를 건너뜁니다.");
-    return { success: true, finalKeywords: [] };
+    return { success: true, message: "전달된 키워드가 없음", data: { finalKeywords: [] } };
   }
 
   // 데이터 형식 검증
@@ -167,7 +167,7 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
   
   if (!isValidData) {
     logger.error("groupKeywords: 유효하지 않은 데이터 형식", cleanedList);
-    return { success: false, finalKeywords: [] };
+    return { success: false, message: "유효하지 않은 데이터 형식", data: { finalKeywords: [] } };
   }
   
   // 최대 재시도 횟수 설정
@@ -192,11 +192,11 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
       
       logger.info("groupKeywords 반환 데이터:", response.data);
       
-      if (!response.data || !Array.isArray(response.data.finalKeywords)) {
+      if (!response.data || !response.data.data || !Array.isArray(response.data.data.finalKeywords)) {
         logger.error("유효하지 않은 응답 형식:", response.data);
-        return { success: false, finalKeywords: [] };
+        return { success: false, message: "유효하지 않은 응답 형식", data: { finalKeywords: [] } };
       }
-      logger.info("키워드 그룹화 성공", { keywordCount: response.data.finalKeywords.length });
+      logger.info("키워드 그룹화 성공", { keywordCount: response.data.data.finalKeywords.length });
       return response.data;
     } catch (error: unknown) {
       logger.group(`그룹화 시도 ${retries + 1} 실패`, () => {
@@ -230,7 +230,8 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
       // 최대 재시도 횟수를 초과했거나 타임아웃 이외의 오류인 경우
       return { 
         success: false, 
-        finalKeywords: [] 
+        message: "최대 재시도 횟수 초과",
+        data: { finalKeywords: [] }
       };
     }
   }
@@ -238,7 +239,8 @@ export async function groupKeywords(externalDataList: ExternalData[]): Promise<G
   // 이 부분에 도달하지 않아야 하지만, TypeScript를 위해 명시적 반환
   return { 
     success: false, 
-    finalKeywords: [] 
+    message: "예상치 못한 오류",
+    data: { finalKeywords: [] }
   };
 }
 

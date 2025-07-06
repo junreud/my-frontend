@@ -47,7 +47,15 @@ export function useKeywordRankingTable({
           }
         });
 
-        const data = response.data;
+        // 표준 응답 형식 처리: { success: boolean, message: string, data: {...} }
+        let actualData = response.data;
+        if (actualData && typeof actualData === 'object' && 'success' in actualData && 'data' in actualData) {
+          const wrappedResponse = actualData as unknown as { success: boolean; message: string; data: KeywordRankingData };
+          actualData = wrappedResponse.data;
+          logger.info('표준 응답 형식 감지 - data 필드 추출');
+        }
+
+        const data = actualData as KeywordRankingData;
         
         logger.info('키워드 순위 테이블 조회 성공:', {
           status: response.status,
@@ -59,7 +67,31 @@ export function useKeywordRankingTable({
         });
 
         return data;
-      } catch (error) {
+      } catch (error: unknown) {
+        logger.error('키워드 순위 테이블 조회 실패:', error);
+        
+        // Handle 404 errors gracefully
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { status?: number } };
+          if (axiosError.response?.status === 404) {
+            const friendlyMessage = `선택된 키워드 '${keyword}'가 해당 업체에 등록되지 않았습니다.`;
+            logger.info(`업체 변경으로 인한 404 처리: ${friendlyMessage}`); // info level로 변경
+            
+            // Return empty data structure instead of throwing
+            return {
+              rankingDetails: [],
+              rankingList: [],
+              metadata: {
+                hasData: false,
+                keyword,
+                placeId: String(placeId),
+                message: friendlyMessage
+              }
+            } as KeywordRankingData;
+          }
+        }
+        
+        // Only log other errors
         logger.error('키워드 순위 테이블 조회 실패:', error);
         throw error;
       }
@@ -69,6 +101,17 @@ export function useKeywordRankingTable({
     refetchOnWindowFocus: false, // 윈도우 포커스시 리패치 방지
     refetchOnMount: false, // 마운트시 리패치 방지 (캐시된 데이터가 있으면)
     refetchInterval: false, // 자동 리패치 방지
+    retry: (failureCount, error) => {
+      // 404 에러는 재시도하지 않음 (예상된 에러이므로)
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number } };
+        if (axiosError.response?.status === 404) {
+          return false;
+        }
+      }
+      // 다른 에러는 최대 2번 재시도
+      return failureCount < 2;
+    },
   });
 
   return result;

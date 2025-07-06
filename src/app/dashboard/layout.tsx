@@ -1,6 +1,6 @@
 "use client"
 
-import React, { Suspense, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ReactQueryProvider } from "@/lib/reactQueryProvider"
 import { usePathname, useRouter } from "next/navigation"
 import { AppSidebar } from "@/components/Dashboard/app-sidebar"
@@ -27,16 +27,18 @@ import { DashboardFooter } from '@/components/Dashboard/dashboard-footer';
 import { useUser } from '@/hooks/useUser';
 import { BusinessProvider } from '@/app/dashboard/BusinessContext';
 import apiClient from '@/lib/apiClient'
+import { CrawlingNotificationWrapper } from '@/components/Dashboard/CrawlingNotificationWrapper';
+import { DashboardMainContent } from '@/components/Dashboard/DashboardMainContent';
 
-// 스켈레톤 컴포넌트 불러오기
-import {
-  CalendarSkeleton,
-  TableSkeleton,
-  TextSkeleton,
-  AccordionSkeleton,
-  StatCardSkeleton,
-  ChartSkeleton,
-} from "@/components/ui/skeletons"
+// 스켈레톤 컴포넌트 불러오기 - DashboardMainContent로 이동됨
+// import {
+//   CalendarSkeleton,
+//   TableSkeleton,
+//   TextSkeleton,
+//   AccordionSkeleton,
+//   StatCardSkeleton,
+//   ChartSkeleton,
+// } from "@/components/ui/skeletons"
 
 // 현재 URL 경로에 따라 한글 이름 가져오기
 function getKoreanName(segment: string): string {
@@ -58,62 +60,6 @@ function getKoreanName(segment: string): string {
 
   return pathMap[segment] || segment
 }
-
-// 현재 경로에 따라 다른 스켈레톤 컴포넌트를 반환하는 함수
-const getSkeletonForPath = (path: string) => {
-  if (path.includes('marketing-status')) {
-    return (
-      <div className="space-y-6">
-        <CalendarSkeleton />
-        <TableSkeleton rows={8} columns={6} />
-      </div>
-    );
-  } 
-  
-  if (path.includes('marketing-keywords')) {
-    return (
-      <div className="space-y-6">
-        <StatCardSkeleton count={3} />
-        <TableSkeleton rows={10} columns={5} />
-      </div>
-    );
-  }
-
-  if (path.includes('review-receipt') || path.includes('blog-reviews')) {
-    return (
-      <div className="space-y-6">
-        <TextSkeleton lines={2} size="lg" />
-        <TableSkeleton rows={5} columns={4} />
-        <AccordionSkeleton items={3} />
-      </div>
-    );
-  }
-
-  if (path.includes('admin-stats')) {
-    return (
-      <div className="space-y-6">
-        <StatCardSkeleton count={4} />
-        <ChartSkeleton height={350} />
-      </div>
-    );
-  }
-
-  if (path.includes('admin-customer') || path.includes('admin-manage-customer')) {
-    return (
-      <div className="space-y-6">
-        <TableSkeleton rows={10} columns={6} showHeader={true} />
-      </div>
-    );
-  }
-  
-  // 기본 스켈레톤
-  return (
-    <div className="space-y-6">
-      <StatCardSkeleton count={2} />
-      <TableSkeleton rows={5} columns={4} />
-    </div>
-  );
-};
 
 // 새로운 라우트 변경 감지 컴포넌트
 function NavigationEvents() {
@@ -297,20 +243,22 @@ export default function DashboardLayout({
                   </Button>
                 </div>
               </header>
-              <main className={`flex-1 ${isChangingRoute ? 'fade-in' : ''}`}>
-                <Suspense fallback={<div className="p-4">{getSkeletonForPath(pathname)}</div>}>
-                  {children}
-                </Suspense>
-              </main>
+              <DashboardMainContent isChangingRoute={isChangingRoute}>
+                {children}
+              </DashboardMainContent>
               
               {/* 푸터 추가 */}
               <DashboardFooter />
             </SidebarInset>
+            
+            {/* 업체 변경 시 크롤링 상태 알림 - BusinessProvider 내부에서 렌더링 */}
+            <CrawlingNotificationWrapper />
             </BusinessProvider>
           </SidebarProvider>
           {/* Modals */}
           <NotificationsModal open={isNotificationsOpen} onOpenChange={setIsNotificationsOpen} />
           <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+          
           {/* (D) Toaster: 화면 우측 아래로 배치, 기본 4초 후 닫힘. closeButton(=X)도 자동 노출되도록 세팅 */}
           <Toaster
             position="bottom-right"

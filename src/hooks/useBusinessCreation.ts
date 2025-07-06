@@ -203,7 +203,7 @@ export function useBusinessCreation(userId?: string) {
     },
     onSuccess: (data) => {
       if (data?.success) {
-        if (data.alreadyRegistered) {
+        if (data.data?.alreadyRegistered) {
           logger.info("이미 등록된 URL 감지");
           toast.error("이미 등록한 URL입니다.");
           setCurrentStep("idle");
@@ -212,8 +212,8 @@ export function useBusinessCreation(userId?: string) {
         }
         
         logger.info("URL 정규화 성공", {
-          placeName: data.placeInfo?.place_name,
-          platform: data.placeInfo?.platform
+          placeName: data.data?.placeInfo?.place_name,
+          platform: data.data?.placeInfo?.platform
         });
         
         setNormalizedData(data);
@@ -235,9 +235,9 @@ export function useBusinessCreation(userId?: string) {
     mutationFn: async () => {
       // 전체 프로세스 시작 로깅
       logger.group("비즈니스 생성 프로세스", () => {
-        if (!normalizedData?.placeInfo || !userId) {
+        if (!normalizedData?.data?.placeInfo || !userId) {
           logger.error("필수 데이터 누락", { 
-            hasPlaceInfo: !!normalizedData?.placeInfo,
+            hasPlaceInfo: !!normalizedData?.data?.placeInfo,
             hasUserId: !!userId 
           });
           throw new Error("정규화 데이터가 없거나 유저 정보가 없습니다.");
@@ -245,23 +245,23 @@ export function useBusinessCreation(userId?: string) {
         
         logger.info("비즈니스 생성 시작", { 
           userId,
-          placeName: normalizedData.placeInfo.place_name 
+          placeName: normalizedData.data.placeInfo.place_name 
         });
       });
       
       // 필수 데이터 확인 (TypeScript 오류 방지)
-      if (!normalizedData || !normalizedData.placeInfo || !userId) {
+      if (!normalizedData || !normalizedData.data?.placeInfo || !userId) {
         throw new Error("정규화 데이터가 없거나 유저 정보가 없습니다.");
       }
       
       // place_id 확인 및 저장 - 여러 가능한 위치에서 확인
-      const normalizedPlaceInfo = normalizedData.placeInfo as PlaceInfoExtended;
+      const normalizedPlaceInfo = normalizedData.data.placeInfo as PlaceInfoExtended;
       const placeId = normalizedPlaceInfo.place_id || 
                      normalizedPlaceInfo.placeId ||
                      normalizedPlaceInfo.id;
       
       if (!placeId) {
-        logger.error("place_id를 찾을 수 없습니다", normalizedData.placeInfo);
+        logger.error("place_id를 찾을 수 없습니다", normalizedData.data.placeInfo);
         throw new Error("업체 ID 정보를 찾을 수 없습니다.");
       }
       
@@ -287,9 +287,9 @@ export function useBusinessCreation(userId?: string) {
           
           logger.debug("저장할 업체 정보", {
             place_id: placeId,
-            place_name: normalizedData.placeInfo.place_name,
-            category: normalizedData.placeInfo.category,
-            platform: normalizedData.placeInfo.platform
+            place_name: normalizedData.data.placeInfo.place_name,
+            category: normalizedData.data.placeInfo.category,
+            platform: normalizedData.data.placeInfo.platform
           });
         });
         
@@ -297,9 +297,9 @@ export function useBusinessCreation(userId?: string) {
         const storeRes = await logger.logTiming("업체 저장 API 호출", async () => {
           return await storePlace(userId, {
             place_id: placeId.toString(), // 숫자를 문자열로 변환
-            place_name: normalizedData.placeInfo.place_name,
-            category: normalizedData.placeInfo.category,
-            platform: normalizedData.placeInfo.platform,
+            place_name: normalizedData.data.placeInfo.place_name,
+            category: normalizedData.data.placeInfo.category,
+            platform: normalizedData.data.placeInfo.platform?.platform || String(normalizedData.data.placeInfo.platform) || "naver",
           });
         });
         
@@ -317,7 +317,7 @@ export function useBusinessCreation(userId?: string) {
         // logTiming 사용하여 키워드 생성 시간 측정
         const chatgptRes = await logger.logTiming("키워드 생성 API 호출", async () => {
           return await chatgptKeywordsHandler({
-            ...normalizedData.placeInfo,
+            ...normalizedData.data.placeInfo,
             user_id: userId
           });
         });
@@ -327,9 +327,19 @@ export function useBusinessCreation(userId?: string) {
           throw new Error("키워드 생성 실패");
         }
         
+        // ChatGPT 응답 데이터 검증
+        if (!chatgptRes.data || typeof chatgptRes.data !== 'object') {
+          logger.error("ChatGPT 응답 데이터가 올바르지 않습니다:", chatgptRes);
+          throw new Error("ChatGPT 응답 데이터가 올바르지 않습니다");
+        }
+        
+        // 키워드 배열 안전성 검사
+        const locationKeywords = Array.isArray(chatgptRes.data.locationKeywords) ? chatgptRes.data.locationKeywords : [];
+        const featureKeywords = Array.isArray(chatgptRes.data.featureKeywords) ? chatgptRes.data.featureKeywords : [];
+        
         logger.info("키워드 생성 성공", {
-          locationKeywordCount: chatgptRes.locationKeywords.length,
-          featureKeywordCount: chatgptRes.featureKeywords.length
+          locationKeywordCount: locationKeywords.length,
+          featureKeywordCount: featureKeywords.length
         });
         
         // ---- (4) 키워드 조합 ----
@@ -339,8 +349,8 @@ export function useBusinessCreation(userId?: string) {
         // logTiming 사용하여 키워드 조합 시간 측정
         const combineRes = await logger.logTiming("키워드 조합 API 호출", async () => {
           return await combineKeywords(
-            chatgptRes.locationKeywords,
-            chatgptRes.featureKeywords
+            locationKeywords,
+            featureKeywords
           );
         });
         
@@ -357,19 +367,24 @@ export function useBusinessCreation(userId?: string) {
           // API 응답 필드 로깅
           logger.debug("키워드 조합 API 응답 구조", {
             hasSuccess: !!combineRes.success,
-            hasCombinedKeywords: !!combineRes.combinedKeywords,
-            hasCandidateKeywords: !!combineRes.candidateKeywords,
-            fields: Object.keys(combineRes)
+            hasData: !!combineRes.data,
+            dataFields: combineRes.data ? Object.keys(combineRes.data) : []
           });
 
+          // 데이터 검증
+          if (!combineRes.data || typeof combineRes.data !== 'object') {
+            logger.error("키워드 조합 응답 데이터가 올바르지 않습니다:", combineRes);
+            throw new Error("키워드 조합 응답 데이터가 올바르지 않습니다");
+          }
+
         // combinedKeywords 또는 candidateKeywords 사용
-        const combinedKeywords = combineRes.combinedKeywords || combineRes.candidateKeywords;
+        const combinedKeywords = combineRes.data.combinedKeywords || combineRes.data.candidateKeywords;
 
         // 키워드 배열 유효성 확인
         if (!Array.isArray(combinedKeywords)) {
         logger.error("키워드 조합 응답 형식 오류", { 
-            hasCombinedKeywords: !!combineRes.combinedKeywords,
-            hasCandidateKeywords: !!combineRes.candidateKeywords
+            hasCombinedKeywords: !!combineRes.data.combinedKeywords,
+            hasCandidateKeywords: !!combineRes.data.candidateKeywords
         });
         throw new Error("키워드 조합 결과 형식이 올바르지 않습니다.");
         }
@@ -392,7 +407,7 @@ export function useBusinessCreation(userId?: string) {
         updateProgress("checking", 70);
 
         // 정규화된 URL 확인 (TypeScript 오류 방지)
-        const normalizedUrl = normalizedData.normalizedUrl || "";
+        const normalizedUrl = normalizedData.data.normalizedUrl || "";
         if (!normalizedUrl) {
         logger.warn("정규화된 URL이 없음");
         }
@@ -414,20 +429,41 @@ export function useBusinessCreation(userId?: string) {
           );
         });
         
+        // 검색량 확인 응답 검증
+        if (!checkRes.success || !checkRes.data || !Array.isArray(checkRes.data.externalDataList)) {
+          logger.error("검색량 확인 응답이 올바르지 않습니다:", checkRes);
+          throw new Error("검색량 확인 응답이 올바르지 않습니다");
+        }
+        
+        logger.info("검색량 확인 완료", {
+          externalDataCount: checkRes.data.externalDataList.length
+        });
+        
         // ---- (6) 키워드 그룹화 ----
         logger.info("키워드 그룹화 단계 시작");
         updateProgress("grouping", 85);
         
         // logTiming 사용하여 키워드 그룹화 시간 측정
         const groupRes = await logger.logTiming("키워드 그룹화 API 호출", async () => {
-          return await groupKeywords(checkRes.externalDataList);
+          return await groupKeywords(checkRes.data.externalDataList);
         });
         
+        // 키워드 그룹화 응답 검증
+        if (!groupRes.success || !groupRes.data) {
+          logger.error("키워드 그룹화 응답이 올바르지 않습니다:", groupRes);
+          throw new Error("키워드 그룹화 응답이 올바르지 않습니다");
+        }
+        
         // 그룹화 결과가 없으면, 기존 combinedKeywords를 사용 (fallback)
-        let finalList = groupRes.finalKeywords;
-        if ((!groupRes.success || finalList.length === 0) && Array.isArray(combinedKeywords)) {
-          logger.info('그룹화 결과가 없어 초기 조합된 키워드 사용');
-          finalList = combinedKeywords.map(k => ({ combinedKeyword: k, details: [] }));
+        let finalList = groupRes.data.finalKeywords;
+        if (!Array.isArray(finalList) || finalList.length === 0) {
+          if (Array.isArray(combinedKeywords)) {
+            logger.info('그룹화 결과가 없어 초기 조합된 키워드 사용');
+            finalList = combinedKeywords.map(k => ({ combinedKeyword: k, details: [] }));
+          } else {
+            logger.error("그룹화 결과와 조합 키워드 모두 없습니다");
+            throw new Error("그룹화 결과와 조합 키워드 모두 없습니다");
+          }
         }
          
         logger.info("키워드 그룹화 완료 - 최종 키워드 수", { finalKeywordCount: finalList.length });

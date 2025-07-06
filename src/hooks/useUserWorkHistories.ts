@@ -33,17 +33,38 @@ export function useUserWorkHistories() {
     queryKey: ['user-work-histories'],
     queryFn: async (): Promise<WorkHistory[]> => {
       try {
+        // 클라이언트 사이드에서 토큰 확인
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('token');
+          if (!token) {
+            logger.warn('토큰이 없어 작업 이력을 조회할 수 없습니다');
+            return [];
+          }
+        }
+
         logger.info('사용자 작업 이력 조회 요청');
         // API returns unwrapped array of work histories
         const response = await apiClient.get<WorkHistory[]>('/api/user/work-histories');
         const data = response.data;
+        
+        // 응답 데이터가 배열인지 확인
+        if (!Array.isArray(data)) {
+          logger.warn('작업 이력 응답이 배열이 아닙니다:', data);
+          return [];
+        }
+        
         logger.info(`사용자 작업 이력 ${data.length}개 로드됨`);
         return data;
       } catch (error) {
         logger.error('작업 이력 로드 중 오류:', error);
+        // 인증 에러인 경우 빈 배열 반환
+        if (error instanceof Error && error.message.includes('로그인')) {
+          return [];
+        }
         throw error;
       }
     },
     staleTime: 5 * 60 * 1000, // 5분 동안 캐시 유지
+    enabled: typeof window !== 'undefined', // 클라이언트 사이드에서만 실행
   });
 }

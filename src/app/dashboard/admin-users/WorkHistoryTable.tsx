@@ -49,8 +49,17 @@ function useWorkOptions() {
     queryFn: async () => {
       try {
         const response = await apiClient.get('/api/admin/work-histories/options');
-        // Response interceptor unwraps {success, data}, so response.data is the options object
-        return response.data;
+        const responseData = response.data;
+        
+        // 백엔드 응답 구조 확인
+        if (!responseData.success) {
+          logger.warn('작업 옵션 API 요청 실패:', responseData);
+          return { workTypes: [], executors: [] };
+        }
+        
+        const data = responseData.data;
+        logger.debug('작업 옵션 데이터 로드됨:', data);
+        return data;
       } catch (error) {
         logger.error('작업 옵션 조회 오류:', error);
         throw new Error('작업 옵션을 가져오는데 실패했습니다.');
@@ -98,11 +107,22 @@ const WorkTable: React.FC<WorkTableProps> = ({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // useWorkOptions 훅을 호출하여 workTypes와 executors 가져오기
-  const { data: workOptions } = useWorkOptions();
+  const { data: workOptions, isLoading: optionsLoading, isError: optionsError } = useWorkOptions();
   
-  // workOptions에서 필요한 데이터 추출
-  const workTypes = workOptions?.workTypes || [];
-  const executors = workOptions?.executors || [];
+  // workOptions에서 필요한 데이터 추출 (useMemo로 최적화)
+  const workTypes = React.useMemo(() => workOptions?.workTypes || [], [workOptions?.workTypes]);
+  const executors = React.useMemo(() => workOptions?.executors || [], [workOptions?.executors]);
+  
+  // 디버깅 로그 추가
+  useEffect(() => {
+    logger.debug('WorkTable - Work options data:', {
+      workOptions,
+      workTypes,
+      executors,
+      optionsLoading,
+      optionsError
+    });
+  }, [workOptions, workTypes, executors, optionsLoading, optionsError]);
   
   // users 데이터 로드
   const { data: users } = useQuery({
@@ -110,8 +130,21 @@ const WorkTable: React.FC<WorkTableProps> = ({
     queryFn: async () => {
       try {
         const response = await apiClient.get('/api/admin/users-with-places');
-        // Response interceptor unwraps data, so response.data is the array of users
-        return response.data.map((user: UserWithPlaces) => ({
+        // API 응답은 {success, message, data} 형태이므로 data 필드를 추출
+        const apiResponse = response.data;
+        logger.debug('[WorkHistoryTable] 사용자 데이터 API 응답:', apiResponse);
+        
+        // API 응답에서 data 필드 추출
+        const data = apiResponse?.data || apiResponse;
+        
+        // 응답 데이터가 배열인지 확인
+        if (!Array.isArray(data)) {
+          logger.warn('[WorkHistoryTable] 사용자 데이터가 배열이 아닙니다:', data);
+          return [];
+        }
+        
+        logger.debug('[WorkHistoryTable] 사용자 데이터 로드 성공:', data.length, '명');
+        return data.map((user: UserWithPlaces) => ({
           ...user,
           place_ids: user.place_ids || [],
           place_names: user.place_names || []

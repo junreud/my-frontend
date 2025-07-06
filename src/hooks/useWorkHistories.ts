@@ -32,12 +32,30 @@ export function useWorkHistories({
         const queryString = params.toString();
         if (queryString) url += `?${queryString}`;
         
-        // API returns unwrapped array
+        // API returns wrapped response {success: true, message, data}
         const response = await apiClient.get(url);
-        return response.data;
+        const responseData = response.data;
+        
+        // 백엔드 응답 구조 확인
+        if (!responseData.success) {
+          logger.warn('워크 히스토리 API 요청 실패:', responseData);
+          return [];
+        }
+        
+        const data = responseData.data;
+        
+        // 응답 데이터가 배열인지 확인
+        if (!Array.isArray(data)) {
+          logger.warn('워크 히스토리 응답이 배열이 아닙니다:', data);
+          return [];
+        }
+        
+        logger.debug('워크 히스토리 데이터 로드됨:', data);
+        return data;
       } catch (error) {
         logger.error('작업 이력 로드 중 오류:', error);
-        throw error;
+        // 에러 발생 시 빈 배열 반환
+        return [];
       }
     },
     enabled,

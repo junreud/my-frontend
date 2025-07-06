@@ -57,6 +57,17 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
   workTypes,
   executors
 }) => {
+  // 디버깅 로그 추가
+  React.useEffect(() => {
+    if (isOpen) {
+      logger.debug('WorkHistoryModal opened with props:', {
+        workTypes,
+        executors,
+        workTypesLength: workTypes?.length || 0,
+        executorsLength: executors?.length || 0
+      });
+    }
+  }, [isOpen, workTypes, executors]);
   // 로컬 스토리지에서 커스텀 실행사 목록 가져오기
   const [customExecutors, setCustomExecutors] = useState<string[]>(() => {
     if (typeof window !== 'undefined') {
@@ -285,9 +296,18 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
   } = useQuery<UserWithPlaces[]>({
     queryKey: ['admin-users-with-places'],
     queryFn: async () => {
+      logger.info('Fetching users with places for modal...');
       const res = await apiClient.get('/api/admin/users-with-places');
+      logger.debug('Users API response:', res.data);
+      
       if (res.data.success) {
-        return res.data.data.map((user: UserWithPlaces) => ({ ...user, place_ids: user.place_ids || [], place_names: user.place_names || [] }));
+        const userData = res.data.data.map((user: UserWithPlaces) => ({ 
+          ...user, 
+          place_ids: user.place_ids || [], 
+          place_names: user.place_names || [] 
+        }));
+        logger.debug('Processed user data:', userData);
+        return userData;
       }
       throw new Error(res.data.message || '사용자 정보를 불러오는데 실패했습니다');
     },
@@ -328,10 +348,11 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
 
   const userOptions = React.useMemo(() => {
     if (!users || !Array.isArray(users)) {
-      logger.debug('No users available or users is not an array');
+      logger.debug('No users available or users is not an array:', users);
       return [];
     }
 
+    logger.debug('Processing users for options:', users.length);
     const options: { value: string; label: string; userData: UserWithPlaces & { place_id: string; place_name: string } }[] = [];
 
     users.forEach(user => {
@@ -359,7 +380,7 @@ const WorkHistoryModal: React.FC<WorkHistoryModalProps> = ({
       }
     });
 
-    logger.debug(`Generated ${options.length} user options`);
+    logger.debug(`Generated ${options.length} user options:`, options);
     return options;
   }, [users]);
 

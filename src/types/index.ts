@@ -47,6 +47,13 @@ export interface Business {
   blog_review_count?: number | null;   // Add optional review counts
   receipt_review_count?: number | null;
   is_favorite?: boolean; // Favorite flag
+  // 리뷰 변화량 관련 필드
+  reviewChanges?: {
+    blogChange: number;
+    receiptChange: number;
+    totalChange: number;
+    lastUpdated?: string;
+  };
 }
 
 export interface UserKeyword {
@@ -73,15 +80,18 @@ export interface ApiKeywordResponse {
  */
 export interface NormalizeResponse {
   success: boolean;
-  normalizedUrl: string;
-  alreadyRegistered: boolean;
-  placeInfo: {
-    place_id: string;
-    place_name: string;
-    category?: string;
-    platform: Platform;
-    userid: string;
-    [key: string]: unknown;
+  message: string;
+  data: {
+    normalizedUrl: string;
+    alreadyRegistered: boolean;
+    placeInfo: {
+      place_id: string;
+      place_name: string;
+      category?: string;
+      platform: Platform;
+      userid: string;
+      [key: string]: unknown;
+    }
   }
 }
 
@@ -90,8 +100,11 @@ export interface NormalizeResponse {
  */
 export interface ChatGptKeywords {
   success: boolean;
-  locationKeywords: string[];
-  featureKeywords: string[];
+  message?: string;
+  data: {
+    locationKeywords: string[];
+    featureKeywords: string[];
+  };
 }
 
 /**
@@ -99,9 +112,12 @@ export interface ChatGptKeywords {
  */
 export interface CombinedKeywordsResponse {
   success: boolean;
-  // API가 candidateKeywords 또는 combinedKeywords를 반환할 수 있음
-  candidateKeywords?: string[];
-  combinedKeywords?: string[];
+  message?: string;
+  data: {
+    // API가 candidateKeywords 또는 combinedKeywords를 반환할 수 있음
+    candidateKeywords?: string[];
+    combinedKeywords?: string[];
+  };
 }
 
 /**
@@ -117,7 +133,10 @@ export interface ExternalData {
  */
 export interface SearchVolumeResponse {
   success: boolean;
-  externalDataList: ExternalData[];
+  message?: string;
+  data: {
+    externalDataList: ExternalData[];
+  };
 }
 
 /**
@@ -125,7 +144,11 @@ export interface SearchVolumeResponse {
  */
 export interface GroupedKeywordsResponse {
   success: boolean;
-  finalKeywords: FinalKeyword[];
+  message?: string;
+  data: {
+    finalKeywords: FinalKeyword[];
+    message?: string;
+  };
 }
 
 /**
@@ -196,7 +219,7 @@ export interface KeywordRankData {
  */
 export interface BaseKeywordData {
   date: string;
-  date_key: string;  // 옵셔널 제거
+  date_key?: string;  // optional로 변경 (crawled_at과 호환성)
   place_id: string | number;
   ranking: number | null;
   blog_review_count?: number | null;
@@ -223,6 +246,7 @@ export interface KeywordHistoricalData {
   blogReviews?: number | null;
   saved?: number | null;
   savedCount?: number | null;
+  isRestaurant?: boolean; // 키워드의 레스토랑 여부
 }
 /**
  * 키워드 차트 데이터 포인트
@@ -238,8 +262,9 @@ export interface KeywordRankingDetail extends BaseKeywordData {
   keyword: string;
   place_name: string;
   category: string;
-  keywordList: string[] | null;
+  keywordList?: string[] | null;
   crawled_at?: string;
+  date_key?: string; // crawled_at과 호환성을 위해 optional로 변경
   isRestaurant?: boolean;  // 키워드의 레스토랑 여부 (개별 항목)
 }
 
@@ -337,4 +362,62 @@ export interface KeywordResponseWithRemoved {
   keywordDetails?: ApiKeywordResponse[];
   removedKeywords?: RemovedKeyword[];
   message?: string;
+}
+
+/**
+ * 블로그 광고 분석 상세 결과 타입들
+ */
+export interface AnalysisDetail {
+  type: 'text' | 'image';
+  imageIndex?: number;
+  reason: string;
+  keywords: string[];
+  confidence: number;
+}
+
+export interface TextAnalysis {
+  isAd: boolean;
+  confidence: number;
+  detectedKeywords: string[];
+  reason: string;
+}
+
+export interface ImageAnalysis {
+  imageIndex: number;
+  isAd: boolean;
+  confidence: number;
+  detectedKeywords: string[];
+  reason: string;
+  imageType?: 'product_showcase' | 'lifestyle' | 'mixed' | 'other';
+  adType?: 'sponsored' | 'provided' | 'review' | 'none';
+  priority?: 'high' | 'medium' | 'low';
+  isMainContent?: boolean;
+  isProfileImage?: boolean;
+}
+
+export interface AnalysisSummary {
+  textScore: number;
+  imageScore: number;
+  bestImageIndex: number;
+  detectionDetails: AnalysisDetail[];
+}
+
+export interface DetailedAnalysisResult {
+  reviewId: string;
+  title: string;
+  isAd: boolean;
+  confidence: number;
+  finalReason: string;
+  analysis: {
+    textAnalysis: TextAnalysis | null;
+    imageAnalysis: ImageAnalysis[];
+    summary: AnalysisSummary;
+  };
+  error?: string;
+}
+
+export interface ReanalysisResponse {
+  processed: number;
+  total: number;
+  results: DetailedAnalysisResult[];
 }
