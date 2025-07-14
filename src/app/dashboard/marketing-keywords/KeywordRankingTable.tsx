@@ -214,10 +214,10 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
         const candidateDates = keywordData.rankingDetails
           .filter((item: KeywordRankingDetail) => 
             item.place_id === dataForRank.place_id && 
-            item.date_key <= targetDateString
+            item.date_key && item.date_key <= targetDateString
           )
           .sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => 
-            new Date(b.date_key).getTime() - new Date(a.date_key).getTime()
+            new Date(b.date_key!).getTime() - new Date(a.date_key!).getTime()
           );
         
         comparisonData = candidateDates[0] || null;
@@ -357,11 +357,11 @@ const KeywordRankingTable: React.FC<KeywordRankingTableProps> = ({
                   const candidateDates = keywordData.rankingDetails
                     .filter((d: KeywordRankingDetail) => 
                       d.place_id === item.place_id && 
-                      d.date_key <= targetDateString &&
+                      d.date_key && d.date_key <= targetDateString &&
                       d.keyword === selectedKeyword
                     )
                     .sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => 
-                      new Date(b.date_key).getTime() - new Date(a.date_key).getTime()
+                      new Date(b.date_key!).getTime() - new Date(a.date_key!).getTime()
                     );
                   
                   pastData = candidateDates[0] || null;

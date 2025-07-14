@@ -186,7 +186,7 @@ export function useBusinessCreation(userId?: string) {
           
           logger.debug("정규화 API 응답 수신", {
             success: res?.success,
-            hasPlaceInfo: !!res?.placeInfo
+            hasPlaceInfo: !!res?.data?.placeInfo
           });
           
           if (res && typeof res === 'object') {

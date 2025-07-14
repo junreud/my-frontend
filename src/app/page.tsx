@@ -51,12 +51,39 @@ export default function HomePage() {
             '@context': 'https://schema.org',
             '@type': 'WebSite',
             name: '라카비',
+            alternateName: 'Lakabe',
             url: 'https://lakabe.com',
+            description: '네이버 플레이스 키워드 순위 추적, 리뷰 관리, 블로그 마케팅을 한 번에! 라카비로 지역 비즈니스 마케팅을 성공시키세요.',
+            publisher: {
+              '@type': 'Organization',
+              name: '라카비',
+              url: 'https://lakabe.com',
+              logo: {
+                '@type': 'ImageObject',
+                url: 'https://lakabe.com/logo.png'
+              }
+            },
             potentialAction: {
               '@type': 'SearchAction',
               target: 'https://lakabe.com/search?q={search_term_string}',
               'query-input': 'required name=search_term_string',
             },
+            mainEntity: {
+              '@type': 'SoftwareApplication',
+              name: '라카비',
+              applicationCategory: 'BusinessApplication',
+              operatingSystem: 'Web Browser',
+              offers: {
+                '@type': 'Offer',
+                category: '마케팅 솔루션'
+              },
+              featureList: [
+                '네이버 플레이스 키워드 순위 추적',
+                '리뷰 관리',
+                '블로그 마케팅',
+                'SEO 최적화'
+              ]
+            }
           }),
         }}
       />

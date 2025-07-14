@@ -12,7 +12,7 @@ const popInVariants = {
     scale: 1,
     rotate: [0, -5, 5, -2, 0], // 흔들림 효과
     transition: {
-      type: "tween",
+      type: "tween" as const,
       duration: 0.5,
       
     },

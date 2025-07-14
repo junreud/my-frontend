@@ -19,11 +19,9 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Settings, Bot } from "lucide-react";
+import { X, Plus, Bot } from "lucide-react";
 import { useReplySettings, useSaveReplySettings, useGenerateReplies, ReplySettings } from "@/hooks/useReviews";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface ReplySettingsModalProps {
   isOpen: boolean;
@@ -35,15 +33,13 @@ interface ReplySettingsModalProps {
 export default function ReplySettingsModal({ 
   isOpen, 
   onClose, 
-  placeId, 
-  businessName 
+  placeId
 }: ReplySettingsModalProps) {
   const [formData, setFormData] = useState<ReplySettings>({
     tone: 'friendly',
-    template_style: 'standard',
-    keywords: [],
-    auto_generate: false,
-    is_active: true
+    key_messages: [],
+    avoid_words: [],
+    template_content: ''
   });
   
   const [newKeyword, setNewKeyword] = useState('');
@@ -63,8 +59,7 @@ export default function ReplySettingsModal({
     try {
       await saveSettings.mutateAsync({
         placeId,
-        settings: formData,
-        businessName
+        settings: formData
       });
       onClose();
     } catch (error) {
@@ -77,8 +72,7 @@ export default function ReplySettingsModal({
       // 먼저 설정 저장
       await saveSettings.mutateAsync({
         placeId,
-        settings: formData,
-        businessName
+        settings: formData
       });
       
       // 답변 생성 실행
@@ -101,20 +95,20 @@ export default function ReplySettingsModal({
     }
   };
 
-  const addKeyword = () => {
-    if (newKeyword.trim() && !formData.keywords.includes(newKeyword.trim())) {
+  const addKeyMessage = () => {
+    if (newKeyword.trim() && !formData.key_messages?.includes(newKeyword.trim())) {
       setFormData(prev => ({
         ...prev,
-        keywords: [...prev.keywords, newKeyword.trim()]
+        key_messages: [...(prev.key_messages || []), newKeyword.trim()]
       }));
       setNewKeyword('');
     }
   };
 
-  const removeKeyword = (keyword: string) => {
+  const removeKeyMessage = (message: string) => {
     setFormData(prev => ({
       ...prev,
-      keywords: prev.keywords.filter(k => k !== keyword)
+      key_messages: prev.key_messages?.filter(m => m !== message) || []
     }));
   };
 
@@ -123,12 +117,6 @@ export default function ReplySettingsModal({
     { value: 'professional', label: '전문적이고 정중한', description: '격식 있고 신뢰감 있는 톤' },
     { value: 'warm', label: '따뜻하고 정감 있는', description: '인간적이고 따뜻한 감성' },
     { value: 'casual', label: '편안하고 자연스러운', description: '부담 없고 편안한 대화체' }
-  ];
-
-  const styleOptions = [
-    { value: 'standard', label: '표준형', description: '적당한 길이의 균형 잡힌 답변' },
-    { value: 'detailed', label: '상세형', description: '구체적이고 자세한 설명' },
-    { value: 'brief', label: '간결형', description: '핵심만 담은 짧은 답변' }
   ];
 
   return (
@@ -178,50 +166,27 @@ export default function ReplySettingsModal({
               </Select>
             </div>
 
-            {/* 답변 스타일 설정 */}
+            {/* 핵심 메시지 설정 */}
             <div className="space-y-3">
-              <Label className="text-base font-medium">답변 스타일</Label>
-              <Select
-                value={formData.template_style}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, template_style: value as ReplySettings['template_style'] }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {styleOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{option.label}</span>
-                        <span className="text-xs text-gray-500">{option.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 강조 키워드 설정 */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">강조 키워드</Label>
+              <Label className="text-base font-medium">핵심 메시지</Label>
               <div className="space-y-2">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="강조할 키워드를 입력하세요 (예: 청결, 친절, 맛있는)"
+                    placeholder="핵심 메시지를 입력하세요 (예: 청결, 친절, 맛있는)"
                     value={newKeyword}
                     onChange={(e) => setNewKeyword(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
+                    onKeyPress={(e) => e.key === 'Enter' && addKeyMessage()}
                   />
-                  <Button onClick={addKeyword} size="sm">
+                  <Button onClick={addKeyMessage} size="sm">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {formData.keywords.map((keyword, index) => (
+                  {formData.key_messages?.map((message, index) => (
                     <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {keyword}
+                      {message}
                       <button
-                        onClick={() => removeKeyword(keyword)}
+                        onClick={() => removeKeyMessage(message)}
                         className="ml-1 hover:bg-gray-200 rounded-full p-0.5"
                       >
                         <X className="h-3 w-3" />
@@ -230,38 +195,24 @@ export default function ReplySettingsModal({
                   ))}
                 </div>
                 <p className="text-xs text-gray-500">
-                  키워드는 랜덤으로 선택되어 답변에 자연스럽게 포함됩니다. (최대 2개씩 사용)
+                  핵심 메시지는 답변에 자연스럽게 포함됩니다.
                 </p>
               </div>
             </div>
 
-            {/* 자동 생성 설정 */}
+            {/* 템플릿 내용 */}
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base font-medium">자동 답변 생성</Label>
-                  <p className="text-sm text-gray-500">
-                    새로운 리뷰가 수집될 때 자동으로 답변을 생성합니다
-                  </p>
-                </div>
-                <Switch
-                  checked={formData.auto_generate}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ ...prev, auto_generate: checked }))
-                  }
-                />
-              </div>
+              <Label className="text-base font-medium">템플릿 내용</Label>
+              <textarea
+                className="w-full p-3 border rounded-md resize-none min-h-[100px]"
+                placeholder="답변 템플릿을 입력하세요..."
+                value={formData.template_content || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, template_content: e.target.value }))}
+              />
+              <p className="text-xs text-gray-500">
+                답변 생성 시 기본 템플릿으로 사용됩니다.
+              </p>
             </div>
-
-            {formData.auto_generate && (
-              <Alert>
-                <Settings className="h-4 w-4" />
-                <AlertDescription>
-                  자동 답변 생성이 활성화되면 새로 수집된 영수증 리뷰에 대해 
-                  설정된 톤과 키워드를 바탕으로 답변이 자동 생성됩니다.
-                </AlertDescription>
-              </Alert>
-            )}
           </div>
         )}
 

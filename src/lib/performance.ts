@@ -53,6 +53,7 @@ interface WebVital {
 }
 
 // 성능 메트릭 인터페이스
+/*
 interface PerformanceMetric {
   name: string;
   value: number;
@@ -63,6 +64,7 @@ interface PerformanceMetric {
   connectionType?: string;
   deviceMemory?: number;
 }
+*/
 
 // 리소스 성능 정보
 interface ResourceTiming {

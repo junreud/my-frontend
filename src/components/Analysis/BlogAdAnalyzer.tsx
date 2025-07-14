@@ -37,7 +37,7 @@ export function BlogAdAnalyzer({ placeId, placeName, onAnalysisStart, onAnalysis
   const [onlyUnchecked, setOnlyUnchecked] = useState(true);
   const [progress, setProgress] = useState(0);
   const [analysisResults, setAnalysisResults] = useState<ReanalysisResponse | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [, setSocket] = useState<Socket | null>(null); // socket 변수명 변경
   const [isConnected, setIsConnected] = useState(false);
 
   const reanalyzeAllMutation = useReanalyzeAllAds();

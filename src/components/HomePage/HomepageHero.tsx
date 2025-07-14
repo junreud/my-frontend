@@ -2,7 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import FadeInSection from "../animations/FadeInComponent";
-import Mockup from "../ui/Mockup";
+// import Mockup from "../ui/Mockup"; // 사용하지 않음
 
 const HomepageHero = () => {
   return (

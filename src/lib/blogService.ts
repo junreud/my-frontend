@@ -22,10 +22,12 @@ export const sampleBlogPosts: BlogPost[] = [
 
       Next.js 15는 많은 새로운 기능과 성능 개선사항을 제공합니다...
     `,
-    publishedAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-15T10:00:00Z',
+    publishedAt: new Date('2024-01-15T10:00:00Z'),
+    updatedAt: new Date('2024-01-15T10:00:00Z'),
     author: {
+      id: '1',
       name: '김개발자',
+      email: 'developer@example.com',
       bio: '프론트엔드 개발자',
       avatar: '/images/authors/author1.jpg',
       social: {
@@ -33,13 +35,13 @@ export const sampleBlogPosts: BlogPost[] = [
         github: 'developer-kim'
       }
     },
-    category: {
+    categories: [{
       id: '1',
       name: '웹 개발',
       slug: 'web-development',
       description: '웹 개발 관련 포스트',
       color: '#3B82F6'
-    },
+    }],
     tags: [
       { id: '1', name: 'Next.js', slug: 'nextjs', color: '#000000' },
       { id: '2', name: 'React', slug: 'react', color: '#61DAFB' },
@@ -51,16 +53,13 @@ export const sampleBlogPosts: BlogPost[] = [
       width: 1200,
       height: 630
     },
-    seo: {
+    seoMetadata: {
       title: 'Next.js 15의 새로운 기능들 - 완전 가이드',
       description: 'Next.js 15에서 새롭게 추가된 기능들과 성능 개선사항을 자세히 알아보세요.',
       keywords: ['Next.js', 'React', '웹개발', 'JavaScript', '프론트엔드'],
       ogImage: '/images/og/nextjs-15.jpg'
     },
-    readingTime: 8,
-    wordCount: 1200,
-    isPublished: true,
-    isFeatured: true
+    status: 'published'
   },
   {
     id: '2',
@@ -72,23 +71,25 @@ export const sampleBlogPosts: BlogPost[] = [
 
       검색 엔진 최적화는 웹사이트의 성공에 필수적입니다...
     `,
-    publishedAt: '2024-01-10T14:30:00Z',
-    updatedAt: '2024-01-10T14:30:00Z',
+    publishedAt: new Date('2024-01-10T14:30:00Z'),
+    updatedAt: new Date('2024-01-10T14:30:00Z'),
     author: {
+      id: '2',
       name: '박마케터',
+      email: 'marketer@example.com',
       bio: '디지털 마케팅 전문가',
       avatar: '/images/authors/author2.jpg',
       social: {
         linkedin: 'marketer-park'
       }
     },
-    category: {
+    categories: [{
       id: '2',
       name: '디지털 마케팅',
       slug: 'digital-marketing',
       description: '디지털 마케팅 관련 포스트',
       color: '#10B981'
-    },
+    }],
     tags: [
       { id: '4', name: 'SEO', slug: 'seo', color: '#059669' },
       { id: '5', name: '마케팅', slug: 'marketing', color: '#7C3AED' },
@@ -100,16 +101,13 @@ export const sampleBlogPosts: BlogPost[] = [
       width: 1200,
       height: 630
     },
-    seo: {
+    seoMetadata: {
       title: 'SEO 최적화 완벽 가이드 - 검색 상위 랭킹 달성하기',
       description: '웹사이트의 검색 엔진 최적화를 위한 실전 가이드와 팁을 알아보세요.',
       keywords: ['SEO', '검색엔진최적화', '마케팅', '웹사이트', '구글', '네이버'],
       ogImage: '/images/og/seo-guide.jpg'
     },
-    readingTime: 12,
-    wordCount: 1800,
-    isPublished: true,
-    isFeatured: false
+    status: 'published'
   }
 ];
 
@@ -171,7 +169,10 @@ export async function getBlogPosts(
 
   // 필터링
   if (options.category) {
-    posts = posts.filter(post => post.category.slug === options.category);
+    posts = posts.filter(post => 
+      post.category?.slug === options.category || 
+      post.categories.some(cat => cat.slug === options.category)
+    );
   }
 
   if (options.tag) {
@@ -244,9 +245,18 @@ export async function getBlogStats(): Promise<BlogStats> {
     totalCategories: categories.length,
     totalTags: tags.length,
     totalViews: posts.reduce((sum, post) => sum + (post.id === '1' ? 1500 : 800), 0),
-    averageReadingTime: Math.round(
-      posts.reduce((sum, post) => sum + post.readingTime, 0) / posts.length
+    totalComments: 0,
+    averageReadTime: Math.round(
+      posts.reduce((sum, post) => sum + (post.readingTime || 0), 0) / posts.length
     ),
+    topCategories: categories.slice(0, 3).map(category => ({
+      category,
+      postCount: category.postCount || 0
+    })),
+    topTags: tags.slice(0, 10).map(tag => ({
+      tag,
+      postCount: tag.postCount || 0
+    })),
     mostPopularPosts: posts.slice(0, 5),
     mostPopularCategories: categories.slice(0, 3),
     mostPopularTags: tags.slice(0, 10)
@@ -393,7 +403,8 @@ export async function getBlogSitemap(): Promise<BlogSitemap> {
       slug: tag.slug,
       lastmod: new Date().toISOString(),
       priority: 0.5
-    }))
+    })),
+    lastModified: new Date()
   };
 }
 
@@ -414,7 +425,7 @@ export async function getRelatedPosts(
     let score = 0;
     
     // 같은 카테고리
-    if (post.category.id === currentPost.category.id) {
+    if (post.category && currentPost.category && post.category.id === currentPost.category.id) {
       score += 3;
     }
     

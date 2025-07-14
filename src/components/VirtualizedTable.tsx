@@ -60,10 +60,10 @@ const TableRow: React.FC<ListChildComponentProps<RowData>> = ({ index, style, da
     const candidateDates = keywordData.rankingDetails
       .filter((d: KeywordRankingDetail) => 
         d.place_id === item.place_id && 
-        d.date_key <= targetDateString
+        d.date_key && d.date_key <= targetDateString
       )
       .sort((a: KeywordRankingDetail, b: KeywordRankingDetail) => 
-        new Date(b.date_key).getTime() - new Date(a.date_key).getTime()
+        new Date(b.date_key || '').getTime() - new Date(a.date_key || '').getTime()
       );
     
     pastData = candidateDates[0] || null;

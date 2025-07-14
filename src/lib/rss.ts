@@ -1,4 +1,4 @@
-import { BlogPost } from '@/types/blog';
+import { BlogPost, BlogCategory, BlogTag } from '@/types/blog';
 
 /**
  * RSS 피드 생성
@@ -32,9 +32,11 @@ export const generateRSSFeed = (posts: BlogPost[], siteUrl: string = 'https://la
       <guid isPermaLink="true">${siteUrl}/blog/${post.slug}</guid>
       <pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate>
       <dc:creator><![CDATA[${post.author.name}]]></dc:creator>
-      <category><![CDATA[${post.category.name}]]></category>
-      ${post.tags.map(tag => `<category><![CDATA[${tag.name}]]></category>`).join('')}
-      ${post.featuredImage ? `<enclosure url="${siteUrl}${post.featuredImage.url}" type="image/jpeg"/>` : ''}
+      ${post.category ? `<category><![CDATA[${post.category.name}]]></category>` : ''}
+      ${post.categories.map((cat: BlogCategory) => `<category><![CDATA[${cat.name}]]></category>`).join('')}
+      ${post.tags.map((tag: BlogTag) => `<category><![CDATA[${tag.name}]]></category>`).join('')}
+      ${post.featuredImage ? 
+        `<enclosure url="${siteUrl}${typeof post.featuredImage === 'string' ? post.featuredImage : post.featuredImage.url}" type="image/jpeg"/>` : ''}
     </item>`).join('');
 
   const rssFooter = `
@@ -77,7 +79,7 @@ export const generateAtomFeed = (posts: BlogPost[]) => {
     <summary type="html"><![CDATA[${post.excerpt}]]></summary>
     <content type="html"><![CDATA[${post.content}]]></content>
     <category term="${post.category}"/>
-    ${post.tags.map(tag => `<category term="${tag}"/>`).join('')}
+    ${post.tags.map((tag: BlogTag) => `<category term="${tag.name}"/>`).join('')}
   </entry>`).join('');
 
   const atomFooter = `

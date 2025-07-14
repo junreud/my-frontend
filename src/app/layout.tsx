@@ -40,9 +40,9 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "YOUR_GOOGLE_VERIFICATION_CODE",
+    google: "googlea1b2c3d4e5f6g7h8", // 실제 Google 인증 코드로 교체 필요
     other: {
-      "naver-site-verification": "YOUR_NAVER_VERIFICATION_CODE",
+      "naver-site-verification": "naver1a2b3c4d5e6f7g8h9i0j", // 실제 네이버 인증 코드로 교체 필요
     },
   },
   alternates: {

@@ -30,7 +30,7 @@
  * - Instant UI feedback with optimistic updates
  */
 
-import React, { useState, useMemo, useEffect, useTransition, Suspense } from "react";
+import React, { useState, useMemo, useEffect, useTransition } from "react";
 import { useQueryClient } from '@tanstack/react-query';
 
 // Performance optimization imports
@@ -38,20 +38,27 @@ import { useWebVitals } from "@/hooks/useAdvancedPerformance";
 import { useBackgroundSync, useSmartCache } from "@/hooks/useSmartCaching";
 import { useResourcePreloader, useRequestOptimization, useMemoryOptimization as useAdvancedMemory } from "@/hooks/useAdvancedOptimizations";
 import { prefetchStrategies, optimisticUpdates } from "@/lib/queryOptimizations";
-import VirtualizedKeywordList from "@/components/performance/VirtualizedKeywordList";
-import { LazyContent } from "@/components/performance/ProgressiveComponents";
-import { 
-  withSuspense, 
-  CriticalBoundary, 
-  NonCriticalBoundary,
-  KeywordListSkeleton
-} from "@/components/performance/SuspenseWrappers";
+// Performance components removed - using standard components
+import { Suspense } from "react";
 import { getKeywordUsageStatus } from "@/utils/keywordLimits";
 
-// Create lazy components for code splitting
-const LazyKeywordRankingTable = withSuspense(
-  React.lazy(() => import("./KeywordRankingTableVirtualized")),
-  <KeywordListSkeleton />
+// Create simple loading component
+const KeywordListSkeleton = () => (
+  <div className="space-y-4">
+    {[...Array(5)].map((_, i) => (
+      <div key={i} className="animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+      </div>
+    ))}
+  </div>
+);
+
+// Simple lazy loading wrapper
+const LazyKeywordRankingTable = React.lazy(() => 
+  import("./KeywordRankingTableVirtualized").catch(() => 
+    ({ default: () => <div>Table component not found</div> })
+  )
 );
 import { useUser } from "@/hooks/useUser"; 
 import { useBusinessContext } from '@/app/dashboard/BusinessContext';
@@ -92,7 +99,7 @@ export default function MarketingKeywordsPage() {
   const { trackCustomMetric } = useWebVitals();
   const { trackAccess } = useSmartCache();
   const { isOnline } = useBackgroundSync();
-  const { preloadCritical } = useResourcePreloader();
+  const { } = useResourcePreloader(); // preloadCritical 제거
   const { batchRequest } = useRequestOptimization();
   const { registerCleanupTask, getMemoryUsage } = useAdvancedMemory();
 
@@ -999,32 +1006,52 @@ export default function MarketingKeywordsPage() {
                       실시간 업데이트
                     </div>
                   </div>
-                <CriticalBoundary>
                   {!isLoadingRankings && userKeywords.length > 0 && (
-                    <LazyContent 
-                      onVisible={() => {
-                        if (userKeywords.length > 0) {
-                          preloadCritical([
-                            { url: `/keyword/keyword-rankings-by-business?placeId=${selectedBusinessId}`, type: 'fetch' }
-                          ]);
-                        }
-                      }}
-                      fallback={<Skeleton className="h-96 w-full" />}
-                    >
-                      <div className="max-h-[600px] overflow-y-auto overflow-x-visible relative z-10">
-                        <VirtualizedKeywordList
-                          keywords={virtualizedKeywords}
-                          expandedIndex={expandedKeywordIndex}
-                          onToggle={toggleAccordionByIndex}
-                          keywordRankingsMap={keywordRankingsMap}
-                          selectedBusiness={selectedBusiness}
-                          historyData={historyData || []}
-                          loadingHistory={loadingHistory}
-                          height={550}
-                          width="100%"
-                        />
+                    <div className="max-h-[600px] overflow-y-auto overflow-x-visible relative z-10">
+                      {/* VirtualizedKeywordList를 간단한 키워드 리스트로 대체 */}
+                      <div className="space-y-4">
+                        {virtualizedKeywords.map((keyword, index) => (
+                          <div 
+                            key={keyword.id} 
+                            className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50"
+                            onClick={() => toggleAccordionByIndex(index)}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="font-medium">{keyword.keyword}</span>
+                              <div className="flex items-center gap-2">
+                                {(() => {
+                                  const historical = keywordRankingsMap.get(keyword.keyword)?.historical;
+                                  const ranking = historical?.length ? historical[historical.length - 1]?.ranking : null;
+                                  return ranking ? (
+                                    <span className="text-sm text-gray-600">{ranking}위</span>
+                                  ) : null;
+                                })()}
+                                <span className="text-gray-400">
+                                  {expandedKeywordIndex === index ? '▼' : '▶'}
+                                </span>
+                              </div>
+                            </div>
+                            {expandedKeywordIndex === index && (
+                              <div className="mt-4 border-t pt-4">
+                                {loadingHistory ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                    <span className="text-sm text-gray-600">히스토리 로딩 중...</span>
+                                  </div>
+                                ) : historyData && historyData.length > 0 ? (
+                                  <div className="text-sm text-gray-600">
+                                    <p>최근 30일 데이터: {historyData.length}개 항목</p>
+                                    <p>최신 순위: {historyData[historyData.length - 1]?.ranking || 'N/A'}위</p>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500">히스토리 데이터가 없습니다.</p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    </LazyContent>
+                    </div>
                   )}
                   
                   {!isLoadingRankings && userKeywords.length === 0 && (
@@ -1033,7 +1060,6 @@ export default function MarketingKeywordsPage() {
                       <p className="text-sm">위에서 키워드를 추가하면 순위 변동 그래프를 볼 수 있습니다.</p>
                     </div>
                   )}
-                </CriticalBoundary>
                 </div>
               )}
 
@@ -1046,17 +1072,6 @@ export default function MarketingKeywordsPage() {
                       업체별 순위
                     </div>
                   </div>
-                <NonCriticalBoundary>
-                  <LazyContent
-                    onVisible={() => {
-                      if (userKeywords.length > 0) {
-                        preloadCritical([
-                          { url: `/keyword/keyword-rankings-by-business?placeId=${selectedBusinessId}`, type: 'fetch' }
-                        ]);
-                      }
-                    }}
-                    fallback={<Skeleton className="h-96 w-full" />}
-                  >
                     <div className="space-y-6 relative z-10">
                       {/* 키워드 선택 드롭다운 - 컴팩트하게 */}
                       <div className="relative z-20">
@@ -1183,8 +1198,6 @@ export default function MarketingKeywordsPage() {
                         )}
                       </Suspense>
                     </div>
-                  </LazyContent>
-                </NonCriticalBoundary>
                 </div>
               )}
             </div>

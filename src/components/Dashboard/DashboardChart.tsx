@@ -9,7 +9,7 @@ import {
   Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 import { Card } from "../ui/card";
-import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher";
+// import { useBusinessSwitcher } from "@/hooks/useBusinessSwitcher"; // 사용하지 않음
 import { Box, Skeleton } from '@mui/material';
 import { KeywordHistoricalData } from '@/types';
 
@@ -19,7 +19,7 @@ type FormatterName = string;
 
 interface DashboardChartProps { initialData: KeywordHistoricalData[] | null }
 export default function DashboardChart({ initialData }: DashboardChartProps) {
-  const { activeBusiness } = useBusinessSwitcher();
+  // const { activeBusiness } = useBusinessSwitcher(); // 사용하지 않음
 
   const processedData: KeywordHistoricalData[] = useMemo(() => {
     console.log("원본 차트 데이터:", initialData);
