@@ -41,7 +41,21 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // 현재 경로가 공개 페이지인지 확인
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-      const publicPaths = ['/', '/login', '/signup', '/password-reset'];
+      const publicPaths = [
+        '/', 
+        '/login', 
+        '/signup', 
+        '/password-reset',
+        '/service',
+        '/company-info',
+        '/blog',
+        '/support',
+        '/faq',
+        '/about',
+        '/estimate',
+        '/terms',
+        '/privacy'
+      ];
       
       // 공개 페이지에서는 토큰 갱신을 시도하지 않음
       if (publicPaths.includes(currentPath)) {
@@ -53,9 +67,27 @@ apiClient.interceptors.response.use(
       const token = localStorage.getItem("accessToken");
       if (!token) {
         console.log(`[apiClient] 액세스 토큰이 없음 - 토큰 갱신 건너뛰기`);
-        if (typeof window !== 'undefined') {
+        // 공개 페이지에서는 리디렉트하지 않음
+        const publicPaths = [
+          '/', 
+          '/login', 
+          '/signup', 
+          '/password-reset',
+          '/service',
+          '/company-info',
+          '/blog',
+          '/support',
+          '/faq',
+          '/about',
+          '/estimate',
+          '/terms',
+          '/privacy'
+        ];
+        if (typeof window !== 'undefined' && !publicPaths.includes(currentPath)) {
           console.log(`[apiClient] 로그인 페이지로 리디렉트`);
           window.location.href = '/login';
+        } else {
+          console.log(`[apiClient] 공개 페이지이므로 리디렉션 건너뛰기: ${currentPath}`);
         }
         return Promise.reject(error);
       }
@@ -117,8 +149,22 @@ apiClient.interceptors.response.use(
         // 토큰 만료 시 로그인 페이지로 리디렉션 (홈페이지는 제외)
         if (typeof window !== 'undefined') {
           const currentPath = window.location.pathname;
-          // 홈페이지('/'), 로그인 페이지, 회원가입 페이지는 리다이렉트하지 않음
-          const publicPaths = ['/', '/login', '/signup', '/password-reset'];
+          // 공개 페이지는 리다이렉트하지 않음
+          const publicPaths = [
+            '/', 
+            '/login', 
+            '/signup', 
+            '/password-reset',
+            '/service',
+            '/company-info',
+            '/blog',
+            '/support',
+            '/faq',
+            '/about',
+            '/estimate',
+            '/terms',
+            '/privacy'
+          ];
           if (!publicPaths.includes(currentPath)) {
             console.log(`[apiClient] 로그인 페이지로 리디렉션`);
             window.location.href = '/login';

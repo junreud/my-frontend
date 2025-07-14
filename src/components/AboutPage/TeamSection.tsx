@@ -76,7 +76,7 @@ const TeamSection = () => {
           ))}
         </div>
 
-        <FadeInSection delay={0.5}>
+        <FadeInSection delay={0.2}>
           <div className="text-center mt-16">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               함께 성장할 인재를 찾습니다

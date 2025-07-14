@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +10,7 @@ import apiClient from "@/lib/apiClient";
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@/hooks/useUser';
 import { useBusinessContext } from '@/app/dashboard/BusinessContext';
+import { toast } from 'sonner';
 import { 
   Star, 
   TrendingUp, 
@@ -25,6 +26,7 @@ import {
 // CSR 컴포넌트로 변경
 export default function DashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { activeBusiness, isLoading: isLoadingBusinesses } = useBusinessContext();
 
@@ -278,6 +280,41 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [userError, router]);
+
+  // URL 파라미터 처리 - 성공 메시지 표시
+  useEffect(() => {
+    const successMessage = searchParams.get('success');
+    if (successMessage) {
+      toast.success(decodeURIComponent(successMessage), {
+        duration: 4000,
+        position: 'top-center',
+      });
+    }
+  }, [searchParams]);
+
+  // 성공 메시지 처리
+  useEffect(() => {
+    const upgrade = searchParams.get('upgrade');
+    const consultation = searchParams.get('consultation');
+    
+    if (upgrade === 'success') {
+      toast.success('🎉 플랜 업그레이드가 완료되었습니다!', {
+        description: '새로운 기능들을 마음껏 사용해보세요.',
+        duration: 5000,
+      });
+      // URL에서 파라미터 제거
+      router.replace('/dashboard', { scroll: false });
+    }
+    
+    if (consultation === 'requested') {
+      toast.success('📞 상담 요청이 접수되었습니다!', {
+        description: '담당자가 24시간 이내에 연락드리겠습니다.',
+        duration: 5000,
+      });
+      // URL에서 파라미터 제거
+      router.replace('/dashboard', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // 사용자 정보가 없으면 로딩 화면 표시
   if (!user || isLoading) {

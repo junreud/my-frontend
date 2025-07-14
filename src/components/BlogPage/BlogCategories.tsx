@@ -21,7 +21,7 @@ const BlogCategories = () => {
   return (
     <div className="space-y-8">
       {/* 카테고리 */}
-      <FadeInSection>
+      <FadeInSection immediate={true}>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">카테고리</h3>
           <ul className="space-y-2">
@@ -40,7 +40,7 @@ const BlogCategories = () => {
       </FadeInSection>
 
       {/* 최신 글 */}
-      <FadeInSection delay={0.1}>
+      <FadeInSection immediate={true} delay={0.1}>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">최신 글</h3>
           <ul className="space-y-3">
@@ -56,7 +56,7 @@ const BlogCategories = () => {
       </FadeInSection>
 
       {/* 태그 */}
-      <FadeInSection delay={0.2}>
+      <FadeInSection immediate={true} delay={0.2}>
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <h3 className="text-lg font-bold text-gray-900 mb-4">인기 태그</h3>
           <div className="flex flex-wrap gap-2">
@@ -73,7 +73,7 @@ const BlogCategories = () => {
       </FadeInSection>
 
       {/* 뉴스레터 구독 */}
-      <FadeInSection delay={0.3}>
+      <FadeInSection immediate={true} delay={0.3}>
         <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
           <h3 className="text-lg font-bold text-gray-900 mb-2">뉴스레터 구독</h3>
           <p className="text-sm text-gray-600 mb-4">

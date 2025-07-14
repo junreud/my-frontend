@@ -30,15 +30,15 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - login, signup 등 인증이 필요 없는 페이지 경로
+     * 인증이 필요한 페이지만 매칭
+     * - dashboard 관련 경로
+     * - 기타 보호된 경로들
+     * 공개 페이지는 제외: /, /service, /company-info, /blog, /support, /faq, /about, /estimate, /terms, /privacy
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|signup).*)',
-    // 필요하다면 /dashboard 등 특정 경로만 포함하도록 수정
-    // '/dashboard/:path*',
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/profile/:path*',
+    '/settings/:path*',
+    // 다른 보호된 경로들이 있다면 여기에 추가
   ],
 }

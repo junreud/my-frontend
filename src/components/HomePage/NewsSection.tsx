@@ -112,7 +112,7 @@ const NewsSection = () => {
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4">
         {/* 헤더 */}
-        <FadeInSection delay={0.2} once>
+        <FadeInSection delay={0.1} once>
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
               <span className="text-blue-600">최신 소식</span>과 인사이트
@@ -126,7 +126,7 @@ const NewsSection = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* 왼쪽 2/3 - 블로그 포스트 */}
           <div className="lg:col-span-2">
-            <FadeInSection delay={0.4} once>
+            <FadeInSection delay={0.2} once>
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-bold text-gray-900">
                   마케팅 인사이트
@@ -139,7 +139,7 @@ const NewsSection = () => {
 
             <div className="space-y-8">
               {blogPosts.map((post, index) => (
-                <FadeInSection key={post.id} delay={0.6 + index * 0.2} once>
+                <FadeInSection key={post.id} delay={0.3 + index * 0.1} once>
                   <article className="bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-shadow duration-300">
                     <div className="md:flex">
                       <div className="md:w-1/3">
@@ -195,7 +195,7 @@ const NewsSection = () => {
 
           {/* 오른쪽 1/3 - 공지사항 */}
           <div>
-            <FadeInSection delay={0.8} once>
+            <FadeInSection delay={0.4} once>
               <h3 className="text-2xl font-bold text-gray-900 mb-8">
                 공지사항
               </h3>
@@ -203,7 +203,7 @@ const NewsSection = () => {
 
             <div className="space-y-4 mb-8">
               {announcements.map((announcement, index) => (
-                <FadeInSection key={announcement.id} delay={1.0 + index * 0.1} once>
+                <FadeInSection key={announcement.id} delay={0.5 + index * 0.05} once>
                   <div className={`p-4 rounded-lg border-l-4 ${
                     announcement.important 
                       ? 'border-red-500 bg-red-50' 
@@ -229,7 +229,7 @@ const NewsSection = () => {
             </div>
 
             {/* 뉴스레터 구독 */}
-            <FadeInSection delay={1.4} once>
+            <FadeInSection delay={0.7} once>
               <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-6 text-white">
                 <h4 className="text-xl font-bold mb-4">
                   📧 뉴스레터 구독
@@ -254,7 +254,7 @@ const NewsSection = () => {
             </FadeInSection>
 
             {/* 소셜 미디어 */}
-            <FadeInSection delay={1.6} once>
+            <FadeInSection delay={0.8} once>
               <div className="mt-8 bg-gray-50 rounded-xl p-6">
                 <h4 className="text-lg font-bold text-gray-900 mb-4">
                   소셜 미디어
@@ -285,7 +285,7 @@ const NewsSection = () => {
         </div>
 
         {/* 하단 CTA */}
-        <FadeInSection delay={1.8} once>
+        <FadeInSection delay={0.9} once>
           <div className="mt-16 text-center bg-gray-50 rounded-2xl p-12">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               더 많은 인사이트가 필요하신가요?

@@ -19,7 +19,7 @@ const CompanyOverview = () => {
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-blue-600 to-indigo-800 py-20 flex items-center justify-center min-h-[500px]">
+      <div className="bg-gradient-to-br from-blue-600 to-indigo-800 py-12 pt-24 sm:py-16 sm:pt-28 lg:py-20 lg:pt-32 flex items-center justify-center min-h-[600px] relative overflow-hidden">
         <LoadingSpinner size="large" />
       </div>
     );
@@ -27,7 +27,7 @@ const CompanyOverview = () => {
 
   return (
     <section 
-      className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white py-12 sm:py-16 lg:py-20 relative overflow-hidden"
+      className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white py-12 pt-24 sm:py-16 sm:pt-28 lg:py-20 lg:pt-32 relative overflow-hidden min-h-[600px]"
       aria-labelledby="company-overview-title"
     >
       {/* 배경 애니메이션 - 모바일에서는 단순화 */}
@@ -41,7 +41,7 @@ const CompanyOverview = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          <FadeInSection>
+          <FadeInSection immediate={true}>
             <div>
               <h1 
                 id="company-overview-title"
@@ -85,7 +85,7 @@ const CompanyOverview = () => {
             </div>
           </FadeInSection>
 
-          <FadeInSection delay={0.3}>
+          <FadeInSection immediate={true} delay={0.3}>
             <div className="relative mt-8 lg:mt-0">
               {/* 가상의 대시보드 미리보기 - 모바일 최적화 */}
               <div className="bg-white/10 backdrop-blur border border-white/20 rounded-2xl p-4 sm:p-6 hover:bg-white/15 transition-colors duration-300">

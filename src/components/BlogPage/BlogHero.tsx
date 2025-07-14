@@ -3,9 +3,9 @@ import FadeInSection from "../animations/FadeInComponent";
 
 const BlogHero = () => {
   return (
-    <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-20">
+    <div className="bg-gradient-to-br from-blue-600 to-blue-800 text-white py-20 pt-32">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <FadeInSection>
+        <FadeInSection immediate={true}>
           <h1 className="text-4xl md:text-5xl font-bold mb-6">
             마케팅 인사이트 블로그
           </h1>

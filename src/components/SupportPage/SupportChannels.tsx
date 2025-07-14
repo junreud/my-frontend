@@ -36,7 +36,7 @@ const SupportChannels = () => {
   return (
     <div className="py-20 bg-white">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <FadeInSection>
+        <FadeInSection immediate={true}>
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               다양한 지원 채널
@@ -49,7 +49,7 @@ const SupportChannels = () => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {channels.map((channel, index) => (
-            <FadeInSection key={index} delay={index * 0.1}>
+            <FadeInSection key={index} immediate={true} delay={index * 0.1}>
               <div className="bg-gray-50 rounded-xl p-6 text-center hover:shadow-lg transition-shadow">
                 <div className="text-4xl mb-4">{channel.icon}</div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">

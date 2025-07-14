@@ -42,11 +42,9 @@ export default function Footer() {
         <div>
           <h2 className="mb-4 font-semibold text-gray-800">서비스</h2>
           <ul className="space-y-2">
-            
-            
-            
-            <li><a className="hover:underline" href="/service/blog">블로그</a></li>
-            <li><a className="hover:underline" href="/service/place">플레이스</a></li>
+            <li><a className="hover:underline" href="/service">서비스 소개</a></li>
+            <li><a className="hover:underline" href="/estimate">견적 문의</a></li>
+            <li><a className="hover:underline" href="/blog">블로그</a></li>
           </ul>
         </div>
 
@@ -54,15 +52,18 @@ export default function Footer() {
         <div>
           <h2 className="mb-4 font-semibold text-gray-800">회사</h2>
           <ul className="space-y-2">
-            <li><a className="hover:underline" href="/co-info">회사 소개</a></li>
+            <li><a className="hover:underline" href="/about">About</a></li>
+            <li><a className="hover:underline" href="/company-info">회사소개</a></li>
             <li><a className="hover:underline" href="/faq">자주 묻는 질문</a></li>
           </ul>
         </div>
 
-        {/* 문의 컬럼 */}
+        {/* 고객지원 컬럼 */}
         <div>
-          <h2 className="mb-4 font-semibold text-gray-800">문의</h2>
+          <h2 className="mb-4 font-semibold text-gray-800">고객지원</h2>
           <ul className="space-y-2">
+            <li><a className="hover:underline" href="/support">고객지원</a></li>
+            <li><a className="hover:underline" href="/faq">FAQ</a></li>
             <li><a className="hover:underline" href="/estimate">견적 문의</a></li>
           </ul>
         </div>
@@ -74,7 +75,7 @@ export default function Footer() {
             <li>전화: 070-8064-1793</li>
             <li>이메일(대표): growthjun@gmail.com</li>
             <li>개인정보 보호 책임자: 김준석 (010-8079-0063)</li>
-            <li><a className="hover:underline" href="#!">민원 접수</a></li>
+            <li><a className="hover:underline" href="/support">문의하기</a></li>
           </ul>
         </div>
       </div>
@@ -89,7 +90,7 @@ export default function Footer() {
         </p>
         <p>주소 : 서울특별시 관악구 은천로 25, 7층 b-2호 (봉천동, 정암빌딩)</p>
         <p>대표 연락처 : 070-8064-1793 | 대표 이메일 : growthjun@gmail.com</p>
-        <p>개인정보 보호 책임자 : 김준석 / 대표이사 / 010-2063-5816</p>
+        <p>개인정보 보호 책임자 : 김준석 / 대표이사 / 010-1223-5816</p>
 
         {/* 약관 링크 (모달 오픈) */}
         <div className="mt-4 flex flex-wrap gap-4 text-gray-600">

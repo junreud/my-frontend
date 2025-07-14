@@ -1,13 +1,20 @@
+"use client";
+
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
 import { Container } from "@/components/common/Container";
 import BlogHero from "@/components/BlogPage/BlogHero";
 import BlogList from "@/components/BlogPage/BlogList";
 import BlogCategories from "@/components/BlogPage/BlogCategories";
+import { motion } from "framer-motion";
 
 export default function BlogPage() {
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
       <Container>
         <Navbar />
       </Container>
@@ -23,6 +30,6 @@ export default function BlogPage() {
         </div>
       </div>
       <Footer />
-    </>
+    </motion.div>
   );
 }

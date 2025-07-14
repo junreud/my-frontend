@@ -6,7 +6,7 @@ import FadeInSection from "../animations/FadeInComponent";
 
 const ServiceHero = () => {
   return (
-    <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 min-h-screen flex items-center">
+    <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 min-h-screen flex items-center pt-16">
       {/* Background Image with Overlay */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"

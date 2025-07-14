@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Building2, CheckCircle2, BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Business } from '@/types';
-import { formatChange, getChangeColorClass, getChangeBadgeClass } from '@/services/businessServices';
+import { formatChange, getChangeBadgeClass } from '@/services/businessServices';
 
 export default function AnalysisPage() {
   const [selectedBusinesses, setSelectedBusinesses] = useState<string[]>([]);

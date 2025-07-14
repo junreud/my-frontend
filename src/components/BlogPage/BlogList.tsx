@@ -70,7 +70,7 @@ const BlogList = () => {
     <div>
       <div className="grid gap-8">
         {posts.map((post, index) => (
-          <FadeInSection key={post.id} delay={index * 0.1}>
+          <FadeInSection key={post.id} immediate={true} delay={index * 0.1}>
             <article className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -112,7 +112,7 @@ const BlogList = () => {
       </div>
 
       {/* 페이지네이션 */}
-      <FadeInSection delay={0.5}>
+      <FadeInSection immediate={true} delay={0.5}>
         <div className="flex justify-center mt-12">
           <div className="flex space-x-2">
             <button className="px-4 py-2 text-gray-500 hover:text-gray-700">이전</button>

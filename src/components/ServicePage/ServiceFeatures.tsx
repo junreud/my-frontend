@@ -101,7 +101,7 @@ const ServiceFeatures = () => {
   return (
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4">
-        <FadeInSection delay={0.2} once>
+        <FadeInSection immediate={true} delay={0.2} once>
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
               서비스 <span className="text-blue-600">주요 기능</span>
@@ -113,7 +113,7 @@ const ServiceFeatures = () => {
         </FadeInSection>
 
         {/* 탭 네비게이션 */}
-        <FadeInSection delay={0.4} once>
+        <FadeInSection immediate={true} delay={0.4} once>
           <div className="flex justify-center mb-12">
             <div className="bg-gray-100 rounded-xl p-2 inline-flex">
               {Object.entries(features).map(([key, feature]) => (
@@ -142,7 +142,7 @@ const ServiceFeatures = () => {
                 activeTab === key ? 'opacity-100 visible' : 'opacity-0 invisible absolute top-0 left-0 right-0'
               }`}
             >
-              <FadeInSection delay={0.2} once>
+              <FadeInSection immediate={true} delay={0.2} once>
                 <div className="text-center mb-12">
                   <h3 className="text-3xl font-bold text-gray-900 mb-4">{feature.title}</h3>
                   <p className="text-lg text-gray-600">{feature.subtitle}</p>
@@ -151,7 +151,7 @@ const ServiceFeatures = () => {
 
               <div className="grid md:grid-cols-2 gap-8">
                 {feature.items.map((item, index) => (
-                  <FadeInSection key={index} delay={0.3 + index * 0.1} once>
+                  <FadeInSection key={index} immediate={true} delay={0.3 + index * 0.1} once>
                     <div className="bg-gray-50 rounded-xl p-8 hover:bg-gray-100 transition-colors duration-300">
                       <div className="flex items-start space-x-4">
                         <div className="text-3xl">{item.icon}</div>
@@ -183,7 +183,7 @@ const ServiceFeatures = () => {
         </div>
 
         {/* 통합 솔루션 섹션 */}
-        <FadeInSection delay={0.8} once>
+        <FadeInSection immediate={true} delay={0.8} once>
           <div className="mt-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-white text-center">
             <h3 className="text-3xl font-bold mb-6">
               모든 기능이 하나로 연결된 통합 솔루션

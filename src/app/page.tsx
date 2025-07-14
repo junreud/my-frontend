@@ -1,10 +1,6 @@
-// pages.jsx
 import HomepageHero from "../components/HomePage/HomepageHero";
 import { Container } from "@/components/common/Container";
 import Homepage from "@/components/HomePage/Homepage";
-import HomepageSection from "@/components/HomePage/HomepageSection";
-import IsItImposible from "@/components/ui/IsItImposible";
-import Cheheom from "@/components/HomePage/Cheheom";
 import CustomerTestimonials from "@/components/HomePage/CustomerTestimonials";
 import CompanyIntro from "@/components/HomePage/CompanyIntro";
 import ServiceAdvantages from "@/components/HomePage/ServiceAdvantages";
@@ -12,30 +8,71 @@ import ContactSection from "@/components/HomePage/ContactSection";
 import NewsSection from "@/components/HomePage/NewsSection";
 import Navbar from "@/components/common/Navbar";
 import Footer from "@/components/common/Footer";
+import { Metadata } from "next";
 import "./globals.css"
 
-const HomePage = () => {
+export const metadata: Metadata = {
+  title: "라카비 - 네이버 플레이스 키워드 순위 관리 솔루션",
+  description: "네이버 플레이스 키워드 순위 추적, 리뷰 관리, 블로그 마케팅을 한 번에! 라카비로 지역 비즈니스 마케팅을 성공시키세요.",
+  openGraph: {
+    title: "라카비 - 네이버 플레이스 키워드 순위 관리 솔루션",
+    description: "네이버 플레이스 키워드 순위 추적, 리뷰 관리, 블로그 마케팅을 한 번에! 라카비로 지역 비즈니스 마케팅을 성공시키세요.",
+    url: "https://lakabe.com",
+    siteName: "라카비",
+    images: [
+      {
+        url: "https://lakabe.com/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "라카비 - 네이버 플레이스 키워드 순위 관리 솔루션",
+      },
+    ],
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "라카비 - 네이버 플레이스 키워드 순위 관리 솔루션",
+    description: "네이버 플레이스 키워드 순위 추적, 리뷰 관리, 블로그 마케팅을 한 번에! 라카비로 지역 비즈니스 마케팅을 성공시키세요.",
+    images: ["https://lakabe.com/og-image.jpg"],
+  },
+  alternates: {
+    canonical: "https://lakabe.com",
+  },
+};
+
+export default function HomePage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: '라카비',
+            url: 'https://lakabe.com',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: 'https://lakabe.com/search?q={search_term_string}',
+              'query-input': 'required name=search_term_string',
+            },
+          }),
+        }}
+      />
       <Container>
-        {/* Pass a placeholder user prop */}
         <Navbar />
       </Container>
       <HomepageHero />
-      <HomepageSection />
       <Container>
         <Homepage />
       </Container>
       <ServiceAdvantages />
       <CustomerTestimonials />
-      <IsItImposible />
-      <Cheheom />
       <CompanyIntro />
       <NewsSection />
       <ContactSection />
       <Footer />
     </>
   );
-};
-
-export default HomePage;
+}

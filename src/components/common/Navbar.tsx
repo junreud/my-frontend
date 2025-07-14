@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import useScrollDirection from "../../hooks/useScrollDirection";
 import { Container } from "@/components/common/Container";
 import { useUser } from "@/hooks/useUser"; // 추가: useUser 훅 import
@@ -18,6 +19,7 @@ interface NavbarProps {
 
 export default function Navbar({ user: propUser = null }: NavbarProps) {
   const scrollDirection = useScrollDirection();
+  const pathname = usePathname();
   
   // 클라이언트 사이드 렌더링 여부 확인
   const [isClient, setIsClient] = useState(false);
@@ -26,17 +28,32 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
     setIsClient(true);
   }, []);
   
-  // 현재 경로 확인
-  const [currentPath, setCurrentPath] = useState('');
+  // 현재 경로는 usePathname으로 가져오기
+  const currentPath = pathname;
   
-  useEffect(() => {
-    if (isClient) {
-      setCurrentPath(window.location.pathname);
-    }
-  }, [isClient]);
+  // 현재 페이지인지 확인하는 함수
+  const isCurrentPage = (path: string) => {
+    if (path === '/' && currentPath === '/') return true;
+    if (path !== '/' && currentPath.startsWith(path)) return true;
+    return false;
+  };
   
   // 공개 페이지인지 확인
-  const isPublicPage = ['/', '/login', '/signup', '/password-reset'].includes(currentPath);
+  const isPublicPage = [
+    '/', 
+    '/login', 
+    '/signup', 
+    '/password-reset',
+    '/service',
+    '/company-info',
+    '/blog',
+    '/support',
+    '/faq',
+    '/about',
+    '/estimate',
+    '/terms',
+    '/privacy'
+  ].includes(currentPath);
   
   // useUser 훅은 클라이언트에서만 호출하고, 공개 페이지에서는 비활성화
   const userQuery = useUser({
@@ -93,11 +110,7 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
     }
   }
 
-  // 드롭다운 항목
-  const serviceItems = [
-    { text: "네이버플레이스", href: "/service/place" },
-    { text: "블로그", href: "/service/blog" },
-  ];
+
 
   // 로딩 중 상태 표시 (선택적)
   if (isLoading) {
@@ -150,37 +163,34 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
                 className="menu menu-sm dropdown-content bg-white rounded-box mt-1 w-52 p-2 shadow z-[1]"
               >
                 <li>
-                  <Link href="/co-info">회사소개</Link>
-                </li>
-                {/* 모바일: '서비스' 드롭다운 */}
-                <li
-                  className="dropdown dropdown-hover dropdown-bottom dropdown-center"
-                  tabIndex={0}
-                >
-                  <Link href="/service" className="justify-between">
+                  <Link href="/service" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg ${isCurrentPage('/service') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
                     서비스
-                    <svg
-                      className="ml-1 h-4 w-4 fill-current"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 10.708l3.71-3.496a.75.75 0 111.04 1.08l-4.25 4a.75.75 0 01-1.04 0l-4.25-4a.75.75 0 01.02-1.06z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
                   </Link>
-                  <ul className="dropdown-content menu bg-white p-2 shadow rounded-box w-52 mt-0">
-                    {serviceItems.map((item, idx) => (
-                      <li key={idx}>
-                        <Link href={item.href}>{item.text}</Link>
-                      </li>
-                    ))}
-                  </ul>
                 </li>
                 <li>
-                  <Link href="/faq">자주 묻는 질문</Link>
+                  <Link href="/about" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg ${isCurrentPage('/about') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/company-info" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg ${isCurrentPage('/company-info') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                    회사소개
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg ${isCurrentPage('/blog') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                    블로그
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/support" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg ${isCurrentPage('/support') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                    고객지원
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faq" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg ${isCurrentPage('/faq') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                    자주 묻는 질문
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -196,42 +206,34 @@ export default function Navbar({ user: propUser = null }: NavbarProps) {
           <div className="navbar-center hidden [@media(min-width:763px)]:flex">
             <ul className="menu menu-horizontal px-1 gap-x-4">
               <li>
-                <Link href="/co-info">회사소개</Link>
-              </li>
-              {/* 데스크톱: '서비스' 드롭다운 */}
-              <li
-                className="dropdown dropdown-hover dropdown-bottom dropdown-center"
-                tabIndex={0}
-              >
-                <Link href="/service" className="btn-ghost flex items-center gap-1">
+                <Link href="/service" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg px-3 py-2 ${isCurrentPage('/service') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
                   서비스
-                  <svg
-                    className="ml-1 h-4 w-4 fill-current"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.708l3.71-3.496a.75.75 0 111.04 1.08l-4.25 4a.75.75 0 01-1.04 0l-4.25-4a.75.75 0 01.02-1.06z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
                 </Link>
-                <ul className="dropdown-content menu p-2 shadow bg-white rounded-box w-40 mt-0">
-                  {serviceItems.map((item, idx) => (
-                    <li
-                      key={idx}
-                      onClick={() => {
-                        (document.activeElement as HTMLElement)?.blur();
-                      }}
-                    >
-                      <Link href={item.href}>{item.text}</Link>
-                    </li>
-                  ))}
-                </ul>
               </li>
               <li>
-                <Link href="/faq">자주 묻는 질문</Link>
+                <Link href="/about" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg px-3 py-2 ${isCurrentPage('/about') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link href="/company-info" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg px-3 py-2 ${isCurrentPage('/company-info') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                  회사소개
+                </Link>
+              </li>
+              <li>
+                <Link href="/blog" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg px-3 py-2 ${isCurrentPage('/blog') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                  블로그
+                </Link>
+              </li>
+              <li>
+                <Link href="/support" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg px-3 py-2 ${isCurrentPage('/support') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                  고객지원
+                </Link>
+              </li>
+              <li>
+                <Link href="/faq" className={`transition-all duration-300 hover:bg-blue-50 rounded-lg px-3 py-2 ${isCurrentPage('/faq') ? 'font-bold text-blue-600 bg-blue-50' : 'hover:text-blue-600'}`}>
+                  자주 묻는 질문
+                </Link>
               </li>
             </ul>
           </div>

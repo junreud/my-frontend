@@ -7,7 +7,7 @@ const ServiceCTA = () => {
   return (
     <section className="py-20 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700">
       <div className="max-w-6xl mx-auto px-4">
-        <FadeInSection delay={0.2} once>
+        <FadeInSection immediate={true} delay={0.2} once>
           <div className="text-center text-white">
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               지금 시작하고 <span className="text-yellow-300">성과를 확인</span>하세요
@@ -19,7 +19,7 @@ const ServiceCTA = () => {
           </div>
         </FadeInSection>
 
-        <FadeInSection delay={0.4} once>
+        <FadeInSection immediate={true} delay={0.4} once>
           <div className="flex flex-col md:flex-row justify-center items-center space-y-4 md:space-y-0 md:space-x-6 mb-12">
             <Link href="/signup">
               <button className="bg-white text-blue-600 hover:bg-gray-100 font-bold py-4 px-8 rounded-lg text-lg transition-colors duration-300 shadow-lg">
@@ -34,7 +34,7 @@ const ServiceCTA = () => {
           </div>
         </FadeInSection>
 
-        <FadeInSection delay={0.6} once>
+        <FadeInSection immediate={true} delay={0.6} once>
           <div className="grid md:grid-cols-3 gap-8 text-center text-white">
             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
               <div className="text-3xl mb-4">🚀</div>
@@ -60,7 +60,7 @@ const ServiceCTA = () => {
           </div>
         </FadeInSection>
 
-        <FadeInSection delay={0.8} once>
+        <FadeInSection immediate={true} delay={0.8} once>
           <div className="mt-16 bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold text-white mb-4">
@@ -89,7 +89,7 @@ const ServiceCTA = () => {
           </div>
         </FadeInSection>
 
-        <FadeInSection delay={1.0} once>
+        <FadeInSection immediate={true} delay={1.0} once>
           <div className="mt-12 text-center">
             <p className="text-white/80 mb-4">
               궁금한 점이 있으시거나 상담이 필요하시다면

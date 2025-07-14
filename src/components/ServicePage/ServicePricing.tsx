@@ -87,7 +87,7 @@ const ServicePricing = () => {
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4">
-        <FadeInSection delay={0.2} once>
+        <FadeInSection immediate={true} delay={0.2} once>
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
               합리적인 <span className="text-blue-600">요금제</span>
@@ -127,7 +127,7 @@ const ServicePricing = () => {
 
         <div className="grid lg:grid-cols-3 gap-8">
           {plans.map((plan, index) => (
-            <FadeInSection key={plan.name} delay={0.4 + index * 0.2} once>
+            <FadeInSection key={plan.name} immediate={true} delay={0.4 + index * 0.2} once>
               <div className={`relative bg-white rounded-2xl shadow-lg overflow-hidden ${
                 plan.popular ? 'ring-2 ring-blue-600 scale-105' : ''
               }`}>
@@ -205,7 +205,7 @@ const ServicePricing = () => {
         </div>
 
         {/* 추가 정보 섹션 */}
-        <FadeInSection delay={1.0} once>
+        <FadeInSection immediate={true} delay={1.0} once>
           <div className="mt-16 text-center">
             <div className="bg-white rounded-2xl p-8 shadow-lg">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">
@@ -254,7 +254,7 @@ const ServicePricing = () => {
         </FadeInSection>
 
         {/* FAQ 링크 */}
-        <FadeInSection delay={1.2} once>
+        <FadeInSection immediate={true} delay={1.2} once>
           <div className="mt-12 text-center">
             <p className="text-gray-600 mb-4">
               요금제에 대해 더 궁금한 점이 있으신가요?

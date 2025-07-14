@@ -3,9 +3,9 @@ import FadeInSection from "../animations/FadeInComponent";
 
 const CompanyInfo = () => {
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-white py-20">
+    <div className="bg-gradient-to-br from-blue-50 to-white py-20 pt-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <FadeInSection>
+        <FadeInSection immediate={true}>
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
               지역 비즈니스의 성장을 위한 
@@ -18,7 +18,7 @@ const CompanyInfo = () => {
           </div>
         </FadeInSection>
 
-        <FadeInSection delay={0.2}>
+        <FadeInSection immediate={true} delay={0.1}>
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-6">

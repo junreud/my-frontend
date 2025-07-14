@@ -10,26 +10,50 @@ interface FadeInProps {
   delay?: number;
   /** 한 번만 애니메이션을 실행할지 여부 */
   once?: boolean;
+  /** 즉시 애니메이션을 시작할지 여부 (스크롤 감지 안함) */
+  immediate?: boolean;
 }
 
 export default function FadeInSection({
   children,
-  duration = 1.5,
+  duration = 0.3,
   delay = 0,
-  once = false,
+  once = true,
+  immediate = false,
 }: FadeInProps) {
+  if (immediate) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ 
+          opacity: 1,
+          transition: {
+            duration,
+            delay,
+            ease: "easeOut"
+          }
+        }}
+      >
+        {children}
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       whileInView={{
         opacity: 1,
         transition: {
-          duration, // 페이드인에 걸리는 시간
-          delay,    // 몇 초 후에 시작할지
+          duration,
+          delay,
           ease: "easeOut"
         },
       }}
-      viewport={{ once }}
+      viewport={{ 
+        once,
+        margin: "0px 0px -200px 0px"
+      }}
     >
       {children}
     </motion.div>

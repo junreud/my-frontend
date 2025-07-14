@@ -6,7 +6,7 @@ const ServiceOverview = () => {
   return (
     <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-6xl mx-auto px-4">
-        <FadeInSection delay={0.2} once>
+        <FadeInSection immediate={true} delay={0.2} once>
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
               라카비가 제공하는 <span className="text-blue-600">통합 마케팅 솔루션</span>
@@ -19,7 +19,7 @@ const ServiceOverview = () => {
         </FadeInSection>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <FadeInSection delay={0.4} once>
+          <FadeInSection immediate={true} delay={0.4} once>
             <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <div className="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                 <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,27 +39,27 @@ const ServiceOverview = () => {
             </div>
           </FadeInSection>
 
-          <FadeInSection delay={0.6} once>
+          <FadeInSection immediate={true} delay={0.6} once>
             <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <div className="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mb-6">
                 <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">블로그 마케팅</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">콘텐츠 마케팅</h3>
               <p className="text-gray-600 mb-4">
-                체험단, 기자단 관리부터 블로그 리뷰 분석까지 완벽한 블로그 마케팅
+                검색 상위노출을 위한 효과적인 콘텐츠 전략과 최적화 서비스
               </p>
               <ul className="text-sm text-gray-500 space-y-2">
-                <li>• 블로그 체험단/기자단 모집</li>
-                <li>• 리뷰 품질 분석</li>
-                <li>• 블로그 상위노출 전략</li>
-                <li>• 콘텐츠 효과 측정</li>
+                <li>• 검색 최적화 콘텐츠 제작</li>
+                <li>• 키워드 기반 포스팅 전략</li>
+                <li>• 콘텐츠 성과 분석</li>
+                <li>• 브랜드 스토리텔링</li>
               </ul>
             </div>
           </FadeInSection>
 
-          <FadeInSection delay={0.8} once>
+          <FadeInSection immediate={true} delay={0.8} once>
             <div className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
               <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
                 <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,7 @@ const ServiceOverview = () => {
           </FadeInSection>
         </div>
 
-        <FadeInSection delay={1.0} once>
+        <FadeInSection immediate={true} delay={1.0} once>
           <div className="mt-16 text-center">
             <div className="bg-white rounded-2xl p-8 shadow-lg">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">

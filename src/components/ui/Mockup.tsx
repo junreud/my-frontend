@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import styles from './Mockup.module.css';
 
 interface MockupProps {
     src: string;
@@ -14,6 +15,8 @@ const Mockup: React.FC<MockupProps> = ({ src, alt = "", className = "" }) => {
                 shadow-45deg relative mx-auto border-gray-800 dark:border-gray-800
                 bg-gray-800 border-[14px] rounded-[2.5rem]
                 h-[600px] w-[300px] ${className}
+                cursor-pointer
+                ${styles.springPhone}
             `}
         >
             {/* 테두리 장식들... */}

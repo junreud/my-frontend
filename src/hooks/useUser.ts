@@ -35,8 +35,23 @@ export function useUser(options: Partial<UseQueryOptions<User>> = {}) {
     }
   }, []);
 
-  // 공개 페이지에서는 useUser를 비활성화 - 하지만 현재는 대시보드에서만 사용하므로 비활성화
-  const isPublicPage = false; // 임시로 비활성화하여 문제 해결
+  // 공개 페이지에서는 useUser를 비활성화
+  const publicPages = [
+    '/', 
+    '/login', 
+    '/signup', 
+    '/password-reset',
+    '/service',
+    '/company-info',
+    '/blog',
+    '/support',
+    '/faq',
+    '/about',
+    '/estimate',
+    '/terms',
+    '/privacy'
+  ];
+  const isPublicPage = publicPages.includes(currentPath);
   
   // 더 확실한 클라이언트 사이드 감지
   const shouldEnable = isClient && !isPublicPage;
@@ -57,7 +72,7 @@ export function useUser(options: Partial<UseQueryOptions<User>> = {}) {
 
   const query = useQuery<User>({
     queryKey: ["user"],
-    enabled: true, // 임시로 항상 활성화하여 테스트
+    enabled: shouldEnable, // 공개 페이지에서는 비활성화
     queryFn: async () => {
       console.log('[useUser] API 호출 시작');
       console.log('[useUser] localStorage 토큰:', localStorage.getItem("accessToken") ? "있음" : "없음");

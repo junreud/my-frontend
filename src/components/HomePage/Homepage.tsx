@@ -18,7 +18,7 @@ export default function Homepage() {
         리뷰 관리부터 방문자 수 증대까지, AI 기반 자동화 시스템으로 효율적인 마케팅을 경험하실 수 있습니다.
       </p>
       <div>
-        <SequentialFadeSlideUp fadeInDuration={0.8} delay={0.5} once={true} rootMargin="-50% 0px 0px 0px">
+        <SequentialFadeSlideUp fadeInDuration={0.3} delay={0.1} once={true} rootMargin="-50% 0px 0px 0px">
           <Mockup
             src="/images/beforeRestaurant.png"
             alt="마케팅 전 플레이스"

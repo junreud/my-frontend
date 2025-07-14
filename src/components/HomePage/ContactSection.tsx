@@ -105,7 +105,7 @@ const ContactSection = () => {
     <section className="py-20 bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto px-4">
         {/* 헤더 */}
-        <FadeInSection delay={0.2} once>
+        <FadeInSection delay={0.1} once>
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
               <span className="text-blue-600">무료 상담</span> 받아보세요
@@ -119,7 +119,7 @@ const ContactSection = () => {
         <div className="grid lg:grid-cols-2 gap-12">
           {/* 왼쪽 - 연락 방법들 */}
           <div>
-            <FadeInSection delay={0.4} once>
+            <FadeInSection delay={0.2} once>
               <h3 className="text-2xl font-bold text-gray-900 mb-8">
                 편한 방법으로 연락주세요
               </h3>
@@ -127,7 +127,7 @@ const ContactSection = () => {
 
             <div className="space-y-6 mb-12">
               {contactMethods.map((method, index) => (
-                <FadeInSection key={method.title} delay={0.6 + index * 0.1} once>
+                <FadeInSection key={method.title} delay={0.3 + index * 0.05} once>
                   <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
@@ -153,7 +153,7 @@ const ContactSection = () => {
             </div>
 
             {/* 자주 묻는 질문 */}
-            <FadeInSection delay={1.0} once>
+            <FadeInSection delay={0.5} once>
               <div className="bg-white rounded-xl p-6 shadow-lg">
                 <h4 className="text-lg font-semibold text-gray-900 mb-6">
                   자주 묻는 질문
@@ -180,7 +180,7 @@ const ContactSection = () => {
           </div>
 
           {/* 오른쪽 - 문의 폼 */}
-          <FadeInSection delay={0.8} once>
+          <FadeInSection delay={0.4} once>
             <div className="bg-white rounded-2xl p-8 shadow-xl">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">
                 무료 상담 신청

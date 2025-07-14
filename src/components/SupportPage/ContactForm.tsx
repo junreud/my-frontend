@@ -29,7 +29,7 @@ const ContactForm = () => {
   return (
     <div className="py-20 bg-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <FadeInSection>
+        <FadeInSection immediate={true}>
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               문의하기
@@ -40,7 +40,7 @@ const ContactForm = () => {
           </div>
         </FadeInSection>
 
-        <FadeInSection delay={0.2}>
+        <FadeInSection immediate={true} delay={0.2}>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <div>

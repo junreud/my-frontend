@@ -52,12 +52,12 @@ const CompanyIntro = () => {
 
   const milestones = [
     {
-      year: "2023",
+      year: "2023.01",
       title: "라카비 서비스 런칭",
       description: "소상공인을 위한 통합 마케팅 플랫폼 정식 출시"
     },
     {
-      year: "2023",
+      year: "2023.07",
       title: "1,000개 업체 돌파", 
       description: "출시 6개월 만에 1,000개 업체 등록 달성"
     },
@@ -77,7 +77,7 @@ const CompanyIntro = () => {
     <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4">
         {/* 회사 소개 헤더 */}
-        <FadeInSection delay={0.2} once>
+        <FadeInSection delay={0.1} once>
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-6">
               라카비를 <span className="text-blue-600">만드는 사람들</span>
@@ -90,7 +90,7 @@ const CompanyIntro = () => {
         </FadeInSection>
 
         {/* 미션 & 비전 */}
-        <FadeInSection delay={0.4} once>
+        <FadeInSection delay={0.2} once>
           <div className="grid md:grid-cols-2 gap-12 mb-20">
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">우리의 미션</h3>
@@ -112,14 +112,14 @@ const CompanyIntro = () => {
         </FadeInSection>
 
         {/* 팀 소개 */}
-        <FadeInSection delay={0.6} once>
+        <FadeInSection delay={0.3} once>
           <div className="mb-20">
             <h3 className="text-3xl font-bold text-gray-900 text-center mb-12">
               전문가 팀
             </h3>
             <div className="grid md:grid-cols-3 gap-8">
               {teamMembers.map((member, index) => (
-                <FadeInSection key={member.name} delay={0.8 + index * 0.2} once>
+                <FadeInSection key={member.name} delay={0.4 + index * 0.1} once>
                   <div className="bg-gray-50 rounded-2xl p-8 text-center hover:shadow-lg transition-shadow duration-300">
                     <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full mx-auto mb-6 flex items-center justify-center text-white font-bold text-2xl">
                       {member.name.charAt(0)}
@@ -151,14 +151,14 @@ const CompanyIntro = () => {
         </FadeInSection>
 
         {/* 회사 가치 */}
-        <FadeInSection delay={1.0} once>
+        <FadeInSection delay={0.7} once>
           <div className="mb-20">
             <h3 className="text-3xl font-bold text-gray-900 text-center mb-12">
               우리의 가치
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {companyValues.map((value, index) => (
-                <FadeInSection key={value.title} delay={1.2 + index * 0.1} once>
+                <FadeInSection key={value.title} delay={0.8 + index * 0.05} once>
                   <div className="text-center p-6">
                     <div className="text-4xl mb-4">{value.icon}</div>
                     <h4 className="text-lg font-semibold text-gray-900 mb-3">
@@ -175,14 +175,14 @@ const CompanyIntro = () => {
         </FadeInSection>
 
         {/* 성장 스토리 */}
-        <FadeInSection delay={1.4} once>
+        <FadeInSection delay={1.0} once>
           <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-white">
             <h3 className="text-3xl font-bold text-center mb-12">
               함께한 성장 스토리
             </h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {milestones.map((milestone) => (
-                <div key={milestone.year} className="text-center">
+              {milestones.map((milestone, index) => (
+                <div key={`${milestone.year}-${index}`} className="text-center">
                   <div className="text-3xl font-bold text-yellow-300 mb-2">
                     {milestone.year}
                   </div>
@@ -199,7 +199,7 @@ const CompanyIntro = () => {
         </FadeInSection>
 
         {/* CTA 섹션 */}
-        <FadeInSection delay={1.6} once>
+        <FadeInSection delay={1.1} once>
           <div className="mt-16 text-center">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               라카비와 함께 성장하고 싶으신가요?

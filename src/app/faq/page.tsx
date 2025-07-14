@@ -6,7 +6,6 @@ import Navbar from "@/components/common/Navbar";
 import { Container } from "@/components/common/Container";
 import Footer from "@/components/common/Footer";
 import FAQHero from "@/components/FAQPage/FAQHero";
-import LoadingSpinner from "@/components/ui/LoadingStates/LoadingSpinner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 interface FaqItem {
@@ -48,7 +47,6 @@ export default function FaqPage() {
   const [faqData, setFaqData] = useState<FaqData | null>(null);
   const [category, setCategory] = useState<string>("플레이스");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   useEffect(() => {
@@ -76,13 +74,9 @@ export default function FaqPage() {
         }
       ]
     };
-
-    const timer = setTimeout(() => {
-      setFaqData(mockFaqData);
-      setIsLoading(false);
-    }, 800);
-
-    return () => clearTimeout(timer);
+    
+    // 즉시 데이터 설정 (로딩 제거)
+    setFaqData(mockFaqData);
   }, []);
 
   const getFilteredFaqs = () => {
@@ -96,19 +90,6 @@ export default function FaqPage() {
         item.answer.toLowerCase().includes(searchTerm.toLowerCase())
     );
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen">
-        <Container>
-          <Navbar />
-        </Container>
-        <div className="flex items-center justify-center py-20">
-          <LoadingSpinner size="large" />
-        </div>
-      </div>
-    );
-  }
 
   const categories = faqData ? Object.keys(faqData) : [];
   const filteredFaqs = getFilteredFaqs();
@@ -145,7 +126,6 @@ export default function FaqPage() {
               ))}
             </div>
           </div>
-
           <div className={`flex ${isMobile ? 'flex-col' : 'gap-8'}`}>
             <nav 
               className={`${isMobile ? 'w-full mb-6' : 'w-1/4'} ${isMobile ? '' : 'border-r pr-4'}`}
