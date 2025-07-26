@@ -6,7 +6,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 // API 기본 URL 환경 변수에서 가져오기
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000';
+import { API_BASE_URL } from '@/lib/config';
 
 // 이메일 중복 체크 함수 (api.ts에서 가져오던 것 직접 정의)
 async function checkEmailAvailability(email: string): Promise<boolean> {

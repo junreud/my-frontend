@@ -2,6 +2,21 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 
+// Performance API 확장 타입
+interface ExtendedPerformanceEntry extends PerformanceEntry {
+  processingStart?: number;
+  hadRecentInput?: boolean;
+  value?: number;
+  responseStart?: number;
+}
+
+// Global window 타입 확장
+declare global {
+  interface Window {
+    gtag?: (command: string, action: string, options: Record<string, unknown>) => void;
+  }
+}
+
 /**
  * Performance monitoring hook using Web Vitals
  * Tracks Core Web Vitals and custom performance metrics
@@ -32,15 +47,15 @@ export function useWebVitals() {
             metricsRef.current.lcp = entry.startTime;
             break;
           case 'first-input':
-            metricsRef.current.fid = (entry as any).processingStart - entry.startTime;
+            metricsRef.current.fid = (entry as ExtendedPerformanceEntry).processingStart! - entry.startTime;
             break;
           case 'layout-shift':
-            if (!(entry as any).hadRecentInput) {
-              metricsRef.current.cls += (entry as any).value;
+            if (!(entry as ExtendedPerformanceEntry).hadRecentInput) {
+              metricsRef.current.cls += (entry as ExtendedPerformanceEntry).value!;
             }
             break;
           case 'navigation':
-            metricsRef.current.ttfb = (entry as any).responseStart;
+            metricsRef.current.ttfb = (entry as ExtendedPerformanceEntry).responseStart!;
             break;
         }
       }
@@ -60,8 +75,8 @@ export function useWebVitals() {
     metricsRef.current.customMetrics[name] = value;
     
     // Report to analytics if available
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', 'custom_metric', {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'custom_metric', {
         metric_name: name,
         metric_value: value,
       });
@@ -202,10 +217,15 @@ export function useMemoryOptimization() {
 
     // Listen for memory pressure events
     if ('memory' in performance && 'addEventListener' in performance) {
-      (performance as any).addEventListener('memorywarning', handleMemoryPressure);
+      const perfWithEvents = performance as Performance & {
+        addEventListener(type: 'memorywarning', listener: () => void): void;
+        removeEventListener(type: 'memorywarning', listener: () => void): void;
+      };
+      
+      perfWithEvents.addEventListener('memorywarning', handleMemoryPressure);
       
       return () => {
-        (performance as any).removeEventListener('memorywarning', handleMemoryPressure);
+        perfWithEvents.removeEventListener('memorywarning', handleMemoryPressure);
       };
     }
   }, [runCleanup]);

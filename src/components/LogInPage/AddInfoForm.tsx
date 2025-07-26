@@ -8,6 +8,7 @@ import { PRIVACY_TERM_TEXT } from "@/app/terms/privacyTerm";
 import { MARKETING_TERM_TEXT } from "@/app/terms/marketingTerm";
 import { useSearchParams } from "next/navigation";
 import { Checkbox } from "@/components/ui/checkbox"
+import { API_BASE_URL } from '@/lib/config';
 
 /** 
  * 휴대전화 포맷팅 (010-1234-5678)
@@ -230,8 +231,7 @@ export default function AddInfoForm() {
   
     try {
       // (C) API URL 구분
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
-      const apiUrl = `${baseUrl}/auth/addinfo`;
+      const apiUrl = `${API_BASE_URL}/auth/addinfo`;
   
       // (D) /auth/addinfo 요청
       const response = await fetch(apiUrl, {
@@ -254,7 +254,8 @@ export default function AddInfoForm() {
   
       // (G) accessToken or redirectUrl 처리
       if (data.accessToken) {
-        const redirectBaseUrl = process.env.NEXT_PUBLIC_REDIRECT_URL || "https://localhost:3000";
+        const frontendPort = process.env.NEXT_PUBLIC_FRONTEND_PORT || "3000";
+        const redirectBaseUrl = process.env.NEXT_PUBLIC_REDIRECT_URL || `https://localhost:${frontendPort}`;
         window.location.href = `${redirectBaseUrl}/oauth-redirect?accessToken=${data.accessToken}`;
       } else if (data.redirectUrl) {
         window.location.href = data.redirectUrl;

@@ -69,6 +69,7 @@ import { useAddKeyword } from "@/hooks/useAddKeyword";
 import { useKeywordHistory } from '@/hooks/useKeywordHistory';
 
 import { ChartDataItem } from "./KeywordRankingChart";
+import KeywordRankingChart from "./KeywordRankingChart";
 // Remove direct import of KeywordRankingTable since we'll use lazy loading
 // import KeywordRankingTable from "./KeywordRankingTableVirtualized";
 import { Button } from "@/components/ui/button";
@@ -873,10 +874,6 @@ export default function MarketingKeywordsPage() {
     return <div className="text-center mt-20 p-4">등록된 업체가 없습니다. 업체를 먼저 등록해주세요.</div>;
   }
 
-  const toggleAccordionByIndex = (index: number) => {
-    setExpandedKeywordIndex(expandedKeywordIndex === index ? null : index);
-  };
-
   return (
     <div className="h-full flex flex-col" style={{ contentVisibility: 'auto' }}>
       {/* 브레드크럼프 스타일의 탭 네비게이션 - 헤더 바로 아래 */}
@@ -1006,51 +1003,62 @@ export default function MarketingKeywordsPage() {
                       실시간 업데이트
                     </div>
                   </div>
-                  {!isLoadingRankings && userKeywords.length > 0 && (
-                    <div className="max-h-[600px] overflow-y-auto overflow-x-visible relative z-10">
-                      {/* VirtualizedKeywordList를 간단한 키워드 리스트로 대체 */}
-                      <div className="space-y-4">
-                        {virtualizedKeywords.map((keyword, index) => (
-                          <div 
-                            key={keyword.id} 
-                            className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:bg-gray-50"
-                            onClick={() => toggleAccordionByIndex(index)}
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="font-medium">{keyword.keyword}</span>
-                              <div className="flex items-center gap-2">
-                                {(() => {
-                                  const historical = keywordRankingsMap.get(keyword.keyword)?.historical;
-                                  const ranking = historical?.length ? historical[historical.length - 1]?.ranking : null;
-                                  return ranking ? (
-                                    <span className="text-sm text-gray-600">{ranking}위</span>
-                                  ) : null;
-                                })()}
-                                <span className="text-gray-400">
-                                  {expandedKeywordIndex === index ? '▼' : '▶'}
-                                </span>
-                              </div>
-                            </div>
-                            {expandedKeywordIndex === index && (
-                              <div className="mt-4 border-t pt-4">
-                                {loadingHistory ? (
-                                  <div className="flex items-center gap-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                    <span className="text-sm text-gray-600">히스토리 로딩 중...</span>
-                                  </div>
-                                ) : historyData && historyData.length > 0 ? (
-                                  <div className="text-sm text-gray-600">
-                                    <p>최근 30일 데이터: {historyData.length}개 항목</p>
-                                    <p>최신 순위: {historyData[historyData.length - 1]?.ranking || 'N/A'}위</p>
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-gray-500">히스토리 데이터가 없습니다.</p>
-                                )}
-                              </div>
-                            )}
+                  
+                  {/* 키워드 선택 드롭다운 */}
+                  {userKeywords.length > 0 && (
+                    <div className="mb-6">
+                      <Combobox
+                        options={preparedKeywordOptions.map(opt => opt.label)}
+                        value={
+                          selectedKeywordForChart
+                            ? preparedKeywordOptions.find(opt => opt.value === selectedKeywordForChart)?.label || ""
+                            : ""
+                        }
+                        onChange={(selectedLabel) => {
+                          const selectedOpt = preparedKeywordOptions.find(opt => opt.label === selectedLabel);
+                          const newKeyword = selectedOpt ? selectedOpt.value : null;
+                          console.log('[Debug] Chart keyword selection changed:', { 
+                            selectedLabel, 
+                            newKeyword, 
+                            previousKeyword: selectedKeywordForChart,
+                            availableOptions: preparedKeywordOptions.length 
+                          });
+                          setSelectedKeywordForChart(newKeyword);
+                          trackCustomMetric('chart_keyword_selected', performance.now());
+                        }}
+                        placeholder="키워드를 선택하세요..."
+                        className="w-full max-w-md border-2 focus-within:border-blue-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* 차트 렌더링 */}
+                  {!isLoadingRankings && userKeywords.length > 0 && selectedKeywordForChart && (
+                    <div className="relative">
+                      {(() => {
+                        const chartData = keywordRankingsMap.get(selectedKeywordForChart)?.historical || [];
+                        const isRestaurantKeyword = chartData.length > 0 && chartData[0].isRestaurant || false;
+                        
+                        return chartData.length > 0 ? (
+                          <KeywordRankingChart
+                            chartData={chartData}
+                            activeBusiness={selectedBusiness}
+                            isRestaurantKeyword={isRestaurantKeyword}
+                          />
+                        ) : (
+                          <div className="text-center text-gray-500 py-12">
+                            <p className="text-lg">선택한 키워드의 차트 데이터가 없습니다.</p>
+                            <p className="text-sm">데이터가 수집되면 차트가 표시됩니다.</p>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+                  
+                  {!isLoadingRankings && userKeywords.length > 0 && !selectedKeywordForChart && (
+                    <div className="text-center text-gray-500 py-12">
+                      <p className="text-lg">키워드를 선택하세요</p>
+                      <p className="text-sm">위에서 키워드를 선택하면 순위 변동 차트를 볼 수 있습니다.</p>
                     </div>
                   )}
                   
@@ -1058,6 +1066,13 @@ export default function MarketingKeywordsPage() {
                     <div className="text-center text-gray-500 py-12">
                       <p className="text-lg">키워드가 없습니다.</p>
                       <p className="text-sm">위에서 키워드를 추가하면 순위 변동 그래프를 볼 수 있습니다.</p>
+                    </div>
+                  )}
+
+                  {isLoadingRankings && (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <span className="ml-3 text-gray-600">차트 데이터 로딩 중...</span>
                     </div>
                   )}
                 </div>

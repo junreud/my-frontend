@@ -78,7 +78,8 @@ export default function BlogReviewsPage() {
     if (!token) return;
 
     console.log(`[Socket.IO] 연결 시도 중... placeId: ${placeId}`);
-    const socket = io('https://localhost:4000', {
+    const backendPort = process.env.NEXT_PUBLIC_BACKEND_PORT || '4000';
+    const socket = io(`https://localhost:${backendPort}`, {
       auth: { token },
       transports: ['websocket'],
       rejectUnauthorized: false // 개발 환경에서 자체 서명 인증서 허용

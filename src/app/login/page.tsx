@@ -20,12 +20,15 @@ export default function LoginPage() {
   const [notifDescription, setNotifDescription] = useState("");
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      router.replace("/dashboard");
-      setCheckDone(true);
-    } else {
-      setCheckDone(true);
+    // 클라이언트 사이드에서만 실행
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        router.replace("/dashboard");
+        setCheckDone(true);
+      } else {
+        setCheckDone(true);
+      }
     }
   }, [router]);
 

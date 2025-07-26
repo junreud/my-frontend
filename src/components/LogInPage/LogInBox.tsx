@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { API_BASE_URL } from '@/lib/config';
 
 // ───────────────────────────────────────────────────
 // shadcn/ui 컴포넌트 import
@@ -35,13 +36,11 @@ const LogInBox: React.FC<LogInBoxProps> = ({ onLogin }) => {
 
   // 소셜 로그인
   const handleGoogleLogin = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
-    window.location.href = `${baseUrl}/auth/google`;
+    window.location.href = `${API_BASE_URL}/auth/google`;
   };
   
   const handleKakaoLogin = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:4000";
-    window.location.href = `${baseUrl}/auth/kakao`;
+    window.location.href = `${API_BASE_URL}/auth/kakao`;
   };
 
   // blur 시, 값이 없으면 라벨 내리기

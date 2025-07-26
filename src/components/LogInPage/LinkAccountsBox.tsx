@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { API_BASE_URL } from '@/lib/config';
 
 interface LinkAccountLoginBoxProps {
   defaultEmail: string; // 쿼리 파라미터 등으로 받은 이메일
@@ -34,7 +35,7 @@ const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
   
     try {
       // 1) 비밀번호 인증
-      const res = await fetch("https://localhost:4000/auth/checkEmailAndPassword", {
+      const res = await fetch(`${API_BASE_URL}/auth/checkEmailAndPassword`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -49,7 +50,7 @@ const LinkAccountLoginBox: React.FC<LinkAccountLoginBoxProps> = ({
       alert("비번 인증 성공! 계정 연동 진행...");
   
       // 2) 소셜 계정 연동 -> /auth/link-accounts (토큰 발급)
-      const linkRes = await fetch("https://localhost:4000/auth/link-accounts", {
+      const linkRes = await fetch(`${API_BASE_URL}/auth/link-accounts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

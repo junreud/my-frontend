@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useMemo, memo, useState, useEffect, useRef } from 'react';
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+
+// Performance API 확장 타입
+interface ExtendedPerformanceEntry extends PerformanceEntry {
+  processingStart?: number;
+  hadRecentInput?: boolean;
+  value?: number;
+  responseStart?: number;
+}
 
 /**
  * Enterprise-level performance hook for aggressive prefetching
@@ -35,7 +43,7 @@ export function useAgressivePrefetch() {
   }, []);
 
   // Viewport-based prefetching
-  const prefetchInViewport = React.useCallback((element: Element, queryKey: string[], queryFn: () => Promise<any>) => {
+  const prefetchInViewport = React.useCallback((element: Element, queryKey: string[], queryFn: () => Promise<unknown>) => {
     if (!observerRef.current) {
       observerRef.current = new IntersectionObserver(
         (entries) => {
@@ -63,7 +71,7 @@ export function useAgressivePrefetch() {
   }, [queryClient]);
 
   // Aggressive background prefetching when idle
-  const backgroundPrefetch = React.useCallback((queries: Array<{ queryKey: string[], queryFn: () => Promise<any> }>) => {
+  const backgroundPrefetch = React.useCallback((queries: Array<{ queryKey: string[], queryFn: () => Promise<unknown> }>) => {
     if (!isIdle) return;
 
     queries.forEach(({ queryKey, queryFn }) => {
@@ -171,15 +179,15 @@ export function usePerformanceMonitor() {
             setMetrics(prev => ({ ...prev, lcp: entry.startTime }));
             break;
           case 'first-input':
-            setMetrics(prev => ({ ...prev, fid: (entry as any).processingStart - entry.startTime }));
+            setMetrics(prev => ({ ...prev, fid: (entry as ExtendedPerformanceEntry).processingStart! - entry.startTime }));
             break;
           case 'layout-shift':
-            if (!(entry as any).hadRecentInput) {
-              setMetrics(prev => ({ ...prev, cls: prev.cls + (entry as any).value }));
+            if (!(entry as ExtendedPerformanceEntry).hadRecentInput) {
+              setMetrics(prev => ({ ...prev, cls: prev.cls + (entry as ExtendedPerformanceEntry).value! }));
             }
             break;
           case 'navigation':
-            setMetrics(prev => ({ ...prev, ttfb: (entry as any).responseStart }));
+            setMetrics(prev => ({ ...prev, ttfb: (entry as ExtendedPerformanceEntry).responseStart! }));
             break;
         }
       });

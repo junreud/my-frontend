@@ -20,8 +20,12 @@ import {
   Clock,
   Target,
   BarChart3,
-  Calendar
+  Calendar,
+  Trophy
 } from 'lucide-react';
+// import { QuestList, QuestStats } from '@/components/Quest/QuestComponents';
+// import { useQuests, useQuestTrigger, useQuestInitialization } from '@/hooks/useQuests';
+import { questCategories } from '@/lib/questManager';
 
 // CSR 컴포넌트로 변경
 export default function DashboardPage() {
@@ -36,6 +40,21 @@ export default function DashboardPage() {
 
   // selectedBusinessId를 activeBusiness에서 가져오기
   const selectedBusinessId = activeBusiness?.place_id || null;
+
+  // 퀘스트 관련 훅들 (임시 비활성화)
+  // const { quests, stats, isLoading: isQuestLoading, startQuest, completeQuest } = useQuests(userId?.toString());
+  // const { triggerQuestProgress } = useQuestTrigger(userId?.toString());
+  // useQuestInitialization(userId?.toString());
+
+  // 퀘스트 필터 상태
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  // 대시보드 방문 퀘스트 트리거 (임시 비활성화)
+  // useEffect(() => {
+  //   if (userId) {
+  //     triggerQuestProgress('dashboard_visited');
+  //   }
+  // }, [userId, triggerQuestProgress]);
 
   // 컴포넌트 레이아웃 쉬프트 방지를 위한 상태
   const [contentHeight, setContentHeight] = useState<number | null>(null);
@@ -752,6 +771,79 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 퀘스트 섹션 */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-600" />
+                  주간 퀘스트
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="카테고리" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">전체</SelectItem>
+                      {questCategories.map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.icon} {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            {/* 퀘스트 섹션 임시 비활성화 */}
+            {/* <CardContent>
+              <div className="mb-6">
+                <QuestStats 
+                  totalCompleted={stats.totalCompleted}
+                  totalPoints={stats.totalPoints}
+                  currentStreak={stats.currentStreak}
+                  weeklyProgress={stats.weeklyProgress}
+                />
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-sm font-medium text-gray-700">진행 중인 퀘스트</h3>
+                {isQuestLoading ? (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="h-48 bg-gray-200 animate-pulse rounded-lg"></div>
+                    ))}
+                  </div>
+                ) : (
+                  <QuestList
+                    quests={quests.filter(q => q.status !== 'completed')}
+                    categoryFilter={selectedCategory === 'all' ? undefined : selectedCategory}
+                    onQuestStart={startQuest}
+                    onQuestComplete={completeQuest}
+                  />
+                )}
+              </div>
+              
+              <div className="mt-8 space-y-4">
+                <h3 className="text-sm font-medium text-gray-700">완료된 퀘스트</h3>
+                <div className="max-h-64 overflow-y-auto">
+                  <QuestList
+                    quests={quests.filter(q => q.status === 'completed').slice(0, 6)}
+                    categoryFilter={selectedCategory === 'all' ? undefined : selectedCategory}
+                  />
+                </div>
+              </div>
+            </CardContent> */}
+            <CardContent>
+              <div className="text-center py-8 text-gray-500">
+                퀘스트 기능은 현재 개발 중입니다.
               </div>
             </CardContent>
           </Card>

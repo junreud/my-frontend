@@ -15,15 +15,6 @@ declare global {
       jsHeapSizeLimit: number;
     };
   }
-  
-  interface Navigator {
-    connection?: {
-      effectiveType: string;
-      downlink: number;
-      rtt: number;
-      saveData: boolean;
-    };
-  }
 }
 
 // 특정 Performance Entry 타입들

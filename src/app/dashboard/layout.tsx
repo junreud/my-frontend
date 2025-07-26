@@ -21,7 +21,7 @@ import { InstantLink } from "@/components/ui/instant-link"
 import { Toaster } from "@/components/ui/sonner"
 import { Bell, Cog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { NotificationsModal } from '@/components/Dashboard/notifications-modal';
+import NotificationsModal from '@/components/Dashboard/notifications-modal';
 import { SettingsModal } from '@/components/Dashboard/settings-modal';
 import { DashboardFooter } from '@/components/Dashboard/dashboard-footer';
 import { useUser } from '@/hooks/useUser';

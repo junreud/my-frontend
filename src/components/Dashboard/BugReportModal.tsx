@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, ChangeEvent } from "react";
+import { API_BASE_URL } from '@/lib/config';
 import { toast } from "@/components/ui/sonner";
 
 interface BugReportModalProps {
@@ -33,8 +34,7 @@ export default function BugReportModal({ open, onClose }: BugReportModalProps) {
     formData.append("contactEmail", contactEmail);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000';
-      const res = await fetch(`${apiUrl}/api/bug-report`, {
+      const res = await fetch(`${API_BASE_URL}/api/bug-report`, {
         method: 'POST',
         body: formData,
       });

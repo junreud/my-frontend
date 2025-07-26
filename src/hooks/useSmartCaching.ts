@@ -3,13 +3,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
+// 타입 정의
+interface SyncQueueItem {
+  queryKey: string[];
+  data: unknown;
+}
+
+interface NetworkConnection {
+  effectiveType?: 'slow-2g' | '2g' | '3g' | '4g';
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
+  addEventListener?: (type: 'change', listener: () => void) => void;
+  removeEventListener?: (type: 'change', listener: () => void) => void;
+}
+
+declare global {
+  interface Navigator {
+    connection?: NetworkConnection;
+  }
+}
+
 /**
  * Enterprise-level background sync for offline support
  */
 export function useBackgroundSync() {
   const queryClient = useQueryClient();
   const [isOnline, setIsOnline] = useState(true);
-  const syncQueueRef = useRef<Array<{ queryKey: string[], data: any }>>([]);
+  const syncQueueRef = useRef<SyncQueueItem[]>([]);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -34,7 +55,7 @@ export function useBackgroundSync() {
     };
   }, [queryClient]);
 
-  const queueForSync = useCallback((queryKey: string[], data: any) => {
+  const queueForSync = useCallback((queryKey: string[], data: unknown) => {
     if (!isOnline) {
       syncQueueRef.current.push({ queryKey, data });
     }
@@ -96,7 +117,9 @@ export function useAdaptiveLoading() {
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && 'connection' in navigator) {
-      const connection = (navigator as any).connection;
+      const connection = navigator.connection;
+      
+      if (!connection) return;
       
       const updateConnectionSpeed = () => {
         const effectiveType = connection.effectiveType;
@@ -107,11 +130,14 @@ export function useAdaptiveLoading() {
       };
 
       updateConnectionSpeed();
-      connection.addEventListener('change', updateConnectionSpeed);
-
-      return () => {
-        connection.removeEventListener('change', updateConnectionSpeed);
-      };
+      
+      if (connection.addEventListener) {
+        connection.addEventListener('change', updateConnectionSpeed);
+        
+        return () => {
+          connection.removeEventListener?.('change', updateConnectionSpeed);
+        };
+      }
     }
   }, []);
 
@@ -135,13 +161,13 @@ export function useAdaptiveLoading() {
  * Request deduplication and batching
  */
 export function useRequestOptimization() {
-  const requestMapRef = useRef(new Map<string, Promise<any>>());
-  const batchedRequestsRef = useRef(new Map<string, any[]>());
+  const requestMapRef = useRef(new Map<string, Promise<unknown>>());
+  const batchedRequestsRef = useRef(new Map<string, unknown[]>());
   const batchTimeoutRef = useRef<NodeJS.Timeout>();
 
   const deduplicateRequest = useCallback(<T>(key: string, requestFn: () => Promise<T>): Promise<T> => {
     if (requestMapRef.current.has(key)) {
-      return requestMapRef.current.get(key)!;
+      return requestMapRef.current.get(key)! as Promise<T>;
     }
 
     const promise = requestFn().finally(() => {
@@ -152,7 +178,7 @@ export function useRequestOptimization() {
     return promise;
   }, []);
 
-  const batchRequest = useCallback((batchKey: string, request: any, batchSize = 10, delay = 100) => {
+  const batchRequest = useCallback((batchKey: string, request: unknown, batchSize = 10, delay = 100) => {
     if (!batchedRequestsRef.current.has(batchKey)) {
       batchedRequestsRef.current.set(batchKey, []);
     }

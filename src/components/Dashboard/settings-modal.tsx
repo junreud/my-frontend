@@ -72,7 +72,7 @@ export function SettingsModal({ open, onOpenChange }: { open: boolean; onOpenCha
       setShowContentAfterResize(false);
       scrollContainerRef.current?.scrollTo(0, 0);
     }
-  }, [open]);
+  }, [open, activeTab]);
 
   // Handle tab switch: fade-out, resize height, then fade-in
   React.useEffect(() => {

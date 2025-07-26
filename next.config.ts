@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
     domains: ['lakabe.com', 'www.lakabe.com'], // 외부 도메인이 있다면 여기 추가
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 31536000, // 1년
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // 모바일 최적화
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // 아이콘 크기
   },
   // 성능 최적화
   compiler: {
@@ -23,6 +25,15 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'], // 패키지 최적화
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
   // 헤더 설정
   async headers() {

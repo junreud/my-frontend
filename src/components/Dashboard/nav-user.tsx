@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import { ChevronsUpDown, LogOut, Sparkles } from "lucide-react"
+import { API_BASE_URL } from '@/lib/config';
 
 // ui/avatar
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -92,7 +93,7 @@ export function NavUser() {
                 onClick={async () => {
                   // 로그아웃 API 호출
                   try {
-                    const response = await fetch('https://localhost:4000/auth/logout', { 
+                    const response = await fetch(`${API_BASE_URL}/auth/logout`, { 
                       method: 'POST', 
                       credentials: 'include',
                       headers: {
