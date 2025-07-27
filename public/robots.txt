@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# 검색엔진이 크롤링하지 말아야 할 디렉토리
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+
+# 사이트맵 위치
+Sitemap: https://lakabe.com/sitemap.xml
+Sitemap: https://lakabe.com/rss.xml
+
+# 크롤링 속도 제한 (선택사항)
+Crawl-delay: 1
