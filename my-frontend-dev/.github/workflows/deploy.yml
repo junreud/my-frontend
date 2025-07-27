@@ -1,0 +1,35 @@
+name: Deploy to Mac Server -Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-job:
+    runs-on: self-hosted  # <-- 'self-hosted'를 지정해야 로컬 맥북 Runner에서 실행됨
+    steps:
+      # 1) 체크아웃(코드를 Runner 디렉토리에 받음)
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      # 2) Node 버전 지정 (선택)
+      - name: Use Node.js 23.7
+        uses: actions/setup-node@v3
+        with:
+          node-version: 23.7
+
+      - name: Create .env
+        run: |
+          echo "${{ secrets.PRODUCTION_ENV }}" > .env
+      # 4) 프론트엔드 배포 (Next.js 예시)
+      - name: Install & Build Frontend
+        run: |
+          npm install
+          npm run build  # Next.js 빌드
+          # npm run export (Static export가 필요하다면)
+      
+      - name: Restart Frontend Server
+        run: |
+          pm2 stop next-frontend || true
+          pm2 start "npm run start" --name next-frontend

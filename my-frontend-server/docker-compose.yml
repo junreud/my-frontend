@@ -1,0 +1,42 @@
+services:
+  # 개발 환경 - 프론트엔드
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=https://localhost:4000
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    depends_on:
+      - backend-dev
+
+  # 프로덕션 환경 - 프론트엔드 (로컬 테스트용)
+  frontend-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8080:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://api.lakabe.com
+
+  # 백엔드 개발 환경 (my-backend 디렉토리 필요)
+  backend-dev:
+    build: 
+      context: ../my-backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ../my-backend:/app
+      - /app/node_modules

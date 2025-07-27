@@ -1,0 +1,39 @@
+# Git 관련
+.git
+.gitignore
+
+# 의존성 모듈 (Docker에서 다시 설치)
+node_modules
+npm-debug.log*
+
+# Next.js 빌드 파일
+.next
+out
+
+# 환경 파일
+.env.local
+.env.*.local
+
+# 로그 파일
+*.log
+
+# 임시 파일
+.DS_Store
+Thumbs.db
+
+# IDE 설정
+.vscode
+.idea
+
+# 테스트 결과
+coverage
+.nyc_output
+
+# Docker 관련
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# 기타 불필요한 파일
+README.md
+docs/
